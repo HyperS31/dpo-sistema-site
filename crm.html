@@ -299,9 +299,40 @@
             background: rgba(255,255,255,0.7); display: none; justify-content: center;
             align-items: center; z-index: 2000;
         }
+
+        /* Экран входа — закрывает вообще всё, включая loading-overlay, пока не введён верный пароль */
+        #authOverlay {
+            display: none; position: fixed; inset: 0; background: linear-gradient(135deg, #e0e7ff 0%, #f8f9fa 100%);
+            align-items: center; justify-content: center; z-index: 3000; padding: 20px;
+        }
+        #authOverlay.open { display: flex; }
+        #authBox {
+            background: white; border-radius: var(--radius); padding: 32px 30px; width: 100%;
+            max-width: 380px; box-shadow: 0 20px 50px rgba(0,0,0,0.25); text-align: center;
+        }
+        #authBox i.fa-lock { font-size: 32px; color: var(--primary); margin-bottom: 12px; }
+        #authBox h2 { margin: 0 0 8px; font-size: 18px; color: var(--primary-dark); }
+        #authBox p { margin: 0 0 18px; font-size: 13px; color: var(--text-secondary); }
+        #authKeyInput {
+            width: 100%; padding: 11px 14px; border: 1px solid var(--border); border-radius: 8px;
+            font-size: 15px; text-align: center; letter-spacing: 1px; margin-bottom: 12px;
+        }
+        #authKeyInput:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(67,97,238,0.15); }
+        #authError { color: var(--danger); font-size: 12.5px; margin-bottom: 10px; display: none; }
+        #authBox button { width: 100%; justify-content: center; padding: 11px; }
     </style>
 </head>
 <body>
+<div id="authOverlay">
+    <div id="authBox">
+        <i class="fas fa-lock"></i>
+        <h2>Доступ к CRM</h2>
+        <p>Система содержит персональные данные слушателей. Введите пароль отдела ДПО.</p>
+        <input type="password" id="authKeyInput" placeholder="Пароль" autocomplete="off">
+        <div id="authError">Неверный пароль</div>
+        <button type="button" onclick="submitAuthKey()"><i class="fas fa-arrow-right-to-bracket"></i> Войти</button>
+    </div>
+</div>
 <div class="container">
     <h1><i class="fas fa-diagram-project"></i> CRM · Воронка сделок</h1>
     <div id="notifBanner"></div>
@@ -600,21 +631,49 @@
         setTimeout(() => msg.style.display = 'none', 2000);
     }
 
+    // ========== Доступ к CRM ==========
+    // Пароль хранится только в localStorage этого браузера, никогда — в самом файле.
+    // Сервер (script-google) проверяет его как CRM_KEY на каждый запрос; без него
+    // Apps Script отвечает {status:'error', message:'Unauthorized'}.
+    function getCrmKey() { return localStorage.getItem('crm_key') || ''; }
+    function onUnauthorized() {
+        localStorage.removeItem('crm_key');
+        document.getElementById('authError').style.display = 'block';
+        document.getElementById('authOverlay').classList.add('open');
+        showLoading(false);
+    }
+    async function submitAuthKey() {
+        const val = document.getElementById('authKeyInput').value.trim();
+        if (!val) return;
+        localStorage.setItem('crm_key', val);
+        document.getElementById('authError').style.display = 'none';
+        document.getElementById('authOverlay').classList.remove('open');
+        await initApp();
+    }
+    document.getElementById('authKeyInput').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') submitAuthKey();
+    });
+
     async function fetchJSON(url) {
-        const resp = await fetch(url);
+        const sep = url.includes('?') ? '&' : '?';
+        const resp = await fetch(url + sep + 'key=' + encodeURIComponent(getCrmKey()));
         const ct = resp.headers.get('content-type') || '';
         if (!ct.includes('application/json')) throw new Error('Ответ не JSON — возможно, нужна авторизация');
-        return resp.json();
+        const data = await resp.json();
+        if (data.status === 'error' && data.message === 'Unauthorized') { onUnauthorized(); throw new Error('Unauthorized'); }
+        return data;
     }
     async function postJSON(action, params) {
         const resp = await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({ action, ...params })
+            body: JSON.stringify({ action, key: getCrmKey(), ...params })
         });
         const ct = resp.headers.get('content-type') || '';
         if (!ct.includes('application/json')) throw new Error('Ответ не JSON — возможно, нужна авторизация');
-        return resp.json();
+        const data = await resp.json();
+        if (data.status === 'error' && data.message === 'Unauthorized') { onUnauthorized(); throw new Error('Unauthorized'); }
+        return data;
     }
 
     function normalizeStage(status) {
@@ -1694,11 +1753,18 @@
         if (e.target.id === 'overlay') closeModal();
     });
 
-    (async () => {
+    async function initApp() {
         await loadDeals();
         populateManagerFilter();
         applyFilterAndRender();
-    })();
+    }
+
+    if (getCrmKey()) {
+        initApp();
+    } else {
+        document.getElementById('authOverlay').classList.add('open');
+        document.getElementById('authKeyInput').focus();
+    }
 </script>
 </body>
 </html>

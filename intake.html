@@ -99,8 +99,8 @@
 
     <div id="successScreen" hidden>
         <i class="fas fa-circle-check"></i>
-        <h2>Спасибо, данные отправлены</h2>
-        <p>Отдел ДПО получил анкету и свяжется с вами при необходимости.</p>
+        <h2 id="successTitle">Спасибо, данные отправлены</h2>
+        <p id="successText">Отдел ДПО получил анкету и свяжется с вами при необходимости.</p>
     </div>
 
     <div id="formScreen" hidden>
@@ -318,11 +318,22 @@
             if (result.status !== 'success') throw new Error(result.message || 'Ссылка недействительна');
 
             const ctx = result.data;
+
+            // Анкета по этой заявке уже отправлена — форма заново не открывается
+            // (сервер всё равно отклонит повторную отправку, но лучше не показывать
+            // человеку форму, которую всё равно не получится отправить).
+            if (ctx.already_submitted > 0) {
+                document.getElementById('successTitle').textContent = 'Анкета уже отправлена';
+                document.getElementById('successText').textContent = 'Данные по этой заявке уже переданы в отдел ДПО ранее. Если нужно что-то исправить — свяжитесь с отделом ДПО напрямую.';
+                document.getElementById('successScreen').hidden = false;
+                showLoading(false);
+                return;
+            }
+
             document.getElementById('ctxProgram').textContent = ctx.program || '(программа не указана)';
             let meta = `Заявитель: ${ctx.fio || '—'}`;
             if (ctx.org_name) meta += ` · ${ctx.org_name}`;
             if (ctx.participants > 1) meta += ` · заявлено слушателей: ${ctx.participants}`;
-            if (ctx.already_submitted > 0) meta += ` · уже отправлено анкет: ${ctx.already_submitted}`;
             document.getElementById('ctxMeta').textContent = meta;
 
             const blocksToCreate = Math.max(1, Number(ctx.participants) || 1);
