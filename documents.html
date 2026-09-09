@@ -907,10 +907,14 @@
 
     // ===== Инициализация =====
     async function init() {
+        // Справочник программ теперь живой (управляется в CRM, вкладка «Программы»),
+        // а не статический файл — правки цены/часов сразу видны здесь, без переразвёртывания.
         try {
-            programs = await fetch('templates/programs.json').then(r => r.json());
+            const res = await fetch(`${API_URL}?action=getPrograms`).then(r => r.json());
+            if (res.status !== 'success') throw new Error(res.message || 'Ошибка загрузки');
+            programs = res.data.filter(p => p.active !== false);
         } catch (err) {
-            console.error('Не удалось загрузить прайс-лист программ:', err);
+            console.error('Не удалось загрузить справочник программ:', err);
             programs = [];
         }
         const dl = document.getElementById('programsList');

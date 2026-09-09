@@ -286,6 +286,16 @@
             max-width: 520px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0,0,0,0.25);
         }
         #modal h2 { margin: 0 0 18px; font-size: 19px; color: var(--primary-dark); }
+        #programOverlay {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+            align-items: center; justify-content: center; z-index: 1000; padding: 20px;
+        }
+        #programOverlay.open { display: flex; }
+        #programModal {
+            background: white; border-radius: var(--radius); padding: 26px 28px; width: 100%;
+            max-width: 420px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+        }
+        #programModal h2 { margin: 0 0 18px; font-size: 19px; color: var(--primary-dark); }
         .field { margin-bottom: 14px; }
         .field label { display: block; font-size: 12.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 5px; }
         .field input, .field select, .field textarea {
@@ -365,6 +375,7 @@
         <button class="tab-btn" data-tab="archive" onclick="switchTab('archive')"><i class="fas fa-box-archive"></i> Архив</button>
         <button class="tab-btn" data-tab="clients" onclick="switchTab('clients')"><i class="fas fa-address-book"></i> Клиенты</button>
         <button class="tab-btn" data-tab="analytics" onclick="switchTab('analytics')"><i class="fas fa-chart-simple"></i> Аналитика</button>
+        <button class="tab-btn" data-tab="programs" onclick="switchTab('programs')"><i class="fas fa-book"></i> Программы</button>
     </div>
 
     <div id="screen-board" class="screen active">
@@ -413,6 +424,52 @@
                 <h3>По менеджерам</h3>
                 <table class="mgr-table" id="mgrTable"></table>
             </div>
+        </div>
+    </div>
+
+    <div id="screen-programs" class="screen">
+        <div class="modal-actions" style="justify-content:flex-start;margin-bottom:14px;">
+            <button type="button" onclick="openProgramModal(null)"><i class="fas fa-plus"></i> Добавить программу</button>
+        </div>
+        <div class="archive-table-wrap">
+            <table class="archive-table" id="programsTable"></table>
+        </div>
+    </div>
+</div>
+
+<!-- Модалка программы (справочник) -->
+<div id="programOverlay">
+    <div id="programModal">
+        <h2 id="programModalTitle">Программа</h2>
+        <div class="field">
+            <label>Название <span style="color:var(--danger)">*</span></label>
+            <input type="text" id="p_name">
+        </div>
+        <div class="field-row">
+            <div class="field">
+                <label>Стоимость, ₽/чел.</label>
+                <input type="number" id="p_price" min="0" step="1">
+            </div>
+            <div class="field">
+                <label>Часов</label>
+                <input type="number" id="p_hours" min="0" step="1">
+            </div>
+        </div>
+        <div class="field">
+            <label>Формат обучения</label>
+            <input type="text" id="p_format" placeholder="Очная, очно-заочная">
+        </div>
+        <div class="field">
+            <label>Руководитель программы</label>
+            <input type="text" id="p_manager">
+        </div>
+        <div class="field" id="p_activeRow" style="display:none;">
+            <label><input type="checkbox" id="p_active" style="width:auto;"> Активна (показывается в подборе программ)</label>
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="danger-outline" id="p_deleteBtn" style="display:none;margin-right:auto;" onclick="deleteProgramConfirm()"><i class="fas fa-trash"></i> Удалить</button>
+            <button type="button" class="secondary" onclick="closeProgramModal()">Отмена</button>
+            <button type="button" onclick="saveProgram()"><i class="fas fa-check"></i> Сохранить</button>
         </div>
     </div>
 </div>
@@ -514,7 +571,8 @@
             </div>
             <div class="field">
                 <label>Программа</label>
-                <input type="text" id="f_program">
+                <input type="text" id="f_program" list="programsDatalist">
+                <datalist id="programsDatalist"></datalist>
             </div>
             <div class="field-row">
                 <div class="field">
@@ -631,6 +689,7 @@
     let allTasks = [];
     let allCohorts = [];
     let allStudents = [];
+    let allPrograms = [];
     let editingId = null; // null => создание новой сделки
     let currentTab = 'board';
     let cohortContext = null; // {mode:'create', program} | {mode:'view', cohortId}
@@ -703,6 +762,8 @@
             allTasks = res.data.tasks;
             allCohorts = res.data.cohorts;
             allStudents = res.data.students;
+            allPrograms = res.data.programs || [];
+            populateProgramsDatalist();
         } catch (err) {
             console.error(err);
             showMessage('Ошибка загрузки: ' + err.message);
@@ -751,6 +812,7 @@
         else if (currentTab === 'archive') renderArchive(filtered);
         else if (currentTab === 'clients') renderClients(allDeals);
         else if (currentTab === 'analytics') renderAnalytics(allDeals);
+        else if (currentTab === 'programs') renderPrograms();
     }
 
     let searchDebounceTimer = null;
@@ -818,6 +880,133 @@
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
         document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === 'screen-' + tab));
         applyFilterAndRender(); // вкладка могла давно не перерисовываться, пока была скрыта
+    }
+
+    // ========== Справочник программ ==========
+    // Единственный источник правды о названии/цене/часах программы — раньше это был
+    // статический programs.json (только для документов), теперь общий для всей системы:
+    // КП/СЗ/Договор/лист выдачи всегда видят актуальную цену сразу после правки здесь,
+    // а поле "Программа" у сделки подсказывает существующие названия (datalist), снижая
+    // риск разночтений из-за опечаток.
+    function populateProgramsDatalist() {
+        const dl = document.getElementById('programsDatalist');
+        if (!dl) return;
+        dl.innerHTML = allPrograms.filter(p => p.active !== false).map(p => `<option value="${escapeHtml(p.name)}">`).join('');
+    }
+
+    function renderPrograms() {
+        const table = document.getElementById('programsTable');
+        const sorted = [...allPrograms].sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ru'));
+        table.innerHTML = `
+            <tr><th>Название</th><th>Стоимость, ₽</th><th>Часов</th><th>Формат</th><th>Руководитель</th><th>Статус</th></tr>
+            ${sorted.map(p => `
+                <tr data-id="${p.id}">
+                    <td>${escapeHtml(p.name || '')}</td>
+                    <td>${p.price ? Number(p.price).toLocaleString('ru-RU') : '—'}</td>
+                    <td>${p.hours || '—'}</td>
+                    <td>${escapeHtml(p.format || '—')}</td>
+                    <td>${escapeHtml(p.manager || '—')}</td>
+                    <td>${p.active === false ? '<span class="badge" style="background:#eef0f4;color:#868e96;">архив</span>' : '<span class="badge check">активна</span>'}</td>
+                </tr>
+            `).join('') || '<tr><td colspan="6" style="text-align:center;padding:30px;">Программ пока нет</td></tr>'}
+        `;
+        table.querySelectorAll('tr[data-id]').forEach(tr => {
+            tr.addEventListener('click', () => openProgramModal(Number(tr.dataset.id)));
+        });
+    }
+
+    function openProgramModal(id) {
+        document.getElementById('programModalTitle').textContent = id === null ? 'Новая программа' : 'Программа';
+        if (id === null) {
+            document.getElementById('p_name').value = '';
+            document.getElementById('p_price').value = '';
+            document.getElementById('p_hours').value = '';
+            document.getElementById('p_format').value = '';
+            document.getElementById('p_manager').value = '';
+            document.getElementById('p_active').checked = true;
+            document.getElementById('p_activeRow').style.display = 'none';
+            document.getElementById('p_deleteBtn').style.display = 'none';
+        } else {
+            const p = allPrograms.find(x => x.id === id);
+            if (!p) return;
+            document.getElementById('p_name').value = p.name || '';
+            document.getElementById('p_price').value = p.price || '';
+            document.getElementById('p_hours').value = p.hours || '';
+            document.getElementById('p_format').value = p.format || '';
+            document.getElementById('p_manager').value = p.manager || '';
+            document.getElementById('p_active').checked = p.active !== false;
+            document.getElementById('p_activeRow').style.display = 'block';
+            document.getElementById('p_deleteBtn').style.display = 'inline-flex';
+        }
+        document.getElementById('programOverlay').dataset.editingId = id === null ? '' : String(id);
+        document.getElementById('programOverlay').classList.add('open');
+    }
+    function closeProgramModal() {
+        document.getElementById('programOverlay').classList.remove('open');
+    }
+    document.getElementById('programOverlay').addEventListener('click', (e) => {
+        if (e.target.id === 'programOverlay') closeProgramModal();
+    });
+
+    async function saveProgram() {
+        const name = document.getElementById('p_name').value.trim();
+        if (!name) { alert('Укажите название программы'); return; }
+        const editingId = document.getElementById('programOverlay').dataset.editingId;
+        const payload = {
+            name,
+            price: Number(document.getElementById('p_price').value) || 0,
+            hours: Number(document.getElementById('p_hours').value) || 0,
+            format: document.getElementById('p_format').value.trim(),
+            manager: document.getElementById('p_manager').value.trim(),
+        };
+        showLoading(true);
+        try {
+            if (!editingId) {
+                const res = await postJSON('addProgram', { data: payload });
+                if (res.status !== 'success') throw new Error(res.message || 'Ошибка добавления');
+                allPrograms.push({ id: res.id, active: true, ...payload });
+                showMessage('Программа добавлена');
+            } else {
+                const id = Number(editingId);
+                payload.active = document.getElementById('p_active').checked;
+                const res = await postJSON('updateProgram', { data: { id, ...payload } });
+                if (res.status !== 'success') throw new Error(res.message || 'Ошибка сохранения');
+                const p = allPrograms.find(x => x.id === id);
+                if (p) Object.assign(p, payload);
+                showMessage('Сохранено');
+            }
+            closeProgramModal();
+            populateProgramsDatalist();
+            applyFilterAndRender();
+        } catch (err) {
+            alert('Ошибка: ' + err.message);
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    async function deleteProgramConfirm() {
+        const editingId = document.getElementById('programOverlay').dataset.editingId;
+        if (!editingId) return;
+        const id = Number(editingId);
+        const p = allPrograms.find(x => x.id === id);
+        if (!confirm(`Удалить программу «${p ? p.name : ''}»? Действие необратимо.`)) return;
+        showLoading(true);
+        try {
+            const res = await postJSON('deleteProgram', { id });
+            if (res.status !== 'success') throw new Error(res.message || 'Ошибка удаления');
+            // Удаление сдвигает id всех последующих программ — как и везде в проекте
+            // с id-по-номеру-строки, после удаления перезагружаем список целиком.
+            await loadDeals();
+            closeProgramModal();
+            populateProgramsDatalist();
+            applyFilterAndRender();
+            showMessage('Программа удалена');
+        } catch (err) {
+            alert('Ошибка: ' + err.message);
+        } finally {
+            showLoading(false);
+        }
     }
 
     // ========== Дашборд наборов групп + уведомления ==========
