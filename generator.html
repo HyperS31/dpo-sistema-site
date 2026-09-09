@@ -537,6 +537,25 @@
         wordDropArea.addEventListener('dragover', e=>{e.preventDefault(); wordDropArea.style.borderColor='#667eea';});
         wordDropArea.addEventListener('dragleave', ()=>wordDropArea.style.borderColor='#dee2e6');
         wordDropArea.addEventListener('drop', e=>{ e.preventDefault(); wordDropArea.style.borderColor='#dee2e6'; const f=e.dataTransfer.files[0]; if(f&&f.name.match(/\.(docx)$/)){ wordFileInput.files=e.dataTransfer.files; handleFileSelect({target:{files:[f]}},'word'); } });
+
+        // Автозагрузка листа выдачи, переданного из карточки группы в CRM (documents.html) —
+        // минуя ручной выбор Excel-файла. Одноразово: сразу убираем из localStorage, чтобы
+        // при следующем обычном заходе на страницу не подставлялось само по себе.
+        try {
+            const pending = localStorage.getItem('pending_vedomost_aoa');
+            if (pending) {
+                localStorage.removeItem('pending_vedomost_aoa');
+                const aoa = JSON.parse(pending);
+                const ws = XLSX.utils.aoa_to_sheet(aoa);
+                const wb = { SheetNames: ['Лист1'], Sheets: { 'Лист1': ws } };
+                excelFileName.textContent = 'Лист выдачи из карточки группы';
+                excelFileSize.textContent = '';
+                excelSelectedFile.style.display = 'block';
+                parseExcelData(wb);
+            }
+        } catch (err) {
+            console.error('Не удалось загрузить лист выдачи из CRM:', err);
+        }
     });
 })();
 </script>

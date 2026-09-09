@@ -291,6 +291,7 @@
             <div id="ved_rosterList" class="hint">Загрузка…</div>
         </div>
         <button id="genVedBtn" onclick="generateVedomost()"><i class="fas fa-file-excel"></i> Сформировать лист выдачи</button>
+        <button id="openGeneratorBtn" class="secondary" onclick="openGeneratorWithVedomost()" hidden style="width:100%;justify-content:center;margin-top:10px;"><i class="fas fa-arrow-right"></i> Перейти к генератору удостоверений с этим списком</button>
         <div class="status" id="vedStatus"></div>
     </div>
 
@@ -780,6 +781,7 @@
 
     // ===== Лист выдачи =====
     let roster = [];
+    let lastVedomostAoa = null;
 
     async function loadRoster() {
         const listEl = document.getElementById('ved_rosterList');
@@ -881,12 +883,27 @@
             const filename = `Лист_выдачи_${sanitizeFilename(program)}.xlsx`;
             saveAs(out, filename);
             showStatus('vedStatus', 'Готово — файл скачан', 'success');
+
+            lastVedomostAoa = aoa;
+            document.getElementById('openGeneratorBtn').hidden = false;
+
             await maybeSaveToCohort('vedomost', filename, out, 'vedStatus');
         } catch (err) {
             showStatus('vedStatus', 'Ошибка: ' + err.message, 'error');
         }
     }
     window.generateVedomost = generateVedomost;
+
+    // Передаём тот же лист выдачи (тот же массив строк, что ушёл в .xlsx) напрямую
+    // в generator.html через localStorage — сотруднику не нужно скачивать файл
+    // и вручную загружать его там ещё раз.
+    function openGeneratorWithVedomost() {
+        if (!lastVedomostAoa) return;
+        localStorage.setItem('pending_vedomost_aoa', JSON.stringify(lastVedomostAoa));
+        const base = `${location.origin}${location.pathname.replace(/documents\.html$/, '')}generator.html`;
+        window.open(base, '_blank');
+    }
+    window.openGeneratorWithVedomost = openGeneratorWithVedomost;
 
     // ===== Инициализация =====
     async function init() {
