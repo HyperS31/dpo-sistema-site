@@ -302,6 +302,61 @@
         }
     }
 
+    // Сумма прописью для договоров ("110 000" -> "Сто десять тысяч") — только целая
+    // часть в рублях, копейки в шаблоне зафиксированы как "00 копеек".
+    function numberToWordsRu(n) {
+        n = Math.floor(Math.abs(Number(n) || 0));
+        if (n === 0) return 'Ноль';
+
+        const ones = ['', 'один', 'два', 'три', 'четыре', 'пять', 'шесть', 'семь', 'восемь', 'девять'];
+        const onesFem = ['', 'одна', 'две', 'три', 'четыре', 'пять', 'шесть', 'семь', 'восемь', 'девять'];
+        const teens = ['десять', 'одиннадцать', 'двенадцать', 'тринадцать', 'четырнадцать', 'пятнадцать', 'шестнадцать', 'семнадцать', 'восемнадцать', 'девятнадцать'];
+        const tens = ['', '', 'двадцать', 'тридцать', 'сорок', 'пятьдесят', 'шестьдесят', 'семьдесят', 'восемьдесят', 'девяносто'];
+        const hundreds = ['', 'сто', 'двести', 'триста', 'четыреста', 'пятьсот', 'шестьсот', 'семьсот', 'восемьсот', 'девятьсот'];
+
+        function pluralForm(num, forms) {
+            const n100 = num % 100;
+            if (n100 >= 11 && n100 <= 14) return forms[2];
+            const n10 = num % 10;
+            if (n10 === 1) return forms[0];
+            if (n10 >= 2 && n10 <= 4) return forms[1];
+            return forms[2];
+        }
+        function threeDigits(num, fem) {
+            const words = [];
+            const h = Math.floor(num / 100), rest = num % 100;
+            if (h) words.push(hundreds[h]);
+            if (rest >= 10 && rest <= 19) {
+                words.push(teens[rest - 10]);
+            } else {
+                const t = Math.floor(rest / 10), u = rest % 10;
+                if (t) words.push(tens[t]);
+                if (u) words.push(fem ? onesFem[u] : ones[u]);
+            }
+            return words;
+        }
+
+        const millions = Math.floor(n / 1000000) % 1000;
+        const thousands = Math.floor(n / 1000) % 1000;
+        const units = n % 1000;
+
+        let parts = [];
+        if (millions) {
+            parts = parts.concat(threeDigits(millions, false));
+            parts.push(pluralForm(millions, ['миллион', 'миллиона', 'миллионов']));
+        }
+        if (thousands) {
+            parts = parts.concat(threeDigits(thousands, true));
+            parts.push(pluralForm(thousands, ['тысяча', 'тысячи', 'тысяч']));
+        }
+        if (units || parts.length === 0) {
+            parts = parts.concat(threeDigits(units, false));
+        }
+
+        const result = parts.join(' ');
+        return result.charAt(0).toUpperCase() + result.slice(1);
+    }
+
     function escapeXml(s) {
         return String(s == null ? '' : s)
             .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -642,9 +697,11 @@
             let xml = await zip.file('word/document.xml').async('string');
             xml = xml.split('{DOG_PROGRAM}').join(escapeXml(program));
             xml = xml.split('{DOG_SUM_TOTAL}').join(escapeXml(formatMoney(sumTotal)));
+            xml = xml.split('{DOG_SUM_TOTAL_WORDS}').join(escapeXml(numberToWordsRu(sumTotal)));
             if (type === 'dogovor_yul') {
                 const sumPerson = Number(document.getElementById('dog_priceperson').value) || 0;
                 xml = xml.split('{DOG_SUM_PERSON}').join(escapeXml(formatMoney(sumPerson)));
+                xml = xml.split('{DOG_SUM_PERSON_WORDS}').join(escapeXml(numberToWordsRu(sumPerson)));
             }
             zip.file('word/document.xml', xml);
             const out = await zip.generateAsync({ type: 'blob' });
