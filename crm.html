@@ -903,12 +903,19 @@
         const banner = document.getElementById('notifBanner');
         if (!ready.length) { banner.innerHTML = ''; return; }
 
-        banner.innerHTML = `<div class="notif-banner">${ready.map(g => `
+        // Название программы идёт в data-атрибут (через DOM-свойство, не строкой в HTML)
+        // и обработчик навешивается через addEventListener — так оно никогда не может
+        // вырваться из атрибута, даже если в названии программы окажутся кавычки.
+        banner.innerHTML = `<div class="notif-banner">${ready.map((g, i) => `
             <div class="notif-row">
                 <span class="text"><i class="fas fa-champagne-glasses"></i> Группа набрана: <b>${escapeHtml(g.program)}</b> — ${g.count} заявок. Ответственные: ${[...g.managers].map(escapeHtml).join(', ') || '—'}</span>
-                <button type="button" onclick="setDismissed('${g.program.replace(/'/g, "\\'")}', ${g.count})">Скрыть</button>
+                <button type="button" data-idx="${i}">Скрыть</button>
             </div>
         `).join('')}</div>`;
+        banner.querySelectorAll('button[data-idx]').forEach(btn => {
+            const g = ready[Number(btn.dataset.idx)];
+            btn.addEventListener('click', () => setDismissed(g.program, g.count));
+        });
     }
 
     // ========== Модалка формирования / просмотра группы ==========
