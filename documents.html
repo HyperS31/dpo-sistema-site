@@ -89,6 +89,7 @@
         <button class="tab-btn active" id="tabKpBtn" onclick="switchTab('kp')"><i class="fas fa-file-invoice"></i> КП</button>
         <button class="tab-btn" id="tabSzBtn" onclick="switchTab('sz')"><i class="fas fa-envelope-open-text"></i> СЗ на счёт</button>
         <button class="tab-btn" id="tabDogBtn" onclick="switchTab('dog')"><i class="fas fa-file-contract"></i> Договор</button>
+        <button class="tab-btn" id="tabVedBtn" onclick="switchTab('ved')"><i class="fas fa-list-check"></i> Лист выдачи</button>
     </div>
     <div class="hint" id="cohortSaveHint" style="margin-bottom:14px;display:none;"><i class="fas fa-circle-info"></i> Документ также будет сохранён в карточке группы</div>
 
@@ -234,9 +235,69 @@
         <div class="status" id="dogStatus"></div>
     </div>
 
+    <!-- ===== Лист выдачи ===== -->
+    <div id="vedScreen" hidden>
+        <div class="card">
+            <div class="field">
+                <label>Программа <span style="color:var(--danger)">*</span></label>
+                <input type="text" id="ved_program" list="programsList" placeholder="Начните вводить название программы" oninput="onVedProgramChange()">
+                <div class="hint" id="ved_priceHint"></div>
+            </div>
+            <div class="field-row">
+                <div class="field">
+                    <label>Часов</label>
+                    <input type="number" id="ved_hours" min="0" step="1">
+                </div>
+                <div class="field">
+                    <label>Дата начала обучения</label>
+                    <input type="date" id="ved_startdate">
+                </div>
+                <div class="field">
+                    <label>Дата окончания обучения <span style="color:var(--danger)">*</span></label>
+                    <input type="date" id="ved_enddate">
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="field-row">
+                <div class="field">
+                    <label>Серия бланка</label>
+                    <input type="text" id="ved_series" placeholder="7827">
+                </div>
+                <div class="field">
+                    <label>Начальный номер бланка <span style="color:var(--danger)">*</span></label>
+                    <input type="text" id="ved_startnum" placeholder="01219884">
+                </div>
+            </div>
+            <div class="hint" style="margin-top:-8px;margin-bottom:14px;">Номер бланка увеличивается на 1 для каждого следующего слушателя, серия не меняется.</div>
+            <div class="field-row">
+                <div class="field">
+                    <label>Код группы/программы (рег. номер) <span style="color:var(--danger)">*</span></label>
+                    <input type="text" id="ved_regcode" placeholder="52">
+                </div>
+                <div class="field">
+                    <label>Год (2 цифры)</label>
+                    <input type="text" id="ved_year" maxlength="2" placeholder="26">
+                </div>
+                <div class="field">
+                    <label>Дата выдачи</label>
+                    <input type="date" id="ved_issuedate">
+                </div>
+            </div>
+            <div class="hint">Регистрационный номер каждого слушателя соберётся как «№_по_порядку/{код}-{год}».</div>
+        </div>
+        <div class="card">
+            <label style="display:block;font-size:12.5px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">Слушатели группы</label>
+            <div id="ved_rosterList" class="hint">Загрузка…</div>
+        </div>
+        <button id="genVedBtn" onclick="generateVedomost()"><i class="fas fa-file-excel"></i> Сформировать лист выдачи</button>
+        <div class="status" id="vedStatus"></div>
+    </div>
+
     <datalist id="programsList"></datalist>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 <script>
@@ -285,13 +346,13 @@
         }
         try {
             const base64 = await blobToBase64(blob);
+            const mimetype = blob.type || 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
             const resp = await fetch(API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify({
                     action: 'uploadCohortDocument', key: CRM_KEY, cohort_id: cohortId,
-                    doc_type: docType, filename, base64,
-                    mimetype: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                    doc_type: docType, filename, base64, mimetype,
                 }),
             });
             const data = await resp.json();
@@ -388,9 +449,11 @@
         document.getElementById('tabKpBtn').classList.toggle('active', tab === 'kp');
         document.getElementById('tabSzBtn').classList.toggle('active', tab === 'sz');
         document.getElementById('tabDogBtn').classList.toggle('active', tab === 'dog');
+        document.getElementById('tabVedBtn').classList.toggle('active', tab === 'ved');
         document.getElementById('kpScreen').hidden = tab !== 'kp';
         document.getElementById('szScreen').hidden = tab !== 'sz';
         document.getElementById('dogScreen').hidden = tab !== 'dog';
+        document.getElementById('vedScreen').hidden = tab !== 'ved';
     }
     window.switchTab = switchTab;
 
@@ -715,6 +778,116 @@
     }
     window.generateDogovor = generateDogovor;
 
+    // ===== Лист выдачи =====
+    let roster = [];
+
+    async function loadRoster() {
+        const listEl = document.getElementById('ved_rosterList');
+        if (!cohortId) { listEl.textContent = 'Эта вкладка доступна только при формировании из карточки группы (в CRM: Группы → нужная группа → «Сформировать лист выдачи»).'; return; }
+        if (!CRM_KEY) { listEl.textContent = 'Нет доступа — откройте эту страницу через CRM (нужен вход по паролю).'; return; }
+        listEl.textContent = 'Загрузка…';
+        try {
+            const resp = await fetch(`${API_URL}?action=getCohortRoster&cohortId=${cohortId}&key=${encodeURIComponent(CRM_KEY)}`);
+            const data = await resp.json();
+            if (data.status !== 'success') throw new Error(data.message || 'Ошибка загрузки');
+            roster = data.data;
+            listEl.innerHTML = roster.length
+                ? `Заполнили анкету: <b>${roster.length}</b> чел.<br>${roster.map(r => escapeXml(r.fio)).join('<br>')}`
+                : 'Никто из группы ещё не заполнил анкету — лист выдачи формировать не из чего.';
+        } catch (err) {
+            listEl.textContent = 'Не удалось загрузить список: ' + err.message;
+        }
+    }
+
+    function onVedProgramChange() {
+        const match = findProgram(document.getElementById('ved_program').value);
+        const hint = document.getElementById('ved_priceHint');
+        if (match) {
+            hint.textContent = `✓ найдена в прайс-листе: ${match.hours} ч.`;
+            hint.style.color = 'var(--success)';
+            if (!document.getElementById('ved_hours').value) document.getElementById('ved_hours').value = match.hours || '';
+        } else {
+            hint.textContent = '';
+        }
+    }
+    window.onVedProgramChange = onVedProgramChange;
+
+    // Увеличивает числовую строку на delta, сохраняя количество цифр (в т.ч. ведущие нули) —
+    // "01219884" -> "01219885", а не "1219885".
+    function incrementNumberString(str, delta) {
+        const digits = String(str).trim();
+        const num = parseInt(digits, 10) + delta;
+        return String(num).padStart(digits.length, '0');
+    }
+
+    function formatDateRussian(dateStr) {
+        if (!dateStr) return '';
+        const [y, m, d] = dateStr.split('-');
+        return `${d}.${m}.${y}`;
+    }
+
+    async function generateVedomost() {
+        if (!roster.length) { showStatus('vedStatus', 'Нет ни одного слушателя с заполненной анкетой', 'error'); return; }
+        const program = document.getElementById('ved_program').value.trim();
+        const hours = document.getElementById('ved_hours').value.trim();
+        const startDate = document.getElementById('ved_startdate').value;
+        const endDate = document.getElementById('ved_enddate').value;
+        const series = document.getElementById('ved_series').value.trim();
+        const startNum = document.getElementById('ved_startnum').value.trim();
+        const regCode = document.getElementById('ved_regcode').value.trim();
+        const year = document.getElementById('ved_year').value.trim();
+        const issueDate = document.getElementById('ved_issuedate').value;
+
+        if (!program) { showStatus('vedStatus', 'Укажите программу', 'error'); return; }
+        if (!endDate) { showStatus('vedStatus', 'Укажите дату окончания обучения', 'error'); return; }
+        if (!startNum) { showStatus('vedStatus', 'Укажите начальный номер бланка', 'error'); return; }
+        if (!regCode) { showStatus('vedStatus', 'Укажите код группы/программы', 'error'); return; }
+
+        try {
+            const programLine = `«${program}», ${hours || '__'} часов`;
+            const dateLine = `с ${formatDateRussian(startDate) || '__.__.____'} по ${formatDateRussian(endDate)}`;
+            const issueDateObj = issueDate ? new Date(issueDate + 'T00:00:00') : new Date();
+
+            // Первая строка — не пустой массив, а массив пустых строк: SheetJS иначе
+            // схлопывает по-настоящему пустую строку и весь лист сдвигается на 1 —
+            // а html-site.html ищет заголовок таблицы по индексу строки, начиная с 1.
+            const aoa = [
+                new Array(11).fill(''),
+                ['Регистрация выдачи удостоверений о повышении квалификации'],
+                ['по дополнительной образовательной программе'],
+                [programLine + '\n' + dateLine],
+                ['Серия и номер бланка удостоверения', '', 'Регистрационный номер удостоверения', '', '', '', '', 'Фамилия Имя Отчество', 'Структурное подразделение', 'Дата выдачи', 'Подпись'],
+            ];
+            roster.forEach((r, i) => {
+                const num = incrementNumberString(startNum, i);
+                const seq = String(i + 1).padStart(2, '0');
+                aoa.push([series, num, seq, '/', regCode, '-', year, r.fio, 'УНО', issueDateObj, '']);
+            });
+
+            const ws = XLSX.utils.aoa_to_sheet(aoa);
+            ws['!merges'] = [
+                { s: { r: 0, c: 0 }, e: { r: 0, c: 10 } },
+                { s: { r: 1, c: 0 }, e: { r: 1, c: 10 } },
+                { s: { r: 2, c: 0 }, e: { r: 2, c: 10 } },
+                { s: { r: 3, c: 0 }, e: { r: 3, c: 10 } },
+                { s: { r: 4, c: 0 }, e: { r: 4, c: 1 } },
+                { s: { r: 4, c: 2 }, e: { r: 4, c: 6 } },
+            ];
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Лист1');
+            const wbArray = XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
+            const out = new Blob([wbArray], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+            const filename = `Лист_выдачи_${sanitizeFilename(program)}.xlsx`;
+            saveAs(out, filename);
+            showStatus('vedStatus', 'Готово — файл скачан', 'success');
+            await maybeSaveToCohort('vedomost', filename, out, 'vedStatus');
+        } catch (err) {
+            showStatus('vedStatus', 'Ошибка: ' + err.message, 'error');
+        }
+    }
+    window.generateVedomost = generateVedomost;
+
     // ===== Инициализация =====
     async function init() {
         try {
@@ -754,8 +927,18 @@
             onDogTypeChange();
         }
 
+        const plannedStart = params.get('plannedStart') || '';
+        document.getElementById('ved_program').value = program;
+        document.getElementById('ved_startdate').value = plannedStart;
+        onVedProgramChange();
+        const todayIso = new Date().toISOString().slice(0, 10);
+        document.getElementById('ved_issuedate').value = todayIso;
+        document.getElementById('ved_year').value = String(new Date().getFullYear()).slice(-2);
+        if (cohortId) loadRoster();
+
         if (docType === 'sz') switchTab('sz');
         else if (docType === 'dogovor_yul' || docType === 'dogovor_fl') switchTab('dog');
+        else if (docType === 'vedomost') switchTab('ved');
         else switchTab('kp');
     }
     init();

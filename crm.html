@@ -1202,6 +1202,7 @@
                     <button type="button" onclick="openDocumentsForCohort('sz')"><i class="fas fa-envelope-open-text"></i> Сформировать СЗ</button>
                     <button type="button" onclick="openDocumentsForCohort('dogovor_yul')"><i class="fas fa-file-contract"></i> Договор (юр. лицо)</button>
                     <button type="button" onclick="openDocumentsForCohort('dogovor_fl')"><i class="fas fa-file-contract"></i> Договор (физ. лицо)</button>
+                    <button type="button" onclick="openDocumentsForCohort('vedomost')"><i class="fas fa-list-check"></i> Лист выдачи</button>
                 </div>
                 <div class="cohort-doc-upload">
                     <input type="file" id="ct_signedContractFile" accept="image/*,.pdf">
@@ -1247,7 +1248,7 @@
     }
 
     // ========== Документы группы ==========
-    const DOC_TYPE_LABELS = { kp: 'КП', sz: 'СЗ на счёт', dogovor_yul: 'Договор (ЮЛ)', dogovor_fl: 'Договор (ФЛ)', signed_contract: 'Подписанный договор' };
+    const DOC_TYPE_LABELS = { kp: 'КП', sz: 'СЗ на счёт', dogovor_yul: 'Договор (ЮЛ)', dogovor_fl: 'Договор (ФЛ)', signed_contract: 'Подписанный договор', vedomost: 'Лист выдачи' };
 
     function openDocumentsForCohort(docType) {
         const cohort = allCohorts.find(c => c.id === activeCohortTabId);
@@ -1259,6 +1260,7 @@
             inn: cohort.inn || '',
             program: cohort.program || '',
             participants: sumParticipants(membersOfCohort(cohort.id)),
+            plannedStart: (cohort.planned_start_date || '').toString().slice(0, 10),
         });
         const base = `${location.origin}${location.pathname.replace(/crm\.html$/, '')}documents.html`;
         window.open(`${base}?${params.toString()}`, '_blank');
