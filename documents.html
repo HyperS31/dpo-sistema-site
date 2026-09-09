@@ -86,18 +86,26 @@
     </header>
 
     <div class="tabs">
-        <button class="tab-btn active" id="tabKpBtn" onclick="switchTab('kp')"><i class="fas fa-file-invoice"></i> Коммерческое предложение</button>
-        <button class="tab-btn" id="tabSzBtn" onclick="switchTab('sz')"><i class="fas fa-envelope-open-text"></i> Служебная записка на счёт</button>
+        <button class="tab-btn active" id="tabKpBtn" onclick="switchTab('kp')"><i class="fas fa-file-invoice"></i> КП</button>
+        <button class="tab-btn" id="tabSzBtn" onclick="switchTab('sz')"><i class="fas fa-envelope-open-text"></i> СЗ на счёт</button>
+        <button class="tab-btn" id="tabDogBtn" onclick="switchTab('dog')"><i class="fas fa-file-contract"></i> Договор</button>
     </div>
+    <div class="hint" id="cohortSaveHint" style="margin-bottom:14px;display:none;"><i class="fas fa-circle-info"></i> Документ также будет сохранён в карточке группы</div>
 
     <!-- ===== КП ===== -->
     <div id="kpScreen">
         <div class="card">
-            <div class="field">
-                <label>Организация / получатель КП <span style="color:var(--danger)">*</span></label>
-                <input type="text" id="kp_org" placeholder="Например, ООО «Игрушки»">
-                <div class="hint">Подставится в поле адресата на бланке (правый верхний угол)</div>
+            <div class="field-row">
+                <div class="field">
+                    <label>Организация / получатель КП <span style="color:var(--danger)">*</span></label>
+                    <input type="text" id="kp_org" placeholder="Например, ООО «Игрушки»">
+                </div>
+                <div class="field">
+                    <label>ИНН</label>
+                    <input type="text" id="kp_inn" placeholder="7810537558">
+                </div>
             </div>
+            <div class="hint" style="margin-top:-8px;margin-bottom:14px;">Подставится в поле адресата на бланке (правый верхний угол)</div>
             <div id="kpRows"></div>
             <button type="button" class="secondary" onclick="addKpRow()"><i class="fas fa-plus"></i> Добавить программу</button>
         </div>
@@ -191,6 +199,41 @@
         <div class="status" id="szStatus"></div>
     </div>
 
+    <!-- ===== Договор ===== -->
+    <div id="dogScreen" hidden>
+        <div class="card">
+            <div class="field">
+                <label>Тип договора</label>
+                <select id="dog_type" onchange="onDogTypeChange(); recalcDogTotal();">
+                    <option value="dogovor_yul">С юридическим лицом</option>
+                    <option value="dogovor_fl">С физическим лицом</option>
+                </select>
+                <div class="hint">Заполняются только программа и стоимость — остальное (реквизиты, ФИО, даты) впишите вручную в готовом файле.</div>
+            </div>
+            <div class="field">
+                <label>Программа <span style="color:var(--danger)">*</span></label>
+                <input type="text" id="dog_program" list="programsList" placeholder="Начните вводить название программы" oninput="onDogProgramChange()">
+                <div class="hint" id="dog_priceHint"></div>
+            </div>
+            <div class="field-row" id="dog_personRow">
+                <div class="field">
+                    <label>Кол-во слушателей</label>
+                    <input type="number" id="dog_count" min="1" step="1" value="1" oninput="recalcDogTotal()">
+                </div>
+                <div class="field">
+                    <label>Стоимость за 1 слушателя, ₽</label>
+                    <input type="number" id="dog_priceperson" min="0" step="1" oninput="recalcDogTotal()">
+                </div>
+            </div>
+            <div class="field">
+                <label>Стоимость общая, ₽ <span style="color:var(--danger)">*</span></label>
+                <input type="number" id="dog_sumtotal" min="0" step="1">
+            </div>
+        </div>
+        <button id="genDogBtn" onclick="generateDogovor()"><i class="fas fa-file-word"></i> Сформировать договор</button>
+        <div class="status" id="dogStatus"></div>
+    </div>
+
     <datalist id="programsList"></datalist>
 </div>
 
@@ -198,6 +241,12 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 <script>
 (function () {
+    // API_URL/CRM_KEY нужны только для сохранения сформированных документов в карточку
+    // группы (uploadCohortDocument) — сама генерация КП/СЗ/договора по-прежнему
+    // полностью на клиенте и работает без них. Ключ берём из localStorage — он общий
+    // с crm.html, т.к. оба файла на одном домене; отдельный вход тут не нужен.
+    const API_URL = 'https://script.google.com/macros/s/AKfycbzWI54wZt8sHIGLpnjHErG3g3W7BGKfmmXJTE8DRkJfX5hdqab1kOe9cpewtuC4JWbRYw/exec';
+    const CRM_KEY = localStorage.getItem('crm_key') || '';
     const STAFF_PHONE = '+7 921 418 77 72';
     const STAFF = {
         ababin: { fio: 'Абабин М.С.', position: 'Специалист ОДПО', phone: STAFF_PHONE },
@@ -214,6 +263,44 @@
     let kpRowCount = 0;
 
     const params = new URLSearchParams(location.search);
+    const cohortId = params.get('cohortId') || '';
+
+    function blobToBase64(blob) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result.split(',')[1]);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
+    }
+
+    // Если документ формируется из карточки группы — помимо скачивания на компьютер,
+    // сохраняем его же в Drive через тот же шлюз, что и CRM (ключ общий, из localStorage),
+    // чтобы потом можно было скачать его снова прямо из карточки, не пересобирая заново.
+    async function maybeSaveToCohort(docType, filename, blob, statusId) {
+        if (!cohortId) return;
+        if (!CRM_KEY) {
+            showStatus(statusId, 'Файл скачан, но не сохранён в карточке группы — откройте эту страницу через CRM (нужен вход по паролю)', 'error');
+            return;
+        }
+        try {
+            const base64 = await blobToBase64(blob);
+            const resp = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({
+                    action: 'uploadCohortDocument', key: CRM_KEY, cohort_id: cohortId,
+                    doc_type: docType, filename, base64,
+                    mimetype: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                }),
+            });
+            const data = await resp.json();
+            if (data.status !== 'success') throw new Error(data.message || 'Ошибка сохранения');
+            showStatus(statusId, 'Готово — файл скачан и сохранён в карточке группы', 'success');
+        } catch (err) {
+            showStatus(statusId, 'Файл скачан, но не сохранён в карточке группы: ' + err.message, 'error');
+        }
+    }
 
     function escapeXml(s) {
         return String(s == null ? '' : s)
@@ -245,8 +332,10 @@
     function switchTab(tab) {
         document.getElementById('tabKpBtn').classList.toggle('active', tab === 'kp');
         document.getElementById('tabSzBtn').classList.toggle('active', tab === 'sz');
+        document.getElementById('tabDogBtn').classList.toggle('active', tab === 'dog');
         document.getElementById('kpScreen').hidden = tab !== 'kp';
         document.getElementById('szScreen').hidden = tab !== 'sz';
+        document.getElementById('dogScreen').hidden = tab !== 'dog';
     }
     window.switchTab = switchTab;
 
@@ -366,6 +455,7 @@
             const zip = await JSZip.loadAsync(buf);
             let xml = await zip.file('word/document.xml').async('string');
             xml = xml.split('{ORG_NAME}').join(escapeXml(org));
+            xml = xml.split('{ORG_INN}').join(escapeXml(document.getElementById('kp_inn').value.trim()));
             xml = xml.split('{STAFF_FIO}').join(escapeXml(staffFio));
             xml = xml.split('{STAFF_PHONE}').join(escapeXml(STAFF_PHONE));
 
@@ -385,8 +475,10 @@
 
             zip.file('word/document.xml', xml);
             const out = await zip.generateAsync({ type: 'blob' });
-            saveAs(out, `КП_${sanitizeFilename(org)}.docx`);
+            const filename = `КП_${sanitizeFilename(org)}.docx`;
+            saveAs(out, filename);
             showStatus('kpStatus', 'Готово — файл скачан', 'success');
+            await maybeSaveToCohort('kp', filename, out, 'kpStatus');
         } catch (err) {
             showStatus('kpStatus', 'Ошибка: ' + err.message, 'error');
         }
@@ -490,13 +582,81 @@
             }
 
             const out = await zip.generateAsync({ type: 'blob' });
-            saveAs(out, `СЗ_${sanitizeFilename(contragent)}.docx`);
+            const filename = `СЗ_${sanitizeFilename(contragent)}.docx`;
+            saveAs(out, filename);
             showStatus('szStatus', 'Готово — файл скачан', 'success');
+            await maybeSaveToCohort('sz', filename, out, 'szStatus');
         } catch (err) {
             showStatus('szStatus', 'Ошибка: ' + err.message, 'error');
         }
     }
     window.generateSZ = generateSZ;
+
+    // ===== Договор =====
+    function onDogTypeChange() {
+        document.getElementById('dog_personRow').style.display = document.getElementById('dog_type').value === 'dogovor_yul' ? 'flex' : 'none';
+    }
+    window.onDogTypeChange = onDogTypeChange;
+
+    function onDogProgramChange() {
+        const match = findProgram(document.getElementById('dog_program').value);
+        const hint = document.getElementById('dog_priceHint');
+        if (match) {
+            hint.textContent = `✓ найдена в прайс-листе: ${formatMoney(match.price)} ₽/чел.`;
+            hint.style.color = 'var(--success)';
+            if (!document.getElementById('dog_priceperson').value) {
+                document.getElementById('dog_priceperson').value = match.price;
+            }
+        } else {
+            hint.textContent = document.getElementById('dog_program').value.trim() ? 'Не найдена в прайс-листе — впишите стоимость вручную' : '';
+            hint.style.color = 'var(--warning)';
+        }
+        recalcDogTotal();
+    }
+    window.onDogProgramChange = onDogProgramChange;
+
+    function recalcDogTotal() {
+        const match = findProgram(document.getElementById('dog_program').value);
+        const price = Number(document.getElementById('dog_priceperson').value) || (match ? match.price : 0);
+        const count = Number(document.getElementById('dog_count').value) || 1;
+        if (document.getElementById('dog_type').value === 'dogovor_yul' && price) {
+            document.getElementById('dog_sumtotal').value = price * count;
+        }
+    }
+    window.recalcDogTotal = recalcDogTotal;
+
+    async function generateDogovor() {
+        const type = document.getElementById('dog_type').value;
+        const program = document.getElementById('dog_program').value.trim();
+        const sumTotal = Number(document.getElementById('dog_sumtotal').value) || 0;
+        if (!program) { showStatus('dogStatus', 'Укажите программу', 'error'); return; }
+        if (!sumTotal) { showStatus('dogStatus', 'Укажите общую стоимость', 'error'); return; }
+
+        const templateFile = type === 'dogovor_yul' ? 'templates/dogovor_yul_template.docx' : 'templates/dogovor_fl_template.docx';
+        try {
+            const buf = await fetch(templateFile).then(r => {
+                if (!r.ok) throw new Error('Не удалось загрузить шаблон договора (' + r.status + ')');
+                return r.arrayBuffer();
+            });
+            const zip = await JSZip.loadAsync(buf);
+            let xml = await zip.file('word/document.xml').async('string');
+            xml = xml.split('{DOG_PROGRAM}').join(escapeXml(program));
+            xml = xml.split('{DOG_SUM_TOTAL}').join(escapeXml(formatMoney(sumTotal)));
+            if (type === 'dogovor_yul') {
+                const sumPerson = Number(document.getElementById('dog_priceperson').value) || 0;
+                xml = xml.split('{DOG_SUM_PERSON}').join(escapeXml(formatMoney(sumPerson)));
+            }
+            zip.file('word/document.xml', xml);
+            const out = await zip.generateAsync({ type: 'blob' });
+            const filename = `Договор_${type === 'dogovor_yul' ? 'ЮЛ' : 'ФЛ'}_${sanitizeFilename(program)}.docx`;
+            saveAs(out, filename);
+            showStatus('dogStatus', 'Готово — файл скачан', 'success');
+            await maybeSaveToCohort(type, filename, out, 'dogStatus');
+        } catch (err) {
+            showStatus('dogStatus', 'Ошибка: ' + err.message, 'error');
+        }
+    }
+    window.generateDogovor = generateDogovor;
 
     // ===== Инициализация =====
     async function init() {
@@ -515,7 +675,10 @@
         const participants = params.get('participants') || 1;
         const inn = params.get('inn') || '';
 
+        if (cohortId) document.getElementById('cohortSaveHint').style.display = 'block';
+
         document.getElementById('kp_org').value = org;
+        document.getElementById('kp_inn').value = inn;
         addKpRow({ name: program, count: participants });
 
         document.getElementById('sz_formdate').value = formatDateDDMMYYYY(new Date());
@@ -526,7 +689,16 @@
         document.getElementById('sz_count').value = participants;
         document.getElementById('sz_program').dispatchEvent(new Event('input'));
 
+        document.getElementById('dog_program').value = program;
+        document.getElementById('dog_count').value = participants;
+        onDogProgramChange();
+        if (docType === 'dogovor_yul' || docType === 'dogovor_fl') {
+            document.getElementById('dog_type').value = docType;
+            onDogTypeChange();
+        }
+
         if (docType === 'sz') switchTab('sz');
+        else if (docType === 'dogovor_yul' || docType === 'dogovor_fl') switchTab('dog');
         else switchTab('kp');
     }
     init();
