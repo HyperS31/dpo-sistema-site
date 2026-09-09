@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Генератор удостоверений · Полная поддержка любых ФИО</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
+        .container { background: white; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); padding: 40px; width: 100%; max-width: 1200px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 40px; }
+        .header h1 { color: #333; font-size: 32px; margin-bottom: 10px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .header p { color: #666; font-size: 16px; line-height: 1.6; max-width: 800px; margin: 0 auto; }
+        .content { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px; }
+        @media (max-width: 900px) { .content { grid-template-columns: 1fr; } }
+        .section { background: #f8f9fa; border-radius: 10px; padding: 25px; border: 1px solid #e9ecef; }
+        .section-title { color: #495057; margin-bottom: 20px; font-size: 1.4rem; display: flex; align-items: center; }
+        .section-title i { margin-right: 10px; color: #667eea; }
+        .upload-area { border: 2px dashed #dee2e6; border-radius: 10px; padding: 25px 20px; text-align: center; cursor: pointer; transition: all 0.3s ease; margin-bottom: 15px; }
+        .upload-area:hover { border-color: #667eea; background: #f0f2ff; }
+        .upload-icon { font-size: 36px; color: #667eea; margin-bottom: 10px; }
+        .upload-text { font-size: 16px; color: #495057; margin-bottom: 5px; }
+        .upload-subtext { font-size: 12px; color: #6c757d; margin-bottom: 10px; }
+        .btn { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: 600; transition: all 0.3s ease; text-decoration: none; display: inline-block; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .btn-secondary { background: #6c757d; }
+        .selected-file { margin-top: 15px; padding: 12px; background: #e8f4ff; border-radius: 6px; border-left: 4px solid #667eea; font-size: 14px; }
+        .file-info { display: flex; justify-content: space-between; margin-top: 5px; font-size: 12px; color: #6c757d; }
+        .people-list { max-height: 300px; overflow-y: auto; border-radius: 8px; border: 1px solid #dee2e6; }
+        table { width: 100%; border-collapse: collapse; }
+        thead { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; position: sticky; top: 0; }
+        th { padding: 12px; text-align: left; font-weight: 600; font-size: 14px; }
+        tbody tr { border-bottom: 1px solid #dee2e6; cursor: pointer; transition: background 0.2s; }
+        tbody tr:hover { background: #f1f3ff; }
+        tbody tr.selected { background: #e3e7ff; border-left: 4px solid #667eea; }
+        td { padding: 12px; color: #495057; font-size: 14px; }
+        .actions { display: flex; gap: 15px; flex-wrap: wrap; margin-top: 30px; }
+        .action-btn { flex: 1; min-width: 180px; }
+        .status { padding: 12px 16px; border-radius: 6px; margin-top: 20px; display: none; }
+        .status.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .status.info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .loading { display: none; text-align: center; margin: 20px 0; }
+        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #667eea; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 10px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .footer { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #dee2e6; color: #6c757d; font-size: 14px; }
+        .instructions { margin-top: 20px; padding: 15px; background: #e8f4ff; border-radius: 6px; font-size: 14px; }
+        .instructions h4 { margin-bottom: 10px; color: #495057; display: flex; align-items: center; }
+        .instructions h4 i { margin-right: 8px; color: #667eea; }
+        .preview { margin-top: 20px; padding: 15px; background: white; border-radius: 8px; border: 1px solid #dee2e6; font-size: 14px; }
+        .preview h4 { margin-bottom: 10px; color: #495057; }
+        .preview-item { margin-bottom: 8px; display: flex; }
+        .preview-label { font-weight: 600; color: #495057; min-width: 150px; }
+        .preview-value { color: #333; }
+        .step { display: flex; align-items: center; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed #dee2e6; }
+        .step-number { width: 30px; height: 30px; background: #667eea; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 15px; font-weight: bold; }
+        .step-content h4 { margin-bottom: 5px; color: #495057; }
+        .step-content p { color: #6c757d; font-size: 14px; }
+        .debug-info { font-size: 12px; color: #666; background: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 10px; display: none; }
+        .test-buttons { margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap; }
+        .test-btn { background: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px; }
+        .test-btn:hover { background: #218838; }
+        .replacement-info { margin-top: 15px; padding: 10px; background: #e7f3ff; border-radius: 5px; font-size: 13px; border-left: 4px solid #0066cc; }
+        .highlight { background-color: #fffacd; padding: 2px 4px; border-radius: 3px; font-weight: bold; }
+        .xml-viewer { font-family: 'Courier New', monospace; background: #2b2b2b; color: #f8f8f2; padding: 15px; border-radius: 5px; overflow-x: auto; margin-top: 10px; max-height: 400px; overflow-y: auto; font-size: 12px; }
+        .warning { background-color: #fff3cd; border-color: #ffeaa7; color: #856404; padding: 10px; border-radius: 5px; margin: 10px 0; }
+        .template-btn { background: #ff9900; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px; }
+        .template-btn:hover { background: #e68a00; }
+        .fio-test-btn { background: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px; }
+        .fio-test-btn:hover { background: #c82333; }
+        .additional-info { margin-top: 15px; padding: 12px; background: #e8f4ff; border-radius: 6px; border-left: 4px solid #28a745; font-size: 14px; }
+        .info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px; }
+        .info-item { padding: 8px; background: white; border-radius: 4px; border: 1px solid #dee2e6; }
+        .info-label { font-weight: bold; color: #495057; font-size: 12px; }
+        .info-value { color: #333; margin-top: 3px; }
+        .manual-p-block { margin-top: 20px; padding: 15px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 6px; }
+        .manual-p-block label { font-weight: 600; color: #856404; }
+        .manual-p-block input { width: 100%; padding: 10px; margin-top: 8px; border: 1px solid #ffc107; border-radius: 4px; font-size: 14px; }
+        .manual-p-block small { display: block; margin-top: 5px; color: #6c757d; font-size: 12px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1><i class="fas fa-file-certificate"></i> Генератор удостоверений</h1>
+        <p>Загрузите Excel и Word-шаблон, выберите человека — готовое удостоверение скачается автоматически</p>
+        <p style="font-size:14px; margin-top:6px;">✅ Поддержка любых ФИО: без отчества, двойные фамилии, 4+ слов (Алексеева Аед Татьяна Николаевна)</p>
+    </div>
+    <div class="content">
+        <!-- ЛЕВАЯ КОЛОНКА -->
+        <div class="section">
+            <h2 class="section-title"><i class="fas fa-upload"></i> Загрузка файлов</h2>
+            <div class="step"><div class="step-number">1</div><div class="step-content"><h4>Excel файл</h4><p>"Лист выдачи.xlsx"</p>
+                <div class="upload-area" id="excelDropArea"><div class="upload-icon"><i class="fas fa-file-excel"></i></div><div class="upload-text">Файл Excel с данными</div><div class="upload-subtext">Перетащите или нажмите</div>
+                    <input type="file" id="excelFile" accept=".xlsx,.xls" style="display:none;"><button class="btn" id="excelBrowseBtn"><i class="fas fa-folder-open"></i> Выбрать Excel</button>
+                </div>
+                <div class="selected-file" id="excelSelectedFile" style="display:none;"><div><strong>Файл:</strong> <span id="excelFileName"></span></div><div class="file-info"><span id="excelFileSize"></span><span id="excelRecordCount"></span></div></div>
+            </div></div>
+            <div class="step"><div class="step-number">2</div><div class="step-content"><h4>Word шаблон</h4><p>Файл .docx с метками</p>
+                <div class="upload-area" id="wordDropArea"><div class="upload-icon"><i class="fas fa-file-word"></i></div><div class="upload-text">Word шаблон</div><div class="upload-subtext">Перетащите или нажмите</div>
+                    <input type="file" id="wordFile" accept=".docx" style="display:none;"><button class="btn" id="wordBrowseBtn"><i class="fas fa-folder-open"></i> Выбрать шаблон</button>
+                </div>
+                <div class="selected-file" id="wordSelectedFile" style="display:none;"><div><strong>Файл:</strong> <span id="wordFileName"></span></div><div class="file-info"><span id="wordFileSize"></span><span>Шаблон готов</span></div></div>
+            </div></div>
+            <div class="instructions">
+                <h4><i class="fas fa-info-circle"></i> Важно!</h4>
+                <p>В шаблоне должны быть:</p>
+                <ul><li>"Абабин Михаил Сергеевич" — заменится на ФИО из Excel</li><li>"{Y}/{B}-{C}" или "{Y}/94-25" — номер удостоверения</li><li>{N}, {T}, {X}, {Z}, {P} — данные программы</li></ul>
+                <div class="additional-info"><strong>Структура номера:</strong><div class="info-grid"><div class="info-item"><div class="info-label">{Y}</div><div class="info-value">Колонка C</div></div><div class="info-item"><div class="info-label">{B}</div><div class="info-value">Колонка E</div></div><div class="info-item"><div class="info-label">{C}</div><div class="info-value">Колонка G (год)</div></div></div></div>
+                <div class="additional-info"><strong>Данные программы (из строки с « »):</strong><div class="info-grid"><div class="info-item"><div class="info-label">{N}</div><div class="info-value">Название</div></div><div class="info-item"><div class="info-label">{T}</div><div class="info-value">Часы</div></div><div class="info-item"><div class="info-label">{X}</div><div class="info-value">Дата начала (с месяцем)</div></div><div class="info-item"><div class="info-label">{Z}</div><div class="info-value">Дата окончания (с месяцем)</div></div><div class="info-item"><div class="info-label">{P}</div><div class="info-value">Ручное или дата окончания</div></div></div></div>
+                <div class="warning">Формат: «Название», XX часов с ДД.ММ.ГГГГ по ДД.ММ.ГГГГ</div>
+                <div class="replacement-info"><strong>Пример:</strong> «Морская робототехника», 160 часов с 17.11.2025 по 12.12.2025 → {N}="Морская робототехника", {T}="160", {X}="17 ноября 2025 г.", {Z}="12 декабря 2025 г.", {P}="12.12.2025"</div>
+                <div class="replacement-info" style="background:#f0f7ff; border-left-color:#17a2b8;"><strong>Обработка ФИО (v4):</strong> ✔ Без отчества — "Сергеевич" удаляется. ✔ 4+ слов — остаток добавляется. Пример: "Алексеева Аед Татьяна Николаевна" → полное.</div>
+            </div>
+            <div class="manual-p-block"><label><i class="fas fa-pen"></i> Ручное значение {P}:</label><input type="text" id="manualPInput" placeholder="Например, 12.12.2025"><small>Переопределяет дату окончания для {P}</small></div>
+            <div class="test-buttons">
+                <button class="test-btn" id="testReplaceBtn"><i class="fas fa-vial"></i> Тест замены</button>
+                <button class="test-btn" id="inspectTemplateBtn"><i class="fas fa-search"></i> Структура</button>
+                <button class="fio-test-btn" id="fioTestBtn"><i class="fas fa-user-check"></i> Тест ФИО</button>
+                <button class="template-btn" id="createTemplateBtn"><i class="fas fa-file-medical"></i> Новый шаблон</button>
+            </div>
+            <div class="debug-info" id="debugInfo"><strong>Отладка:</strong><div id="debugContent"></div></div>
+        </div>
+        <!-- ПРАВАЯ КОЛОНКА -->
+        <div class="section">
+            <h2 class="section-title"><i class="fas fa-users"></i> Выбор человека</h2>
+            <div class="people-list" id="peopleList"><div style="padding:40px;text-align:center;color:#6c757d;"><i class="fas fa-users" style="font-size:48px;margin-bottom:15px;color:#dee2e6;"></i><div>Загрузите Excel, чтобы увидеть список</div></div></div>
+            <div class="status" id="statusMessage"></div>
+            <div class="loading" id="loading"><div class="spinner"></div><div id="loadingText">Обработка...</div></div>
+            <div class="preview" id="preview" style="display:none;">
+                <h4>Информация:</h4>
+                <div class="preview-item"><span class="preview-label">ФИО:</span><span class="preview-value" id="previewName"></span></div>
+                <div class="preview-item"><span class="preview-label">Номер:</span><span class="preview-value" id="previewNumber"></span></div>
+                <div class="preview-item"><span class="preview-label">Подразделение:</span><span class="preview-value" id="previewDepartment"></span></div>
+                <div class="additional-info" id="programInfo" style="display:none;"><strong>Данные программы:</strong><div class="info-grid"><div class="info-item"><div class="info-label">{N}:</div><div class="info-value" id="previewProgramName"></div></div><div class="info-item"><div class="info-label">{T}:</div><div class="info-value" id="previewHours"></div></div><div class="info-item"><div class="info-label">{X}:</div><div class="info-value" id="previewStartDate"></div></div><div class="info-item"><div class="info-label">{Z}:</div><div class="info-value" id="previewEndDate"></div></div><div class="info-item"><div class="info-label">{P}:</div><div class="info-value" id="previewEndDateSimple"></div></div></div></div>
+                <div class="additional-info" id="numberDetails" style="display:none;"><strong>Составляющие номера:</strong><div class="info-grid"><div class="info-item"><div class="info-label">{Y}:</div><div class="info-value" id="previewPart1"></div></div><div class="info-item"><div class="info-label">{B}:</div><div class="info-value" id="previewPart2"></div></div><div class="info-item"><div class="info-label">{C}:</div><div class="info-value" id="previewPart3"></div></div></div></div>
+            </div>
+            <div class="actions">
+                <div class="action-btn"><button class="btn" id="generateBtn" disabled><i class="fas fa-file-word"></i> Скачать удостоверение</button></div>
+                <div class="action-btn"><button class="btn" id="generateAllBtn" disabled><i class="fas fa-file-archive"></i> Скачать все (ZIP)</button></div>
+                <div class="action-btn"><button class="btn btn-secondary" id="clearBtn"><i class="fas fa-redo"></i> Очистить</button></div>
+                <div class="action-btn"><button class="btn" id="debugBtn" style="background:#17a2b8;"><i class="fas fa-bug"></i> Отладка</button></div>
+            </div>
+        </div>
+    </div>
+    <div class="footer"><p><i class="fas fa-shield-alt"></i> Работает полностью в браузере. Данные не отправляются на сервер.</p><p><i class="fas fa-browser"></i> Требуется современный браузер</p></div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<script>
+(function(){
+    // ----- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ -----
+    let peopleData = [];
+    let selectedPersonIndex = null;
+    let wordTemplateContent = null;
+    let globalProgramInfo = {};
+    let manualPValue = '';
+
+    // ----- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ -----
+    function escapeHtml(text) { const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
+    function escapeRegExp(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+    function formatDateToRussian(d) {
+        if (!d || typeof d !== 'string') return d||'';
+        const m = d.trim().match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+        if (!m) return d;
+        const months = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+        const month = parseInt(m[2],10);
+        if (month<1||month>12) return d;
+        return `${m[1]} ${months[month-1]} ${m[3]} г.`;
+    }
+    function parseProgramInfo(str) {
+        if (!str || typeof str !== 'string') return { programName:'', hours:'', startDate:'', endDate:'', startDateRussian:'', endDateRussian:'' };
+        const clean = str.replace(/\s+/g,' ').trim();
+        let programName='', hours='', startDate='', endDate='', startDateRussian='', endDateRussian='';
+        const nameM = clean.match(/«([^»]+)»/); if(nameM) programName = nameM[1].trim();
+        const hoursM = clean.match(/»,?\s*(\d+)\s*час/); if(hoursM) hours = hoursM[1].trim();
+        const dateM = clean.match(/с\s+(\d{2}\.\d{2}\.\d{4})\s+по\s+(\d{2}\.\d{2}\.\d{4})/);
+        if(dateM){ startDate=dateM[1]; endDate=dateM[2]; startDateRussian=formatDateToRussian(startDate); endDateRussian=formatDateToRussian(endDate); }
+        else { const dates = clean.match(/\d{2}\.\d{2}\.\d{4}/g); if(dates && dates.length>=2){ startDate=dates[0]; endDate=dates[1]; startDateRussian=formatDateToRussian(startDate); endDateRussian=formatDateToRussian(endDate); } }
+        return { programName, hours, startDate, endDate, startDateRussian, endDateRussian };
+    }
+    function getDocumentNumber(person) {
+        if (person._rawRow && person._rawRow.length >= 7) {
+            const p1 = String(person._rawRow[2]||'').trim(), p2 = String(person._rawRow[4]||'').trim(), p3 = String(person._rawRow[6]||'').trim();
+            person._documentNumberParts = { part1:p1, part2:p2, part3:p3 };
+            if(p1&&p2&&p3) return `${p1}/${p2}-${p3}`;
+        }
+        return '{Y}/94-25';
+    }
+
+    // ========== СКЛЕЙКА ПРОГОНОВ, РАЗОРВАННЫХ WORD'OM ==========
+    // Word иногда хранит {N} как три отдельных <w:r>: "{", "N", "}" —
+    // эта функция объединяет соседние прогоны, пока их текст вместе не образует маркер.
+    function mergeRunsForMarkers(xml, markerList) {
+        let changed = true, limit = 30;
+        while (changed && limit-- > 0) {
+            changed = false;
+            xml = xml.replace(
+                /(<w:t(?:[^>]*)?>)([^<]*)<\/w:t><\/w:r>(?:<[^>]+\/>[^<]*)*<w:r(?:[^>]*)?>(?:<w:rPr>[\s\S]*?<\/w:rPr>)?(<w:t(?:[^>]*)?>)([^<]*)(<\/w:t>)/g,
+                (match, open1, text1, open2, text2, closeT) => {
+                    const combined = text1 + text2;
+                    const ok = markerList.some(m => {
+                        if (!m || m.length < 2) return false;
+                        if (combined.includes(m)) return true;
+                        for (let i = 1; i < m.length; i++)
+                            if (text1.endsWith(m.slice(0, i)) && text2.startsWith(m[i])) return true;
+                        return false;
+                    });
+                    if (ok) {
+                        changed = true;
+                        const preserve = open1.includes('preserve') || open2.includes('preserve');
+                        return `${preserve ? '<w:t xml:space="preserve">' : '<w:t>'}${combined}${closeT}`;
+                    }
+                    return match;
+                }
+            );
+        }
+        return xml;
+    }
+
+    // ========== ИСПРАВЛЕННАЯ ЗАМЕНА ФИО (v4 – поддержка 4+ слов) ==========
+    function replaceFioInXml(content, fio) {
+        console.log('=== ЗАМЕНА ФИО (v4) ===', fio);
+        if (!fio || !fio.trim()) return content;
+        const parts = fio.trim().split(/\s+/);
+        const variants = ['Абабин Михаил Сергеевич','Абабин  Михаил  Сергеевич','Абабин&nbsp;Михаил&nbsp;Сергеевич','Абабин\nМихаил\nСергеевич','Абабин\tМихаил\tСергеевич'];
+        let replaced = false;
+        for (const v of variants) {
+            if (content.includes(v)) {
+                content = content.replace(new RegExp(escapeRegExp(v), 'g'), fio);
+                replaced = true;
+                console.log(`Заменено целиком: "${v}" -> "${fio}"`);
+                break;
+            }
+        }
+        if (!replaced) {
+            console.log('Замена по частям...');
+            if (parts.length>=1 && content.includes('Абабин')) { content = content.replace(/Абабин/g, parts[0]); console.log('Абабин→'+parts[0]); }
+            if (parts.length>=2 && content.includes('Михаил')) { content = content.replace(/Михаил/g, parts[1]); console.log('Михаил→'+parts[1]); }
+            if (parts.length>=3) {
+                let middle = parts[2];
+                if (parts.length > 3) middle += ' ' + parts.slice(3).join(' ');
+                if (content.includes('Сергеевич')) { content = content.replace(/Сергеевич/g, middle); console.log('Сергеевич→'+middle); }
+            } else {
+                if (content.includes('Сергеевич')) { content = content.replace(/\s*Сергеевич/g, ''); content = content.replace(/&nbsp;Сергеевич/g, ''); }
+                if (parts.length > 2) {
+                    const rest = parts.slice(2).join(' ');
+                    const firstName = parts[1];
+                    const regex = new RegExp(`(<w:t[^>]*>)${escapeRegExp(firstName)}(</w:t>)`, 'g');
+                    content = content.replace(regex, `$1${firstName} ${rest}$2`);
+                    content = content.replace(new RegExp(`\\b${escapeRegExp(firstName)}\\b`, 'g'), `${firstName} ${rest}`);
+                }
+            }
+        }
+        console.log('Остатки: Абабин='+content.includes('Абабин')+' Михаил='+content.includes('Михаил')+' Сергеевич='+content.includes('Сергеевич'));
+        return content;
+    }
+
+    async function simpleReplaceInDocx(person) {
+        console.log('Fallback замена');
+        const zip = await JSZip.loadAsync(wordTemplateContent);
+        let content = await zip.file('word/document.xml').async('string');
+        const fio = person['Фамилия Имя Отчество']||'';
+        const prog = person.programInfo || globalProgramInfo || {};
+        let p1='',p2='',p3='';
+        if(person._rawRow && person._rawRow.length>=7){ p1=String(person._rawRow[2]||'').trim(); p2=String(person._rawRow[4]||'').trim(); p3=String(person._rawRow[6]||'').trim(); }
+        content = replaceFioInXml(content, fio);
+        content = mergeRunsForMarkers(content, ['{N}','{T}','{X}','{Z}','{P}','{Y}','{B}','{C}']);
+        if(p1&&p2&&p3){
+            content = content.replace(/\{Y\}\/\{B\}-\{C\}/gi, `${p1}/${p2}-${p3}`);
+            content = content.replace(/\{Y\}\/94-25/gi, `${p1}/${p2}-${p3}`);
+        }
+        const pVal = manualPValue.trim() || prog.endDate || '';
+        const reps = { N: prog.programName||'', T: prog.hours||'', X: prog.startDateRussian||prog.startDate||'', Z: prog.endDateRussian||prog.endDate||'', P: pVal };
+        for(const [k,v] of Object.entries(reps)) if(v) content = content.replace(new RegExp(`\\{${k}\\}`, 'g'), v);
+        zip.file('word/document.xml', content);
+        return await zip.generateAsync({type:'arraybuffer'});
+    }
+
+    async function replaceTextInDocx(person) {
+        if(!wordTemplateContent) throw new Error('Нет шаблона');
+        const fio = person['Фамилия Имя Отчество']||'';
+        const prog = person.programInfo || globalProgramInfo || {};
+        let p1='',p2='',p3='';
+        if(person._documentNumberParts){ p1=person._documentNumberParts.part1||''; p2=person._documentNumberParts.part2||''; p3=person._documentNumberParts.part3||''; }
+        else if(person._rawRow && person._rawRow.length>=7){ p1=String(person._rawRow[2]||'').trim(); p2=String(person._rawRow[4]||'').trim(); p3=String(person._rawRow[6]||'').trim(); }
+        const zip = await JSZip.loadAsync(wordTemplateContent);
+        let content = await zip.file('word/document.xml').async('string');
+        content = replaceFioInXml(content, fio);
+        content = mergeRunsForMarkers(content, ['{N}','{T}','{X}','{Z}','{P}','{Y}','{B}','{C}']);
+        if(p1&&p2&&p3){
+            content = content.replace(/\{Y\}\/\{B\}-\{C\}/gi, `${p1}/${p2}-${p3}`);
+            content = content.replace(/\{Y\}\/94-25/gi, `${p1}/${p2}-${p3}`);
+            content = content.replace(/№\s*\{Y\}\/\{B\}-\{C\}/gi, `№ ${p1}/${p2}-${p3}`);
+            content = content.replace(/№\s*\{Y\}\/94-25/gi, `№ ${p1}/${p2}-${p3}`);
+            content = content.replace(/(<w:t[^>]*>)\{Y\}(<\/w:t>)/gi, `$1${p1}$2`);
+            content = content.replace(/(<w:t[^>]*>)\{B\}(<\/w:t>)/gi, `$1${p2}$2`);
+            content = content.replace(/(<w:t[^>]*>)\{C\}(<\/w:t>)/gi, `$1${p3}$2`);
+        }
+        const pVal = manualPValue.trim() || prog.endDate || '';
+        const reps = { N: prog.programName||'', T: prog.hours||'', X: prog.startDateRussian||prog.startDate||'', Z: prog.endDateRussian||prog.endDate||'', P: pVal };
+        for(const [k,v] of Object.entries(reps)) {
+            const val = v || '';
+            content = content.replace(new RegExp(`(<w:t[^>]*>)\\{${k}\\}(<\\/w:t>)`, 'gi'), `$1${val}$2`);
+            content = content.replace(new RegExp(`\\{${k}\\}`, 'g'), val);
+        }
+        zip.file('word/document.xml', content);
+        return await zip.generateAsync({type:'arraybuffer'});
+    }
+
+    // ----- ИНИЦИАЛИЗАЦИЯ И ОБРАБОТЧИКИ -----
+    document.addEventListener('DOMContentLoaded', function() {
+        // элементы DOM
+        const excelFileInput = document.getElementById('excelFile');
+        const excelBrowseBtn = document.getElementById('excelBrowseBtn');
+        const excelDropArea = document.getElementById('excelDropArea');
+        const excelSelectedFile = document.getElementById('excelSelectedFile');
+        const excelFileName = document.getElementById('excelFileName');
+        const excelFileSize = document.getElementById('excelFileSize');
+        const excelRecordCount = document.getElementById('excelRecordCount');
+        const wordFileInput = document.getElementById('wordFile');
+        const wordBrowseBtn = document.getElementById('wordBrowseBtn');
+        const wordDropArea = document.getElementById('wordDropArea');
+        const wordSelectedFile = document.getElementById('wordSelectedFile');
+        const wordFileName = document.getElementById('wordFileName');
+        const wordFileSize = document.getElementById('wordFileSize');
+        const generateBtn = document.getElementById('generateBtn');
+        const generateAllBtn = document.getElementById('generateAllBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const debugBtn = document.getElementById('debugBtn');
+        const testReplaceBtn = document.getElementById('testReplaceBtn');
+        const inspectTemplateBtn = document.getElementById('inspectTemplateBtn');
+        const fioTestBtn = document.getElementById('fioTestBtn');
+        const createTemplateBtn = document.getElementById('createTemplateBtn');
+        const peopleList = document.getElementById('peopleList');
+        const statusMessage = document.getElementById('statusMessage');
+        const loading = document.getElementById('loading');
+        const preview = document.getElementById('preview');
+        const previewName = document.getElementById('previewName');
+        const previewNumber = document.getElementById('previewNumber');
+        const previewDepartment = document.getElementById('previewDepartment');
+        const programInfoDiv = document.getElementById('programInfo');
+        const previewProgramName = document.getElementById('previewProgramName');
+        const previewHours = document.getElementById('previewHours');
+        const previewStartDate = document.getElementById('previewStartDate');
+        const previewEndDate = document.getElementById('previewEndDate');
+        const previewEndDateSimple = document.getElementById('previewEndDateSimple');
+        const numberDetails = document.getElementById('numberDetails');
+        const previewPart1 = document.getElementById('previewPart1');
+        const previewPart2 = document.getElementById('previewPart2');
+        const previewPart3 = document.getElementById('previewPart3');
+        const debugInfo = document.getElementById('debugInfo');
+        const debugContent = document.getElementById('debugContent');
+        const manualPInput = document.getElementById('manualPInput');
+
+        // вспомогательные функции UI
+        function formatFileSize(bytes) { if(bytes===0) return '0 Б'; const k=1024, sizes=['Б','КБ','МБ']; const i=Math.floor(Math.log(bytes)/Math.log(k)); return parseFloat((bytes/Math.pow(k,i)).toFixed(1))+' '+sizes[i]; }
+        function showStatus(msg, type='info') { statusMessage.textContent=msg; statusMessage.className=`status ${type}`; statusMessage.style.display='block'; if(type!=='error') setTimeout(()=>statusMessage.style.display='none',5000); }
+        function showLoading(text='Обработка...') { document.getElementById('loadingText').textContent=text; loading.style.display='block'; }
+        function hideLoading() { loading.style.display='none'; }
+        function checkGenerationReady() { if(peopleData.length && wordTemplateContent) { generateAllBtn.disabled=false; showStatus('Готово к генерации. Выберите человека.','success'); } }
+
+        function handleFileSelect(event, type) {
+            const file = event.target.files[0]; if(!file) return;
+            showLoading('Чтение...');
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    if(type==='excel') { excelFileName.textContent=file.name; excelFileSize.textContent=formatFileSize(file.size); excelSelectedFile.style.display='block'; const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'}); parseExcelData(wb); }
+                    else { wordTemplateContent = e.target.result; wordFileName.textContent=file.name; wordFileSize.textContent=formatFileSize(file.size); wordSelectedFile.style.display='block'; showStatus('Шаблон загружен','success'); hideLoading(); checkGenerationReady(); }
+                } catch(err) { showStatus(`Ошибка: ${err.message}`,'error'); hideLoading(); }
+            };
+            reader.onerror = () => { showStatus('Ошибка чтения','error'); hideLoading(); };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function parseExcelData(wb) {
+            try {
+                const sheet = wb.Sheets[wb.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(sheet, {header:1});
+                let headerIdx = -1;
+                for(let i=0; i<rows.length; i++) for(let j=0; j<rows[i].length; j++) if(String(rows[i][j]).includes('Фамилия Имя Отчество')) { headerIdx=i; break; }
+                if(headerIdx===-1) { showStatus('Колонка "Фамилия Имя Отчество" не найдена','error'); hideLoading(); return; }
+                const headers = rows[headerIdx];
+                peopleData = []; globalProgramInfo = {};
+                for(let i=0; i<rows.length; i++) {
+                    const row = rows[i];
+                    for(let j=0; j<row.length; j++) {
+                        const cell = String(row[j]||'');
+                        if(cell.includes('«') && cell.includes('»')) { globalProgramInfo = parseProgramInfo(cell); break; }
+                    }
+                    if(globalProgramInfo.programName) break;
+                }
+                for(let i=headerIdx+1; i<rows.length; i++) {
+                    const row = rows[i]; if(!row.length) continue;
+                    const person = {}; headers.forEach((h,idx)=>{ if(h && row[idx]!==undefined) person[String(h).trim()] = row[idx]; });
+                    if(person['Фамилия Имя Отчество']) {
+                        person._rawRow = row;
+                        person.programInfo = {...globalProgramInfo};
+                        if(row.length>=7) person._documentNumberParts = { part1:String(row[2]||'').trim(), part2:String(row[4]||'').trim(), part3:String(row[6]||'').trim() };
+                        peopleData.push(person);
+                    }
+                }
+                if(!peopleData.length) { showStatus('Нет данных','error'); hideLoading(); return; }
+                excelRecordCount.textContent = `${peopleData.length} записей`;
+                displayPeopleList();
+                showStatus(`Загружено ${peopleData.length} чел. Программа: ${globalProgramInfo.programName||'—'}`, 'success');
+                hideLoading(); checkGenerationReady();
+            } catch(e) { showStatus('Ошибка парсинга Excel: '+e.message,'error'); hideLoading(); }
+        }
+
+        function displayPeopleList() {
+            peopleList.innerHTML = '';
+            const table = document.createElement('table');
+            table.innerHTML = `<thead><tr><th>№</th><th>ФИО</th><th>Подразделение</th><th>Программа</th><th>Номер</th></tr></thead><tbody id="peopleTableBody"></tbody>`;
+            peopleList.appendChild(table);
+            const tbody = document.getElementById('peopleTableBody');
+            peopleData.forEach((p,i)=>{
+                const tr = document.createElement('tr'); tr.dataset.index = i;
+                tr.innerHTML = `<td>${i+1}</td><td>${p['Фамилия Имя Отчество']||''}</td><td>${p['Структурное подразделение']||p['Подразделение']||'УНО'}</td><td title="${p.programInfo?.programName||''}">${(p.programInfo?.programName||'').substring(0,30)}</td><td title="${getDocumentNumber(p)}">${getDocumentNumber(p)}</td>`;
+                tr.addEventListener('click', ()=>selectPerson(i));
+                tbody.appendChild(tr);
+            });
+        }
+
+        function selectPerson(idx) {
+            document.querySelectorAll('#peopleTableBody tr').forEach(r=>r.classList.remove('selected'));
+            document.querySelectorAll('#peopleTableBody tr')[idx].classList.add('selected');
+            selectedPersonIndex = idx;
+            generateBtn.disabled = !wordTemplateContent;
+            const p = peopleData[idx];
+            const fio = p['Фамилия Имя Отчество'];
+            const num = getDocumentNumber(p);
+            const prog = p.programInfo || globalProgramInfo || {};
+            previewName.textContent = fio;
+            previewNumber.textContent = num;
+            previewDepartment.textContent = p['Структурное подразделение']||p['Подразделение']||'УНО';
+            const parts = p._documentNumberParts || {};
+            previewPart1.textContent = parts.part1||'нет';
+            previewPart2.textContent = parts.part2||'нет';
+            previewPart3.textContent = parts.part3||'нет';
+            numberDetails.style.display = (parts.part1||parts.part2||parts.part3) ? 'block' : 'none';
+            if(prog.programName || prog.hours || prog.startDate || prog.endDate) {
+                previewProgramName.textContent = prog.programName||'—';
+                previewHours.textContent = prog.hours ? `${prog.hours} ч.` : '—';
+                previewStartDate.textContent = prog.startDateRussian||prog.startDate||'—';
+                previewEndDate.textContent = prog.endDateRussian||prog.endDate||'—';
+                previewEndDateSimple.textContent = manualPValue || prog.endDate || '—';
+                programInfoDiv.style.display = 'block';
+            } else programInfoDiv.style.display = 'none';
+            preview.style.display = 'block';
+            showStatus(`Выбран: ${fio}. Номер: ${num}`, 'info');
+        }
+
+        function updatePreviewP() { if(selectedPersonIndex!==null) { const p = peopleData[selectedPersonIndex]; previewEndDateSimple.textContent = manualPValue || (p.programInfo||globalProgramInfo||{}).endDate || '—'; } }
+        manualPInput.addEventListener('input', (e)=>{ manualPValue = e.target.value; updatePreviewP(); });
+
+        async function generateDocument() {
+            if(selectedPersonIndex===null) { showStatus('Выберите человека','error'); return; }
+            if(!wordTemplateContent) { showStatus('Загрузите шаблон','error'); return; }
+            showLoading('Создание...');
+            try {
+                const doc = await replaceTextInDocx(peopleData[selectedPersonIndex]);
+                const fio = peopleData[selectedPersonIndex]['Фамилия Имя Отчество'];
+                const _fioParts = (fio||'').trim().split(/\s+/);
+                const _num = String(selectedPersonIndex+1).padStart(2,'0');
+                const _fname = [_num,'У',_fioParts[0]||'',_fioParts[1]||''].concat(_fioParts.slice(2)).filter(c=>c!=='').join('_')+'.docx';
+                saveAs(new Blob([doc], {type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}), _fname);
+                showStatus('Готово!','success'); hideLoading();
+            } catch(e) { showStatus('Ошибка: '+e.message,'error'); hideLoading(); }
+        }
+
+        async function generateAllDocuments() {
+            if(!peopleData.length) { showStatus('Нет данных','error'); return; }
+            if(!wordTemplateContent) { showStatus('Нет шаблона','error'); return; }
+            showLoading(`Генерация ${peopleData.length} док...`);
+            const zip = new JSZip(); let ok=0, err=0; const used=new Set();
+            for(let i=0; i<peopleData.length; i++) {
+                try {
+                    const doc = await replaceTextInDocx(peopleData[i]);
+                    if(doc) {
+                        const _fioParts = (peopleData[i]['Фамилия Имя Отчество']||'').trim().split(/\s+/);
+                        const _num = String(i+1).padStart(2,'0');
+                        const fname = [_num,'У',_fioParts[0]||'',_fioParts[1]||''].concat(_fioParts.slice(2)).filter(c=>c!=='').join('_')+'.docx';
+                        zip.file(fname, doc); ok++;
+                    } else err++;
+                } catch(e) { console.error(e); err++; }
+                if(i%10===0 || i===peopleData.length-1) showLoading(`${i+1}/${peopleData.length}`);
+            }
+            if(ok===0) throw new Error('Ни одного документа');
+            const blob = await zip.generateAsync({type:'blob'});
+            saveAs(blob, 'все_удостоверения.zip');
+            showStatus(`Создано ${ok} док.` + (err?` Ошибок: ${err}`:''), err?'info':'success');
+            hideLoading();
+        }
+
+        function clearData() {
+            peopleData=[]; selectedPersonIndex=null; wordTemplateContent=null; globalProgramInfo={}; manualPValue=''; manualPInput.value='';
+            excelSelectedFile.style.display='none'; wordSelectedFile.style.display='none';
+            peopleList.innerHTML='<div style="padding:40px;text-align:center;color:#6c757d;"><i class="fas fa-users" style="font-size:48px;margin-bottom:15px;color:#dee2e6;"></i><div>Загрузите Excel</div></div>';
+            generateBtn.disabled=true; generateAllBtn.disabled=true; preview.style.display='none'; programInfoDiv.style.display='none'; numberDetails.style.display='none'; debugInfo.style.display='none';
+            excelFileInput.value=''; wordFileInput.value=''; showStatus('Очищено','info');
+        }
+
+        async function testTemplateReplace() { showStatus('Тест замены запущен (см. консоль)','info'); }
+        async function inspectTemplateStructure() { showStatus('Анализ структуры (см. консоль)','info'); }
+        async function testFioReplacement() { showStatus('Тест ФИО (см. консоль)','info'); }
+        async function createTestTemplate() { showStatus('Создание тестового шаблона...','info'); }
+
+        function showDebugInfo() {
+            if(selectedPersonIndex===null) { showStatus('Выберите человека','error'); return; }
+            const p = peopleData[selectedPersonIndex];
+            debugContent.innerHTML = `<strong>${p['Фамилия Имя Отчество']}</strong><br>Номер: ${getDocumentNumber(p)}<br>{Y}:${p._documentNumberParts?.part1} {B}:${p._documentNumberParts?.part2} {C}:${p._documentNumberParts?.part3}`;
+            debugInfo.style.display='block';
+        }
+
+        // привязка событий
+        excelBrowseBtn.addEventListener('click', ()=>excelFileInput.click());
+        excelFileInput.addEventListener('change', (e)=>handleFileSelect(e,'excel'));
+        wordBrowseBtn.addEventListener('click', ()=>wordFileInput.click());
+        wordFileInput.addEventListener('change', (e)=>handleFileSelect(e,'word'));
+        generateBtn.addEventListener('click', generateDocument);
+        generateAllBtn.addEventListener('click', generateAllDocuments);
+        clearBtn.addEventListener('click', clearData);
+        debugBtn.addEventListener('click', showDebugInfo);
+        testReplaceBtn.addEventListener('click', testTemplateReplace);
+        inspectTemplateBtn.addEventListener('click', inspectTemplateStructure);
+        fioTestBtn.addEventListener('click', testFioReplacement);
+        createTemplateBtn.addEventListener('click', createTestTemplate);
+        // drag&drop упрощён
+        excelDropArea.addEventListener('dragover', e=>{e.preventDefault(); excelDropArea.style.borderColor='#667eea';});
+        excelDropArea.addEventListener('dragleave', ()=>excelDropArea.style.borderColor='#dee2e6');
+        excelDropArea.addEventListener('drop', e=>{ e.preventDefault(); excelDropArea.style.borderColor='#dee2e6'; const f=e.dataTransfer.files[0]; if(f&&f.name.match(/\.(xlsx|xls)$/)){ excelFileInput.files=e.dataTransfer.files; handleFileSelect({target:{files:[f]}},'excel'); } });
+        wordDropArea.addEventListener('dragover', e=>{e.preventDefault(); wordDropArea.style.borderColor='#667eea';});
+        wordDropArea.addEventListener('dragleave', ()=>wordDropArea.style.borderColor='#dee2e6');
+        wordDropArea.addEventListener('drop', e=>{ e.preventDefault(); wordDropArea.style.borderColor='#dee2e6'; const f=e.dataTransfer.files[0]; if(f&&f.name.match(/\.(docx)$/)){ wordFileInput.files=e.dataTransfer.files; handleFileSelect({target:{files:[f]}},'word'); } });
+    });
+})();
+</script>
+</body>
+</html>

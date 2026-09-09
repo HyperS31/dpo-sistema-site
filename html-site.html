@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Реестр удостоверений</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <style>
+        :root {
+            --primary: #4361ee; --primary-light: #4895ef; --primary-dark: #3f37c9;
+            --success: #4cc9f0; --danger: #f72585; --warning: #f8961e;
+            --bg: #f8f9fa; --card-bg: #ffffff; --text: #212529;
+            --text-secondary: #495057; --border: #dee2e6;
+            --shadow: 0 4px 12px rgba(0,0,0,0.05); --radius: 12px; --transition: 0.2s ease;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0; padding: 20px;
+            background: linear-gradient(135deg, #e0e7ff 0%, #f8f9fa 100%);
+            color: var(--text);
+        }
+        .container { max-width: 1400px; margin: auto; }
+        h1 { color: var(--primary-dark); font-size: 24px; margin-bottom: 10px; font-weight: 600; }
+        .toolbar {
+            background: var(--card-bg); padding: 20px; border-radius: var(--radius);
+            box-shadow: var(--shadow); margin-bottom: 20px;
+        }
+        .program-section { margin-bottom: 20px; }
+        .template-upload {
+            display: flex; align-items: center; gap: 15px; margin-bottom: 20px;
+            padding: 12px; background: #f1f3ff; border-radius: 8px; border: 1px dashed var(--primary);
+        }
+        .template-upload i { color: var(--primary); font-size: 24px; }
+        .template-upload input { display: none; }
+        .template-status { font-size: 14px; color: var(--text-secondary); }
+        .file-upload { margin-bottom: 15px; }
+        .program-search-row {
+            display: flex; gap: 10px; align-items: center; margin-bottom: 10px; flex-wrap: wrap;
+        }
+        .program-search-row input {
+            flex: 1; min-width: 200px; padding: 10px 16px; border: 1px solid var(--border);
+            border-radius: 25px; font-size: 14px; transition: var(--transition);
+        }
+        .program-search-row input:focus {
+            outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(67,97,238,0.2);
+        }
+        .sort-btns { display: flex; gap: 10px; }
+        .sort-btns button {
+            padding: 8px 16px; background: var(--primary-light); color: white; border: none;
+            border-radius: 25px; cursor: pointer; font-size: 14px; transition: var(--transition); font-weight: 500;
+        }
+        .sort-btns button.active {
+            background: var(--primary-dark); box-shadow: 0 4px 12px rgba(67,97,238,0.3);
+        }
+        .sort-btns button:hover { background: var(--primary); }
+        .year-filter select {
+            padding: 8px 16px; border: 1px solid var(--border); border-radius: 25px;
+            font-size: 14px; background: white; transition: var(--transition);
+        }
+        .year-filter select:focus { outline: none; border-color: var(--primary); }
+        .program-list {
+            display: flex; flex-direction: column; gap: 8px; max-height: 250px; overflow-y: auto;
+            padding: 10px; border: 1px solid var(--border); border-radius: var(--radius); background: #f8f9fa;
+        }
+        .program-item {
+            padding: 10px 20px; background: white; border: 1px solid var(--border);
+            border-radius: 30px; cursor: pointer; font-size: 14px; white-space: normal;
+            word-break: break-word; width: 100%; transition: var(--transition);
+            border-left: 5px solid transparent;
+        }
+        .program-item:hover { background: #eef1ff; border-color: var(--primary-light); }
+        .program-item.selected {
+            background: var(--primary-light); color: white; border-color: var(--primary);
+            border-left-color: var(--warning);
+        }
+        .filters-row {
+            display: flex; flex-wrap: wrap; gap: 15px; align-items: center; margin-top: 20px;
+        }
+        .filters-row label { margin-right: 5px; font-weight: 500; color: var(--text-secondary); }
+        .filters-row input, .filters-row select {
+            padding: 10px 16px; border: 1px solid var(--border); border-radius: 25px;
+            font-size: 14px; transition: var(--transition);
+        }
+        .filters-row input:focus, .filters-row select:focus {
+            outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(67,97,238,0.2);
+        }
+        button {
+            padding: 10px 20px; background: var(--primary); color: white; border: none;
+            border-radius: 25px; cursor: pointer; font-size: 14px; transition: var(--transition);
+            font-weight: 500; display: inline-flex; align-items: center; gap: 6px;
+        }
+        button:hover { background: var(--primary-dark); }
+        button.secondary { background: #6c757d; } button.secondary:hover { background: #5a6268; }
+        button.warning { background: var(--warning); } button.warning:hover { background: #e07d0e; }
+        button.success { background: #2ecc71; } button.success:hover { background: #27ae60; }
+        button.danger { background: var(--danger); } button.danger:hover { background: #c81e70; }
+        .mass-btn { margin-left: auto; }
+        table {
+            width: 100%; border-collapse: collapse; background: var(--card-bg);
+            border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow);
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        th {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white; padding: 14px 12px; text-align: left; font-weight: 600; font-size: 14px; letter-spacing: 0.3px;
+        }
+        td { padding: 12px 10px; border-bottom: 1px solid var(--border); font-size: 14px; transition: background var(--transition); }
+        tr:hover td { background: #f1f4ff; }
+        .issued { background: #f0fdf4; } .issued td { color: #166534; font-weight: 500; }
+        .not-issued td { color: #991b1b; }
+        .dup-original td { background: #e8f4ff; font-weight: 600; }
+        .dup-extra td { background: #fff1f0; }
+        .dup-badge { font-weight: 600; font-size: 13px; white-space: nowrap; }
+        .dup-badge.original { color: #1d4ed8; }
+        .dup-badge.extra { color: #b91c1c; }
+        .checkbox-cell { text-align: center; }
+        #message {
+            position: fixed; bottom: 20px; right: 20px; background: #2ecc71; color: white;
+            padding: 12px 24px; border-radius: 30px; display: none; z-index: 1000;
+            box-shadow: 0 4px 12px rgba(46,204,113,0.3); animation: fadeIn 0.3s ease;
+        }
+        #loading-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.7); display: flex; justify-content: center;
+            align-items: center; z-index: 2000;
+        }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @media (max-width: 600px) {
+            .filters-row { flex-direction: column; align-items: stretch; }
+            .mass-btn { margin-left: 0; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1><i class="fas fa-graduation-cap"></i> Реестр выдачи удостоверений</h1>
+    <div class="toolbar">
+        <div class="template-upload">
+            <i class="fas fa-file-word"></i>
+            <div>
+                <button id="templateBtn" class="secondary"><i class="fas fa-upload"></i> Загрузить шаблон DOCX</button>
+                <input type="file" id="templateFile" accept=".docx">
+                <span class="template-status" id="templateStatus">Шаблон не загружен</span>
+            </div>
+        </div>
+        <div class="file-upload">
+            <button onclick="document.getElementById('fileInput').click()"><i class="fas fa-file-upload"></i> Загрузить Excel</button>
+            <input type="file" id="fileInput" accept=".xlsx, .xls" onchange="handleFileUpload(event)" style="display:none;">
+        </div>
+        <div class="program-section">
+            <div class="program-search-row">
+                <input type="text" id="programSearch" placeholder="Поиск по названию программы..." oninput="renderProgramList()">
+                <div class="sort-btns">
+                    <button id="sortAlphaBtn" onclick="setProgramSort('alpha')" class="active"><i class="fas fa-sort-alpha-down"></i> По алфавиту</button>
+                    <button id="sortDateBtn" onclick="setProgramSort('date')"><i class="far fa-calendar-alt"></i> По дате</button>
+                </div>
+            </div>
+            <div id="programList" class="program-list"></div>
+        </div>
+        <div class="filters-row">
+            <label for="regSearch"><i class="fas fa-search"></i> Рег. номер:</label>
+            <input type="text" id="regSearch" placeholder="Поиск по рег. номеру" oninput="onRegSearchInput()">
+            <button onclick="searchByReg()"><i class="fas fa-search"></i> Искать</button>
+            <label for="fioSearch"><i class="fas fa-user"></i> ФИО:</label>
+            <input type="text" id="fioSearch" placeholder="Введите ФИО" oninput="onFioSearchInput()">
+            <button onclick="searchByFio()"><i class="fas fa-search"></i> Искать</button>
+            <label for="statusFilter"><i class="fas fa-check-circle"></i> Статус:</label>
+            <select id="statusFilter" onchange="applyFilters()">
+                <option value="">Все</option>
+                <option value="issued">Выдано</option>
+                <option value="not_issued">Не выдано</option>
+            </select>
+            <div class="year-filter">
+                <label for="yearFilter"><i class="far fa-calendar-alt"></i> Год:</label>
+                <select id="yearFilter" onchange="saveFilterAndRender()">
+                    <option value="">Все года</option>
+                </select>
+            </div>
+            <button class="warning" onclick="findDuplicates()"><i class="fas fa-clone"></i> Поиск дубликатов</button>
+            <button id="deleteDuplicatesBtn" class="danger" style="display:none;" onclick="deleteDuplicates()"><i class="fas fa-trash-alt"></i> Удалить все дубликаты</button>
+            <button id="massIssueBtn" class="warning" style="display:none;" onclick="massIssue()"><i class="fas fa-check-double"></i> Выдать всем</button>
+            <button id="downloadAllBtn" class="success" style="display:none;" onclick="downloadAllCertificates()"><i class="fas fa-file-archive"></i> Скачать все удостоверения (ZIP)</button>
+        </div>
+        <button class="secondary" onclick="exportToExcel()"><i class="fas fa-download"></i> Экспорт в Excel (по текущему фильтру)</button>
+        <span class="status" id="recordCount"></span>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Программа</th><th>Серия, № бланка</th><th>Рег. номер</th><th>ФИО</th><th>Подразделение</th><th>План. дата</th><th>Выдано</th><th>Факт. дата</th><th>Подпись</th><th style="width:40px;"></th>
+            </tr>
+        </thead>
+        <tbody id="registryBody"></tbody>
+    </table>
+    <div id="message">Изменения сохранены</div>
+</div>
+<div id="loading-overlay" style="display:none;">
+    <i class="fas fa-spinner fa-spin" style="font-size: 3rem; color: var(--primary);"></i>
+</div>
+
+<script>
+    // ⚠️ Замените на актуальный URL вашего веб-приложения (после развёртывания)
+    const API_URL = 'https://script.google.com/macros/s/AKfycbyzCnkD8216HRNLx7ARUsVQdnhm2m0ad_v6cdqJshl6t_8G4LJKGtEWf8By6_rLqtHdEw/exec';
+
+    let allRecords = [];
+    let programs = [];
+    let currentFilter = { search: '', fio: '', prog: '', status: '', year: '' };
+    let currentProgramSort = 'alpha';
+    let selectedYear = '';
+    let wordTemplateArrayBuffer = null;
+    let currentFilteredRecords = [];
+    let duplicateModeActive = false;
+    let duplicateGroups = [];
+
+    // ========== Утилиты ==========
+    function debounce(func, delay) {
+        let timer;
+        return function(...args) {
+            clearTimeout(timer);
+            timer = setTimeout(() => func.apply(this, args), delay);
+        };
+    }
+    function showLoading(show) {
+        document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none';
+    }
+
+    // ========== localStorage ==========
+    function saveFilterState() {
+        localStorage.setItem('selectedProgram', currentFilter.prog);
+        localStorage.setItem('programSort', currentProgramSort);
+        localStorage.setItem('selectedYear', selectedYear);
+    }
+    function loadFilterState() {
+        currentFilter.prog = localStorage.getItem('selectedProgram') || '';
+        currentProgramSort = localStorage.getItem('programSort') || 'alpha';
+        selectedYear = localStorage.getItem('selectedYear') || '';
+    }
+
+    // ========== API (только GET) ==========
+    async function fetchJSON(url) {
+        const resp = await fetch(url);
+        if (!resp.ok) {
+            const text = await resp.text();
+            throw new Error(`HTTP ${resp.status}: ${text.slice(0, 200)}`);
+        }
+        const ct = resp.headers.get('content-type') || '';
+        if (!ct.includes('application/json')) {
+            const text = await resp.text();
+            throw new Error('Ответ не JSON (возможно, требуется авторизация).\n' + text.slice(0, 300));
+        }
+        return resp.json();
+    }
+
+    // Мутирующие запросы (add/update/delete) идут через POST с телом JSON — без ограничения
+    // на длину URL. Content-Type: text/plain специально, чтобы браузер не слал CORS-preflight
+    // (Apps Script Web App его не обрабатывает как настоящий preflight).
+    async function postJSON(action, params) {
+        const resp = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action, ...params })
+        });
+        if (!resp.ok) {
+            const text = await resp.text();
+            throw new Error(`HTTP ${resp.status}: ${text.slice(0, 200)}`);
+        }
+        const ct = resp.headers.get('content-type') || '';
+        if (!ct.includes('application/json')) {
+            const text = await resp.text();
+            throw new Error('Ответ не JSON (возможно, требуется авторизация).\n' + text.slice(0, 300));
+        }
+        return resp.json();
+    }
+
+    async function fetchRecords() {
+        showLoading(true);
+        try {
+            const data = await fetchJSON(`${API_URL}?action=getData`);
+            if (data.status !== 'success') throw new Error(data.message || 'Ошибка загрузки');
+            allRecords = data.data;
+        } catch (err) {
+            console.error('Ошибка загрузки записей:', err);
+            showMessage('Ошибка загрузки данных: ' + err.message);
+            allRecords = [];
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    async function addChunk(programName, chunk) {
+        const data = await postJSON('add', { programName, data: chunk });
+        if (data.status !== 'success') throw new Error(data.message || 'Ошибка добавления');
+        return data.added;
+    }
+
+    async function sendInBatches(programName, records) {
+        // POST не ограничен длиной URL, поэтому пачки можно брать крупными — это резко
+        // сокращает число запросов на больших Excel-файлах. Верхняя граница — просто разумный
+        // запас, чтобы одно выполнение Apps Script не растягивалось надолго.
+        const BATCH_SIZE = 300;
+        let sent = 0;
+        for (let i = 0; i < records.length; i += BATCH_SIZE) {
+            const chunk = records.slice(i, i + BATCH_SIZE);
+            const added = await addChunk(programName, chunk);
+            sent += added;
+        }
+        if (sent !== records.length) {
+            throw new Error(`Добавлено ${sent} из ${records.length} записей — часть могла не сохраниться на сервере. Проверьте реестр (кнопка "Поиск дубликатов" поможет найти случайно повторно загруженные строки) и при необходимости загрузите файл ещё раз.`);
+        }
+        return sent;
+    }
+
+    async function updateRecord(updateData) {
+        showLoading(true);
+        try {
+            const data = await postJSON('update', { data: updateData });
+            if (data.status !== 'success') throw new Error(data.message || 'Ошибка обновления');
+        } catch (err) {
+            console.error('Ошибка обновления:', err);
+            showMessage('Ошибка обновления');
+            throw err;
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    async function deleteRecords(ids) {
+        const data = await postJSON('delete', { ids });
+        if (data.status !== 'success') throw new Error(data.message || 'Ошибка удаления');
+        return data.deleted ?? ids.length;
+    }
+
+    // ========== Парсинг Excel ==========
+    function extractProgramName(rows, headerIdx) {
+        let parts = [];
+        for (let i = 1; i < headerIdx; i++) {
+            const cell = rows[i] ? rows[i][0] : '';
+            if (!cell) continue;
+            const text = String(cell).trim();
+            if (text === '' || text.includes('Регистрация выдачи') || text.includes('по дополнительной образовательной программе')) continue;
+            parts.push(text);
+        }
+        return parts.join(' ').replace(/\s+/g, ' ').trim();
+    }
+
+    function parseExcelDate(raw) {
+        if (!raw) return '';
+        if (raw instanceof Date) return raw.toISOString().split('T')[0];
+        if (typeof raw === 'number') {
+            const excelEpoch = new Date(1899, 11, 30);
+            const d = new Date(excelEpoch.getTime() + raw * 86400000);
+            return d.toISOString().split('T')[0];
+        }
+        const strDate = String(raw).trim();
+        return strDate.match(/^\d{4}-\d{2}-\d{2}/) ? strDate.split(' ')[0] : strDate;
+    }
+
+    async function handleFileUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+                if (rows.length < 6) { alert('Файл не соответствует формату'); return; }
+                let headerIdx = -1;
+                for (let i = 0; i < rows.length; i++) {
+                    if (rows[i][0] && String(rows[i][0]).includes('Серия и номер бланка')) {
+                        headerIdx = i; break;
+                    }
+                }
+                if (headerIdx === -1) { alert('Не найдена строка заголовка таблицы'); return; }
+                const programName = extractProgramName(rows, headerIdx);
+                const newRecords = [];
+                for (let i = headerIdx + 1; i < rows.length; i++) {
+                    const row = rows[i];
+                    if (!row || row.every(cell => cell === '' || cell === null)) continue;
+                    const series = String(row[0] || '').trim();
+                    const number = String(row[1] || '').trim();
+                    const regParts = [];
+                    for (let j = 2; j <= 6; j++) {
+                        const val = String(row[j] || '').trim();
+                        if (val && val !== '/' && val !== '-') regParts.push(val);
+                        else if (val === '/' || val === '-') regParts.push(val);
+                    }
+                    let regNumber = regParts.join('').replace(/\/\//g,'/').replace(/--/g,'-').replace(/^\/|\/$/g,'');
+                    const fullName = String(row[7] || '').trim();
+                    const department = String(row[8] || '').trim();
+                    const plannedDate = parseExcelDate(row[9]);
+                    newRecords.push({
+                        series, number, reg_number: regNumber, full_name: fullName,
+                        department, planned_issue_date: plannedDate,
+                        is_issued: false, actual_issue_date: '', signature: ''
+                    });
+                }
+                if (newRecords.length === 0) { alert('Нет записей для добавления'); return; }
+                const addedCount = await sendInBatches(programName, newRecords);
+                document.getElementById('fileInput').value = '';
+                await refreshData();
+                showMessage(`Успешно добавлено: ${addedCount}`);
+            } catch (err) {
+                console.error(err);
+                alert('Ошибка: ' + err.message);
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    // ========== Отображение программ ==========
+    function getProgramCount(programName) {
+        return allRecords.filter(r => r.program_name === programName).length;
+    }
+
+    async function refreshData() {
+        await fetchRecords();
+        programs = [...new Set(allRecords.map(r => r.program_name))].filter(Boolean);
+        populateYearFilter();
+        loadFilterState();
+        document.getElementById('yearFilter').value = selectedYear;
+        renderProgramList();
+        applyFilters();
+    }
+
+    function extractStartDate(programName) {
+        const match = programName.match(/(\d{2}\.\d{2}\.\d{4})/);
+        if (match) {
+            const parts = match[1].split('.');
+            return new Date(parts[2], parts[1] - 1, parts[0]);
+        }
+        return null;
+    }
+
+    function populateYearFilter() {
+        const years = new Set();
+        programs.forEach(prog => {
+            const date = extractStartDate(prog);
+            if (date) years.add(date.getFullYear());
+        });
+        const yearFilter = document.getElementById('yearFilter');
+        yearFilter.innerHTML = '<option value="">Все года</option>';
+        [...years].sort((a, b) => b - a).forEach(year => {
+            const opt = document.createElement('option');
+            opt.value = year;
+            opt.textContent = year;
+            yearFilter.appendChild(opt);
+        });
+    }
+
+    function getSortedPrograms() {
+        let sorted = [...programs];
+        const searchText = document.getElementById('programSearch')?.value.trim().toLowerCase() || '';
+        const yearValue = document.getElementById('yearFilter')?.value;
+        if (yearValue) {
+            sorted = sorted.filter(prog => {
+                const date = extractStartDate(prog);
+                return date && date.getFullYear() === parseInt(yearValue, 10);
+            });
+        }
+        if (searchText) {
+            sorted = sorted.filter(p => p.toLowerCase().includes(searchText));
+        }
+        if (currentProgramSort === 'alpha') {
+            sorted.sort((a, b) => a.localeCompare(b, 'ru'));
+        } else if (currentProgramSort === 'date') {
+            sorted.sort((a, b) => {
+                const dateA = extractStartDate(a);
+                const dateB = extractStartDate(b);
+                if (!dateA && !dateB) return 0;
+                if (!dateA) return 1;
+                if (!dateB) return -1;
+                return dateA - dateB;
+            });
+        }
+        return sorted;
+    }
+
+    function renderProgramList() {
+        const container = document.getElementById('programList');
+        if (!container) return;
+        const sorted = getSortedPrograms();
+        container.innerHTML = '';
+        sorted.forEach(prog => {
+            const count = getProgramCount(prog);
+            const div = document.createElement('div');
+            div.className = 'program-item' + (currentFilter.prog === prog ? ' selected' : '');
+            div.textContent = `${prog} (${count})`;
+            div.addEventListener('click', () => {
+                currentFilter.prog = (currentFilter.prog === prog) ? '' : prog;
+                saveFilterState();
+                renderProgramList();
+                toggleButtons();
+                applyFilters();
+            });
+            container.appendChild(div);
+        });
+        toggleButtons();
+        toggleMassIssueButton();
+    }
+
+    function setProgramSort(mode) {
+        currentProgramSort = mode;
+        saveFilterState();
+        document.getElementById('sortAlphaBtn').classList.toggle('active', mode === 'alpha');
+        document.getElementById('sortDateBtn').classList.toggle('active', mode === 'date');
+        renderProgramList();
+        applyFilters();
+    }
+
+    function saveFilterAndRender() {
+        selectedYear = document.getElementById('yearFilter').value;
+        saveFilterState();
+        renderProgramList();
+        applyFilters();
+    }
+
+    // ========== Фильтры и таблица ==========
+    function applyFilters() {
+        duplicateModeActive = false;
+        duplicateGroups = [];
+        document.getElementById('deleteDuplicatesBtn').style.display = 'none';
+
+        currentFilter.status = document.getElementById('statusFilter').value;
+        currentFilter.search = document.getElementById('regSearch').value.trim();
+        currentFilter.fio = document.getElementById('fioSearch').value.trim();
+        currentFilter.year = document.getElementById('yearFilter').value;
+
+        const { prog, status, search, fio, year } = currentFilter;
+        let filtered = allRecords.filter(r => {
+            if (prog && r.program_name !== prog) return false;
+            if (status === 'issued' && !r.is_issued) return false;
+            if (status === 'not_issued' && r.is_issued) return false;
+            if (year) {
+                const date = extractStartDate(r.program_name || '');
+                if (!date || String(date.getFullYear()) !== year) return false;
+            }
+            if (search) {
+                const regClean = cleanReg(r.reg_number);
+                const searchClean = cleanReg(search);
+                if (!regClean.includes(searchClean)) return false;
+            }
+            if (fio) {
+                if (!matchesFio(fio, r.full_name || '')) return false;
+            }
+            return true;
+        });
+        currentFilteredRecords = filtered;
+        renderTable(filtered);
+        document.getElementById('recordCount').textContent = `Показано: ${filtered.length} из ${allRecords.length}`;
+        toggleButtons();
+        toggleMassIssueButton();
+    }
+
+    function renderTable(records) {
+        const tbody = document.getElementById('registryBody');
+        tbody.innerHTML = '';
+        if (!records.length) {
+            tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding:40px;">Нет данных</td></tr>';
+            return;
+        }
+        records.forEach(rec => {
+            const tr = document.createElement('tr');
+            tr.className = rec.is_issued ? 'issued' : 'not-issued';
+            tr.innerHTML = `
+                <td>${escapeHtml(rec.program_name||'')}</td>
+                <td>${escapeHtml(rec.series||'')} ${escapeHtml(rec.number||'')}</td>
+                <td>${escapeHtml(rec.reg_number||'')}</td>
+                <td>${escapeHtml(rec.full_name||'')}</td>
+                <td>${escapeHtml(rec.department||'')}</td>
+                <td>${formatDateLocal(rec.planned_issue_date)}</td>
+                <td class="checkbox-cell"><input type="checkbox" ${rec.is_issued?'checked':''} onchange="toggleIssued(${rec.id}, this.checked)"></td>
+                <td>${formatDateLocal(rec.actual_issue_date)}</td>
+                <td><input type="text" value="${escapeHtml(rec.signature||'')}" onchange="updateSignature(${rec.id}, this.value)" placeholder="Подпись" style="width:100px;"></td>
+                <td style="text-align:center;">
+                    ${wordTemplateArrayBuffer ? `<i class="fas fa-file-download" style="cursor:pointer; color:var(--primary);" title="Скачать удостоверение" onclick="event.stopPropagation(); downloadSingleCertificate(allRecords.find(r=>r.id==${rec.id}))"></i>` : ''}
+                </td>`;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function formatDateLocal(dateStr) {
+        if (!dateStr) return '';
+        try {
+            const date = new Date(dateStr);
+            if (isNaN(date.getTime())) return dateStr;
+            return date.toLocaleDateString('ru-RU');
+        } catch (e) { return dateStr; }
+    }
+
+    function cleanReg(str) { return String(str||'').toLowerCase().replace(/[^a-zа-яё0-9]/g, ''); }
+
+    function matchesFio(fioInput, fullName) {
+        if (!fioInput) return true;
+        const inputWords = fioInput.trim().split(/\s+/).filter(w => w.length > 0);
+        if (inputWords.length === 0) return true;
+        const nameWords = fullName.trim().split(/\s+/).filter(w => w.length > 0);
+        if (nameWords.length < inputWords.length) return false;
+        for (let i = 0; i < inputWords.length; i++) {
+            if (inputWords[i].toLowerCase() !== nameWords[i].toLowerCase()) return false;
+        }
+        return true;
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.appendChild(document.createTextNode(text));
+        // innerHTML экранирует &, < и > автоматически, но НЕ кавычки — а результат
+        // подставляется и в атрибуты (value="..."), поэтому кавычки экранируем вручную.
+        return div.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    // ========== Обработчики поиска ==========
+    const onRegSearchInput = debounce(() => {
+        document.getElementById('fioSearch').value = '';
+        applyFilters();
+    }, 300);
+    const onFioSearchInput = debounce(() => {
+        document.getElementById('regSearch').value = '';
+        applyFilters();
+    }, 300);
+    function searchByReg() { document.getElementById('fioSearch').value = ''; applyFilters(); }
+    function searchByFio() { document.getElementById('regSearch').value = ''; applyFilters(); }
+
+    // ========== Редактирование ==========
+    async function toggleIssued(id, checked) {
+        const rec = allRecords.find(r => r.id === id);
+        if (!rec) return;
+        let newActualDate = rec.actual_issue_date;
+        if (!checked) {
+            if (!confirm('Вы уверены, что хотите отменить выдачу?')) {
+                const checkbox = document.querySelector(`input[type="checkbox"][onchange="toggleIssued(${id}, this.checked)"]`);
+                if (checkbox) checkbox.checked = true;
+                return;
+            }
+            newActualDate = '';
+        } else if (!newActualDate) {
+            newActualDate = new Date().toISOString().split('T')[0];
+        }
+        try {
+            await updateRecord({ id, is_issued: checked, actual_issue_date: newActualDate });
+            rec.is_issued = checked;
+            rec.actual_issue_date = newActualDate;
+        } catch (err) {
+            // Сервер не подтвердил сохранение — локальное состояние не трогаем,
+            // applyFilters() ниже перерисует чекбокс в прежнее (сохранённое) положение.
+        } finally {
+            applyFilters();
+        }
+    }
+
+    async function updateSignature(id, signature) {
+        const rec = allRecords.find(r => r.id === id);
+        if (!rec) return;
+        try {
+            await updateRecord({ id, signature });
+            rec.signature = signature;
+            showMessage('Подпись сохранена');
+        } catch (err) {
+            applyFilters(); // откатываем поле ввода к последнему сохранённому значению
+        }
+    }
+
+    // ========== Массовая выдача ==========
+    async function massIssue() {
+        const prog = currentFilter.prog;
+        if (!prog) return;
+        const toIssue = allRecords.filter(r => r.program_name === prog && !r.is_issued);
+        if (toIssue.length === 0) { alert('Все удостоверения уже выданы'); return; }
+        if (!confirm(`Отметить выдачу для ${toIssue.length} слушателей программы "${prog}"?`)) return;
+        const today = new Date().toISOString().split('T')[0];
+        const updates = toIssue.map(rec => ({ id: rec.id, is_issued: true, actual_issue_date: today }));
+        try {
+            await updateRecord(updates);
+            toIssue.forEach(rec => { rec.is_issued = true; rec.actual_issue_date = today; });
+            showMessage('Выдача отмечена');
+        } catch (err) { console.error(err); showMessage('Ошибка массовой выдачи, данные не изменены'); }
+        finally { applyFilters(); }
+    }
+
+    // ========== Поиск и удаление дубликатов ==========
+    // Дата из Google Sheets может прийти и обычной строкой "2026-09-03", и полным ISO
+    // с временем "2026-09-03T00:00:00.000Z" (если ячейка распозналась как настоящая Date) —
+    // это зависит от того, как конкретная ячейка была заполнена. Для сравнения дубликатов
+    // берём только календарную часть, иначе одинаковые по смыслу даты не считались бы дублями.
+    function normalizeDateForCompare(v) {
+        const s = String(v ?? '').trim();
+        const m = s.match(/^(\d{4}-\d{2}-\d{2})/);
+        return m ? m[1] : s.toLowerCase();
+    }
+
+    // Дубликатом считается запись, у которой совпадают ВСЕ поля (кроме id) с другой записью.
+    function recordFingerprint(r) {
+        return [
+            r.program_name, r.series, r.number, r.reg_number, r.full_name,
+            r.department, normalizeDateForCompare(r.planned_issue_date), r.is_issued,
+            normalizeDateForCompare(r.actual_issue_date), r.signature
+        ].map(v => String(v ?? '').trim().toLowerCase()).join('|');
+    }
+
+    function computeDuplicateGroups() {
+        const map = new Map();
+        allRecords.forEach(r => {
+            const key = recordFingerprint(r);
+            if (!map.has(key)) map.set(key, []);
+            map.get(key).push(r);
+        });
+        return [...map.values()]
+            .filter(g => g.length > 1)
+            .map(g => g.slice().sort((a, b) => a.id - b.id));
+    }
+
+    function findDuplicates() {
+        duplicateGroups = computeDuplicateGroups();
+        duplicateModeActive = true;
+        renderDuplicates();
+    }
+
+    function renderDuplicates() {
+        const tbody = document.getElementById('registryBody');
+        tbody.innerHTML = '';
+        const extras = duplicateGroups.flatMap(g => g.slice(1));
+        const deleteBtn = document.getElementById('deleteDuplicatesBtn');
+
+        if (!duplicateGroups.length) {
+            document.getElementById('recordCount').textContent = 'Дубликаты не найдены';
+            deleteBtn.style.display = 'none';
+            tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding:40px;">Дубликаты не найдены</td></tr>';
+            return;
+        }
+
+        document.getElementById('recordCount').textContent =
+            `Найдено групп дубликатов: ${duplicateGroups.length}, лишних записей к удалению: ${extras.length}`;
+        deleteBtn.innerHTML = `<i class="fas fa-trash-alt"></i> Удалить все дубликаты (${extras.length})`;
+        deleteBtn.style.display = 'inline-flex';
+
+        duplicateGroups.forEach(group => {
+            group.forEach((rec, idx) => {
+                const isOriginal = idx === 0;
+                const tr = document.createElement('tr');
+                tr.className = isOriginal ? 'dup-original' : 'dup-extra';
+                tr.innerHTML = `
+                    <td>${escapeHtml(rec.program_name||'')}</td>
+                    <td>${escapeHtml(rec.series||'')} ${escapeHtml(rec.number||'')}</td>
+                    <td>${escapeHtml(rec.reg_number||'')}</td>
+                    <td>${escapeHtml(rec.full_name||'')}</td>
+                    <td>${escapeHtml(rec.department||'')}</td>
+                    <td>${formatDateLocal(rec.planned_issue_date)}</td>
+                    <td class="checkbox-cell">${rec.is_issued ? 'Да' : 'Нет'}</td>
+                    <td>${formatDateLocal(rec.actual_issue_date)}</td>
+                    <td>${escapeHtml(rec.signature||'')}</td>
+                    <td class="dup-badge ${isOriginal ? 'original' : 'extra'}">${isOriginal ? 'Оригинал' : 'Удалить'}</td>`;
+                tbody.appendChild(tr);
+            });
+        });
+    }
+
+    async function deleteDuplicates() {
+        const extrasPreview = duplicateGroups.flatMap(g => g.slice(1));
+        if (!extrasPreview.length) return;
+        if (!confirm(`Удалить ${extrasPreview.length} дублирующихся записей? Останутся только оригиналы (с наименьшим ID). Действие необратимо.`)) return;
+        try {
+            showLoading(true);
+            // id — это позиция строки в текущем срезе листа, а не постоянный идентификатор.
+            // Перед удалением перечитываем данные и пересчитываем дубликаты, чтобы не удалить
+            // не ту строку, если реестр успел измениться (например, в другой вкладке).
+            await fetchRecords();
+            const freshGroups = computeDuplicateGroups();
+            const extras = freshGroups.flatMap(g => g.slice(1));
+            if (!extras.length) {
+                showMessage('Дубликаты уже отсутствуют (реестр изменился)');
+                return;
+            }
+            const ids = extras.map(r => r.id);
+            const deleted = await deleteRecords(ids);
+            showMessage(`Удалено дубликатов: ${deleted}`);
+        } catch (err) {
+            console.error(err);
+            showMessage('Ошибка удаления дубликатов: ' + err.message);
+        } finally {
+            duplicateGroups = [];
+            // Перезагружаем реестр целиком: после удаления строк id всех последующих
+            // записей на сервере пересчитываются, локальный кэш обязательно должен обновиться.
+            await refreshData();
+            showLoading(false);
+        }
+    }
+
+    // ========== Генерация DOCX ==========
+    function parseProgramInfo(programName) {
+        const clean = programName.replace(/\s+/g,' ').trim();
+        let N='', T='', X='', Z='', P='';
+        const nameM = clean.match(/«([^»]+)»/); if(nameM) N = nameM[1].trim();
+        const hoursM = clean.match(/»,?\s*(\d+)\s*час/); if(hoursM) T = hoursM[1].trim();
+        const dateM = clean.match(/с\s+(\d{2}\.\d{2}\.\d{4})\s+по\s+(\d{2}\.\d{2}\.\d{4})/);
+        if(dateM) {
+            X = formatDateToRussian(dateM[1]); Z = formatDateToRussian(dateM[2]); P = dateM[2];
+        } else {
+            const dates = clean.match(/\d{2}\.\d{2}\.\d{4}/g);
+            if(dates && dates.length >= 2) {
+                X = formatDateToRussian(dates[0]); Z = formatDateToRussian(dates[1]); P = dates[1];
+            }
+        }
+        return { N, T, X, Z, P };
+    }
+
+    function formatDateToRussian(d) {
+        if (!d || typeof d !== 'string') return d||'';
+        const m = d.trim().match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+        if (!m) return d;
+        const months = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+        const month = parseInt(m[2],10);
+        if(month<1||month>12) return d;
+        return `${m[1]} ${months[month-1]} ${m[3]} г.`;
+    }
+
+    function getDocumentNumberParts(rec) {
+        const reg = (rec.reg_number || '').trim();
+        const slashIdx = reg.indexOf('/');
+        if (slashIdx === -1) return { part1: '', part2: '', part3: '' };
+        const part1 = reg.substring(0, slashIdx);
+        const afterSlash = reg.substring(slashIdx + 1);
+        const firstDashIdx = afterSlash.indexOf('-');
+        let part2 = afterSlash, part3 = '';
+        if (firstDashIdx !== -1) {
+            part2 = afterSlash.substring(0, firstDashIdx);
+            part3 = afterSlash.substring(firstDashIdx + 1);
+        }
+        return { part1: part1.trim(), part2: part2.trim(), part3: part3.trim() };
+    }
+
+    async function generateSingleDocx(rec, programInfo) {
+        if (!wordTemplateArrayBuffer) throw new Error('Шаблон не загружен');
+        const zip = await JSZip.loadAsync(wordTemplateArrayBuffer);
+        let xml = await zip.file('word/document.xml').async('string');
+
+        const fio = (rec.full_name || '').trim();
+        if (fio) {
+            const parts = fio.split(/\s+/);
+            const replacements = [
+                { from: /Абабин/gi,    to: parts[0] || '' },
+                { from: /Михаил/gi,    to: parts[1] || '' },
+                { from: /Сергеевич/gi, to: parts[2] || '' }
+            ];
+            for (const r of replacements) {
+                if (!r.to) xml = xml.replace(new RegExp(`\\s*${r.from.source}`, 'gi'), '');
+                else xml = xml.replace(r.from, r.to);
+            }
+        }
+
+        const num = getDocumentNumberParts(rec);
+        if (num.part1 && num.part2 && num.part3) {
+            const docNumber = `${num.part1}/${num.part2}-${num.part3}`;
+            xml = xml.replace(/Y\/B-C/gi, docNumber);
+            xml = xml.replace(/Y\/94-25/gi, docNumber);
+            xml = xml.replace(/№\s*Y\/B-C/gi, '№ ' + docNumber);
+            xml = xml.replace(/(<w:t[^>]*>)Y(<\/w:t>)/gi, `$1${num.part1}$2`);
+            xml = xml.replace(/(<w:t[^>]*>)B(<\/w:t>)/gi, `$1${num.part2}$2`);
+            xml = xml.replace(/(<w:t[^>]*>)C(<\/w:t>)/gi, `$1${num.part3}$2`);
+        }
+
+        const map = { N: programInfo.N||'', T: programInfo.T||'', X: programInfo.X||'', Z: programInfo.Z||'', P: programInfo.P||'' };
+        for (const [key, value] of Object.entries(map)) {
+            if (value) {
+                xml = xml.replace(new RegExp(`(<w:t[^>]*>)${key}(</w:t>)`, 'gi'), `$1${value}$2`);
+                xml = xml.replace(new RegExp(`\\b${key}\\b`, 'g'), value);
+            }
+        }
+
+        zip.file('word/document.xml', xml);
+        return await zip.generateAsync({ type: 'arraybuffer' });
+    }
+
+    async function downloadSingleCertificate(rec) {
+        if (!wordTemplateArrayBuffer) { showMessage('Сначала загрузите шаблон DOCX'); return; }
+        try {
+            showLoading(true);
+            const progInfo = parseProgramInfo(rec.program_name || '');
+            const doc = await generateSingleDocx(rec, progInfo);
+            const fileName = `удостоверение_${(rec.full_name||'слушатель').replace(/[^a-zа-я0-9]/gi,'_')}.docx`;
+            saveAs(new Blob([doc], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }), fileName);
+            showMessage('Удостоверение скачано');
+        } catch (e) { showMessage('Ошибка: ' + e.message); }
+        finally { showLoading(false); }
+    }
+
+    async function downloadAllCertificates() {
+        if (!wordTemplateArrayBuffer) { showMessage('Сначала загрузите шаблон DOCX'); return; }
+        const prog = currentFilter.prog;
+        if (!prog) { showMessage('Выберите программу'); return; }
+        const records = allRecords.filter(r => r.program_name === prog);
+        if (!records.length) { alert('Нет слушателей по этой программе'); return; }
+        const progInfo = parseProgramInfo(prog);
+        const zip = new JSZip();
+        const usedNames = new Set();
+        let ok = 0;
+        showLoading(true);
+        try {
+            for (const rec of records) {
+                try {
+                    const doc = await generateSingleDocx(rec, progInfo);
+                    const base = (rec.full_name || 'слушатель').replace(/[^a-zа-я0-9]/gi, '_');
+                    let fileName = base + '.docx';
+                    if (usedNames.has(fileName)) {
+                        let counter = 1;
+                        while (usedNames.has(base + '_' + counter + '.docx')) counter++;
+                        fileName = base + '_' + counter + '.docx';
+                    }
+                    usedNames.add(fileName);
+                    zip.file(fileName, doc);
+                    ok++;
+                } catch (e) { console.error(e); }
+            }
+            if (ok === 0) { showMessage('Не удалось создать ни одного документа'); return; }
+            const blob = await zip.generateAsync({ type: 'blob' });
+            saveAs(blob, `удостоверения_${prog.replace(/[^a-zа-я0-9]/gi,'_').slice(0,30)}.zip`);
+            showMessage(`Создано документов: ${ok} из ${records.length}`);
+        } catch (e) { showMessage('Ошибка: ' + e.message); }
+        finally { showLoading(false); }
+    }
+
+    // Загрузка шаблона
+    document.getElementById('templateBtn').addEventListener('click', () => document.getElementById('templateFile').click());
+    document.getElementById('templateFile').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            wordTemplateArrayBuffer = ev.target.result;
+            document.getElementById('templateStatus').textContent = `Шаблон: ${file.name} (${(file.size/1024).toFixed(0)} КБ)`;
+            showMessage('Шаблон загружен');
+            toggleButtons();
+        };
+        reader.onerror = () => showMessage('Ошибка чтения шаблона');
+        reader.readAsArrayBuffer(file);
+    });
+
+    function toggleButtons() {
+        document.getElementById('downloadAllBtn').style.display = (currentFilter.prog && wordTemplateArrayBuffer) ? 'inline-flex' : 'none';
+    }
+    function toggleMassIssueButton() {
+        document.getElementById('massIssueBtn').style.display = currentFilter.prog ? 'inline-flex' : 'none';
+    }
+    function showMessage(text) {
+        const msg = document.getElementById('message');
+        msg.textContent = text;
+        msg.style.display = 'block';
+        setTimeout(() => msg.style.display = 'none', 2000);
+    }
+    function exportToExcel() {
+        const source = duplicateModeActive ? duplicateGroups.flat() : currentFilteredRecords;
+        const data = source.map(r => ({
+            'Программа': r.program_name, 'Серия': r.series, 'Номер бланка': r.number,
+            'Рег. номер': r.reg_number, 'ФИО': r.full_name, 'Подразделение': r.department,
+            'План. дата': r.planned_issue_date, 'Выдано': r.is_issued ? 'Да' : 'Нет',
+            'Факт. дата': r.actual_issue_date, 'Подпись': r.signature
+        }));
+        const ws = XLSX.utils.json_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Реестр');
+        XLSX.writeFile(wb, 'реестр.xlsx');
+    }
+
+    // Запуск
+    (async () => {
+        loadFilterState();
+        document.getElementById('sortAlphaBtn').classList.toggle('active', currentProgramSort === 'alpha');
+        document.getElementById('sortDateBtn').classList.toggle('active', currentProgramSort === 'date');
+        await refreshData();
+        toggleMassIssueButton();
+        toggleButtons();
+    })();
+</script>
+</body>
+</html>

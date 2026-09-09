@@ -1,0 +1,1704 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRM · Воронка сделок</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --primary: #4361ee; --primary-light: #4895ef; --primary-dark: #3f37c9;
+            --success: #2ecc71; --danger: #f72585; --warning: #f8961e;
+            --bg: #f8f9fa; --card-bg: #ffffff; --text: #212529;
+            --text-secondary: #495057; --border: #dee2e6;
+            --shadow: 0 4px 12px rgba(0,0,0,0.05); --radius: 12px; --transition: 0.2s ease;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0; padding: 20px;
+            background: linear-gradient(135deg, #e0e7ff 0%, #f8f9fa 100%);
+            color: var(--text);
+        }
+        .container { max-width: 1700px; margin: auto; }
+        h1 { color: var(--primary-dark); font-size: 24px; margin-bottom: 10px; font-weight: 600; }
+        .toolbar {
+            background: var(--card-bg); padding: 16px 20px; border-radius: var(--radius);
+            box-shadow: var(--shadow); margin-bottom: 20px;
+            display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+        }
+        .toolbar input[type="text"] {
+            flex: 1; min-width: 220px; padding: 10px 16px; border: 1px solid var(--border);
+            border-radius: 25px; font-size: 14px; transition: var(--transition);
+        }
+        .toolbar input[type="text"]:focus {
+            outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(67,97,238,0.2);
+        }
+        button {
+            padding: 10px 20px; background: var(--primary); color: white; border: none;
+            border-radius: 25px; cursor: pointer; font-size: 14px; transition: var(--transition);
+            font-weight: 500; display: inline-flex; align-items: center; gap: 6px;
+        }
+        button:hover { background: var(--primary-dark); }
+        button.secondary { background: #6c757d; } button.secondary:hover { background: #5a6268; }
+        button.danger-outline { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
+        button.danger-outline:hover { background: var(--danger); color: white; }
+
+        .archive-filters { display: flex; gap: 8px; margin-bottom: 14px; }
+        .chip-filter {
+            background: var(--card-bg); border: 1px solid var(--border); color: var(--text-secondary);
+            padding: 7px 16px; border-radius: 20px; font-size: 13px; cursor: pointer;
+        }
+        .chip-filter.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .archive-table-wrap { background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow); overflow: auto; max-height: calc(100vh - 260px); }
+        table.archive-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        table.archive-table th {
+            position: sticky; top: 0; background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white; padding: 10px 12px; text-align: left; font-weight: 600; font-size: 12.5px; white-space: nowrap;
+        }
+        table.archive-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); }
+        table.archive-table tr { cursor: pointer; }
+        table.archive-table tr:hover td { background: #f1f4ff; }
+
+        .board { display: flex; gap: 16px; align-items: flex-start; overflow-x: auto; padding-bottom: 12px; }
+        .column {
+            background: rgba(255,255,255,0.55); border-radius: var(--radius);
+            width: 300px; min-width: 300px; flex-shrink: 0;
+            display: flex; flex-direction: column; max-height: calc(100vh - 180px);
+        }
+        .column.drag-over { background: rgba(67,97,238,0.12); outline: 2px dashed var(--primary-light); }
+        .column-head {
+            padding: 14px 16px 10px; border-bottom: 2px solid var(--border);
+        }
+        .column-head .title { font-weight: 600; font-size: 14.5px; color: var(--text); display: flex; justify-content: space-between; align-items: center; }
+        .column-head .count { background: var(--primary-light); color: white; border-radius: 20px; padding: 2px 9px; font-size: 12px; font-weight: 600; }
+        .column-head .sum { font-size: 12.5px; color: var(--text-secondary); margin-top: 4px; }
+        .column.stage-otkaz .column-head { border-bottom-color: var(--danger); }
+        .column.stage-otkaz .column-head .count { background: var(--danger); }
+        .column-body { padding: 10px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 10px; min-height: 60px; }
+
+        .card {
+            background: var(--card-bg); border-radius: 10px; padding: 12px 14px;
+            box-shadow: var(--shadow); cursor: grab; border-left: 4px solid var(--primary-light);
+            transition: var(--transition);
+        }
+        .card:hover { box-shadow: 0 6px 16px rgba(0,0,0,0.1); transform: translateY(-1px); }
+        .card.dragging { opacity: 0.4; }
+        .card.stage-otkaz-card { border-left-color: var(--danger); opacity: 0.75; }
+        .card .fio { font-weight: 600; font-size: 14px; margin-bottom: 3px; }
+        .card .program { font-size: 12.5px; color: var(--text-secondary); margin-bottom: 8px; line-height: 1.35; }
+        .card .meta-row { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-secondary); }
+        .card .amount { font-weight: 600; color: var(--primary-dark); }
+        .card .manager { display: inline-flex; align-items: center; gap: 4px; }
+        .card .badges { display: flex; gap: 5px; margin-top: 8px; flex-wrap: wrap; }
+        .badge { font-size: 10.5px; padding: 2px 8px; border-radius: 20px; font-weight: 600; }
+        .badge.legal { background: #e0e7ff; color: var(--primary-dark); }
+        .badge.person { background: #d1fae5; color: #065f46; }
+        .badge.manual { background: #fef3c7; color: #92400e; }
+
+        #recordCount { font-size: 13px; color: var(--text-secondary); }
+
+        select#managerFilter {
+            padding: 10px 16px; border: 1px solid var(--border); border-radius: 25px;
+            font-size: 14px; background: white; min-width: 170px;
+        }
+
+        .tabs { display: flex; gap: 8px; margin-bottom: 18px; }
+        .tab-btn {
+            background: transparent; color: var(--text-secondary); border: 1px solid var(--border);
+            padding: 9px 18px; border-radius: 25px; font-weight: 500;
+        }
+        .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .tab-btn:hover:not(.active) { background: #eef1ff; }
+        .screen { display: none; }
+        .screen.active { display: block; }
+
+        /* Уведомления о наборе группы */
+        .notif-banner {
+            background: linear-gradient(135deg, #d1fae5, #ecfdf5); border: 1px solid #6ee7b7;
+            border-radius: var(--radius); padding: 14px 18px; margin-bottom: 18px;
+            display: flex; flex-direction: column; gap: 8px;
+        }
+        .notif-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 14px; }
+        .notif-row .text { color: #065f46; }
+        .notif-row .text b { font-weight: 700; }
+        .notif-row button { background: transparent; color: #065f46; padding: 4px 10px; font-size: 12px; }
+        .notif-row button:hover { background: #a7f3d0; }
+
+        /* Дашборд наборов групп */
+        .groups-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+        .group-card {
+            background: var(--card-bg); border-radius: var(--radius); padding: 16px 18px;
+            box-shadow: var(--shadow);
+        }
+        .group-card.ready { border: 2px solid var(--success); }
+        .group-card .gname { font-weight: 600; font-size: 14.5px; margin-bottom: 10px; line-height: 1.35; min-height: 38px; }
+        .group-progress {
+            height: 10px; background: #eef0f4; border-radius: 20px; overflow: hidden; margin-bottom: 8px;
+        }
+        .group-progress-fill {
+            height: 100%; border-radius: 20px; background: var(--primary-light);
+            transition: width 0.3s ease;
+        }
+        .group-card.ready .group-progress-fill { background: var(--success); }
+        .group-count-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-secondary); margin-bottom: 10px; }
+        .group-count-row b { color: var(--text); font-size: 15px; }
+        /* Вкладка "Группы" — список + детальная панель */
+        .cohorts-layout { display: grid; grid-template-columns: 300px 1fr; gap: 16px; align-items: start; }
+        @media (max-width: 900px) { .cohorts-layout { grid-template-columns: 1fr; } }
+        .cohorts-list-col { display: flex; flex-direction: column; gap: 8px; max-height: calc(100vh - 220px); overflow-y: auto; }
+        .cohort-list-item {
+            background: var(--card-bg); border-radius: 10px; padding: 12px 14px; box-shadow: var(--shadow);
+            cursor: pointer; border: 2px solid transparent;
+        }
+        .cohort-list-item:hover { background: #f1f4ff; }
+        .cohort-list-item.active { border-color: var(--primary); }
+        .cohort-list-item .cli-prog { font-weight: 600; font-size: 13.5px; margin-bottom: 4px; line-height: 1.3; }
+        .cohort-list-item .cli-meta { font-size: 11.5px; color: var(--text-secondary); display: flex; justify-content: space-between; align-items: center; }
+        .cohort-detail-col { background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow); padding: 22px 26px; min-height: 300px; }
+        .cohort-detail-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 6px; flex-wrap: wrap; }
+        .cohort-detail-head h2 { font-size: 19px; color: var(--primary-dark); margin: 0; }
+        .cohort-detail-sub { color: var(--text-secondary); font-size: 13px; margin-bottom: 18px; }
+        .cohort-meta-row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+        .cohort-meta-field label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: var(--text-secondary); margin-bottom: 4px; }
+        .cohort-meta-field select, .cohort-meta-field input {
+            padding: 7px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px;
+        }
+        .student-cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin-top: 8px; }
+        .student-card { background: #f8f9fc; border-radius: 10px; padding: 14px 16px; border-left: 3px solid var(--border); }
+        .student-card.filled { border-left-color: var(--success); }
+        .student-card.pending { border-left-color: var(--warning); }
+        .student-card .sc-name { font-weight: 600; font-size: 13.5px; margin-bottom: 8px; }
+        .student-card dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; font-size: 12px; }
+        .student-card dt { color: var(--text-secondary); }
+        .student-card dd { margin: 0; }
+        .student-card .sc-empty { font-size: 12.5px; color: var(--text-secondary); }
+        .student-card .sc-scan-link { display: inline-block; margin-top: 8px; font-size: 12px; }
+
+        .group-managers { display: flex; flex-wrap: wrap; gap: 5px; }
+        .manager-chip { font-size: 11px; background: #eef1ff; color: var(--primary-dark); padding: 2px 9px; border-radius: 20px; }
+
+        .group-cohorts { margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--border); display: flex; flex-direction: column; gap: 6px; }
+        .cohort-chip {
+            display: flex; justify-content: space-between; align-items: center; gap: 6px;
+            background: #f8f9fc; border: 1px solid var(--border); border-radius: 8px;
+            padding: 6px 10px; font-size: 12px; cursor: pointer;
+        }
+        .cohort-chip:hover { background: #eef1ff; }
+        .cohort-chip .cstatus { font-size: 10.5px; padding: 1px 8px; border-radius: 20px; font-weight: 600; }
+        .cohort-chip .cstatus.набор { background: #fef3c7; color: #92400e; }
+        .cohort-chip .cstatus.идёт { background: #dbeafe; color: #1e40af; }
+        .cohort-chip .cstatus.завершён { background: #d1fae5; color: #065f46; }
+        .group-card .form-btn { width: 100%; margin-top: 10px; justify-content: center; font-size: 12.5px; padding: 8px; }
+
+        #cohortOverlay {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+            align-items: center; justify-content: center; z-index: 1000; padding: 20px;
+        }
+        #cohortOverlay.open { display: flex; }
+        #cohortModal {
+            background: white; border-radius: var(--radius); padding: 26px 28px; width: 100%;
+            max-width: 560px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+        }
+        #cohortModal h2 { margin: 0 0 18px; font-size: 19px; color: var(--primary-dark); }
+        .pick-item { display: flex; align-items: center; gap: 10px; padding: 7px 4px; border-bottom: 1px solid var(--border-soft, var(--border)); font-size: 13.5px; }
+        .pick-item .pi-name { font-weight: 500; }
+        .pick-item .pi-meta { color: var(--text-secondary); font-size: 12px; }
+        .member-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 4px; font-size: 13px; border-bottom: 1px dashed var(--border); }
+
+        #clientOverlay {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+            align-items: center; justify-content: center; z-index: 1000; padding: 20px;
+        }
+        #clientOverlay.open { display: flex; }
+        #clientModal {
+            background: white; border-radius: var(--radius); padding: 26px 28px; width: 100%;
+            max-width: 520px; max-height: 85vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+        }
+        #clientModal h2 { margin: 0 0 6px; font-size: 19px; color: var(--primary-dark); }
+        .client-deal-row {
+            display: flex; justify-content: space-between; align-items: center; gap: 10px;
+            padding: 9px 6px; border-bottom: 1px solid var(--border); cursor: pointer; font-size: 13.5px;
+        }
+        .client-deal-row:hover { background: #f1f4ff; }
+        .client-deal-row .cdr-date { color: var(--text-secondary); font-size: 12px; width: 78px; flex-shrink: 0; }
+        .client-deal-row .cdr-program { flex: 1; }
+        .client-deal-row .cdr-status { font-size: 11px; color: var(--text-secondary); }
+
+        /* Аналитика */
+        .analytics-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; align-items: start; }
+        @media (max-width: 1100px) { .analytics-grid { grid-template-columns: 1fr; } }
+        .panel { background: var(--card-bg); border-radius: var(--radius); padding: 20px 22px; box-shadow: var(--shadow); }
+        .panel h3 { margin: 0 0 16px; font-size: 15px; color: var(--primary-dark); }
+        .funnel-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+        .funnel-label { width: 130px; font-size: 13px; color: var(--text-secondary); flex-shrink: 0; }
+        .funnel-track { flex: 1; height: 22px; background: #eef0f4; border-radius: 4px; overflow: hidden; }
+        .funnel-fill {
+            height: 100%; background: var(--primary); border-radius: 4px 0 0 4px;
+            display: flex; align-items: center; justify-content: flex-end; padding-right: 8px;
+            color: white; font-size: 11.5px; font-weight: 600; min-width: 28px; box-sizing: border-box;
+            transition: width 0.3s ease;
+        }
+        .funnel-row.otkaz .funnel-fill { background: var(--danger); }
+        .stat-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px; }
+        .stat-tile { background: #f8f9fc; border-radius: 10px; padding: 14px 16px; }
+        .stat-tile .label { font-size: 11.5px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.03em; }
+        .stat-tile .value { font-size: 22px; font-weight: 700; color: var(--primary-dark); margin-top: 4px; }
+        table.mgr-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        table.mgr-table th { text-align: left; padding: 8px 6px; border-bottom: 2px solid var(--border); color: var(--text-secondary); font-weight: 600; }
+        table.mgr-table td { padding: 8px 6px; border-bottom: 1px solid var(--border); }
+
+        /* Задачи и история в карточке */
+        .subsection { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border); }
+        .subsection h4 { font-size: 12.5px; font-weight: 600; color: var(--text-secondary); margin: 0 0 10px; text-transform: uppercase; letter-spacing: 0.03em; }
+        .task-item { display: flex; align-items: flex-start; gap: 8px; padding: 6px 0; font-size: 13.5px; }
+        .task-item.done { opacity: 0.5; text-decoration: line-through; }
+        .task-item input[type="checkbox"] { margin-top: 3px; }
+        .task-item .due { font-size: 11.5px; color: var(--warning); margin-left: 6px; }
+        .task-add-row { display: flex; gap: 6px; margin-top: 8px; }
+        .task-add-row input[type="text"] { flex: 1; padding: 7px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; }
+        .task-add-row input[type="date"] { padding: 7px 8px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; }
+        .task-add-row button { padding: 7px 12px; font-size: 12.5px; }
+        .history-item { font-size: 12.5px; color: var(--text-secondary); padding: 5px 0; border-bottom: 1px dashed var(--border); }
+        .history-item .ts { color: #adb5bd; margin-right: 6px; }
+        .badge.overdue { background: #fee2e2; color: #991b1b; }
+
+        /* Модальное окно */
+        #overlay {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+            align-items: center; justify-content: center; z-index: 1000; padding: 20px;
+        }
+        #overlay.open { display: flex; }
+        #modal {
+            background: white; border-radius: var(--radius); padding: 26px 28px; width: 100%;
+            max-width: 520px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+        }
+        #modal h2 { margin: 0 0 18px; font-size: 19px; color: var(--primary-dark); }
+        .field { margin-bottom: 14px; }
+        .field label { display: block; font-size: 12.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 5px; }
+        .field input, .field select, .field textarea {
+            width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px;
+            font-size: 14px; font-family: inherit;
+        }
+        .field input:focus, .field select:focus, .field textarea:focus {
+            outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(67,97,238,0.15);
+        }
+        .field textarea { resize: vertical; min-height: 60px; }
+        .field-row { display: flex; gap: 12px; }
+        .field-row .field { flex: 1; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+        .readonly-hint { font-size: 11.5px; color: #adb5bd; margin-top: 3px; }
+
+        #message {
+            position: fixed; bottom: 20px; right: 20px; background: #2ecc71; color: white;
+            padding: 12px 24px; border-radius: 30px; display: none; z-index: 1000;
+            box-shadow: 0 4px 12px rgba(46,204,113,0.3);
+        }
+        #loading-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.7); display: none; justify-content: center;
+            align-items: center; z-index: 2000;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1><i class="fas fa-diagram-project"></i> CRM · Воронка сделок</h1>
+    <div id="notifBanner"></div>
+
+    <div class="toolbar">
+        <input type="text" id="search" placeholder="Поиск по ФИО, программе, организации..." oninput="onSearchInput()">
+        <select id="managerFilter" onchange="applyFilterAndRender()">
+            <option value="">Все менеджеры</option>
+        </select>
+        <span id="recordCount"></span>
+        <button onclick="openCreateModal()"><i class="fas fa-plus"></i> Новая сделка</button>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="board" onclick="switchTab('board')"><i class="fas fa-columns"></i> Доска</button>
+        <button class="tab-btn" data-tab="groups" onclick="switchTab('groups')"><i class="fas fa-users"></i> Наборы групп</button>
+        <button class="tab-btn" data-tab="cohorts" onclick="switchTab('cohorts')"><i class="fas fa-people-group"></i> Группы</button>
+        <button class="tab-btn" data-tab="archive" onclick="switchTab('archive')"><i class="fas fa-box-archive"></i> Архив</button>
+        <button class="tab-btn" data-tab="clients" onclick="switchTab('clients')"><i class="fas fa-address-book"></i> Клиенты</button>
+        <button class="tab-btn" data-tab="analytics" onclick="switchTab('analytics')"><i class="fas fa-chart-simple"></i> Аналитика</button>
+    </div>
+
+    <div id="screen-board" class="screen active">
+        <div class="board" id="board"></div>
+    </div>
+
+    <div id="screen-groups" class="screen">
+        <div class="groups-grid" id="groupsGrid"></div>
+    </div>
+
+    <div id="screen-cohorts" class="screen">
+        <div class="cohorts-layout">
+            <div class="cohorts-list-col" id="cohortsListCol"></div>
+            <div class="cohort-detail-col" id="cohortDetailCol">
+                <p class="readonly-hint" style="padding:20px;">Выберите группу слева.</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="screen-archive" class="screen">
+        <div class="archive-filters" id="archiveFilters">
+            <button class="chip-filter active" data-ct="" onclick="setArchiveFilter('')">Все</button>
+            <button class="chip-filter" data-ct="физ" onclick="setArchiveFilter('физ')">Физ. лица</button>
+            <button class="chip-filter" data-ct="юр" onclick="setArchiveFilter('юр')">Юр. лица</button>
+            <button class="chip-filter" data-ct="none" onclick="setArchiveFilter('none')">Не указано</button>
+        </div>
+        <div class="archive-table-wrap">
+            <table class="archive-table" id="archiveTable"></table>
+        </div>
+    </div>
+
+    <div id="screen-clients" class="screen">
+        <div class="archive-table-wrap">
+            <table class="archive-table" id="clientsTable"></table>
+        </div>
+    </div>
+
+    <div id="screen-analytics" class="screen">
+        <div class="analytics-grid">
+            <div class="panel">
+                <h3>Воронка по стадиям</h3>
+                <div id="funnelChart"></div>
+            </div>
+            <div class="panel">
+                <div class="stat-tiles" id="statTiles"></div>
+                <h3>По менеджерам</h3>
+                <table class="mgr-table" id="mgrTable"></table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модалка формирования / просмотра группы (потока) -->
+<div id="cohortOverlay">
+    <div id="cohortModal">
+        <h2 id="cohortModalTitle">Группа</h2>
+        <div id="cohortExisting" style="display:none;">
+            <div class="field-row">
+                <div class="field">
+                    <label>Статус группы</label>
+                    <select id="c_status">
+                        <option value="набор">Набор</option>
+                        <option value="идёт">Идёт обучение</option>
+                        <option value="завершён">Завершён</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label>Плановая дата старта</label>
+                    <input type="date" id="c_planned_start_date_view">
+                </div>
+            </div>
+            <div class="field">
+                <label>Ответственный за поток</label>
+                <input type="text" id="c_manager_view">
+            </div>
+            <div class="modal-actions" style="margin-bottom:16px;">
+                <button type="button" class="secondary" onclick="saveCohortMeta()"><i class="fas fa-check"></i> Сохранить</button>
+            </div>
+            <h4 style="font-size:12.5px;font-weight:600;color:var(--text-secondary);margin:0 0 8px;text-transform:uppercase;">Состав группы</h4>
+            <div id="cohortMembers"></div>
+        </div>
+
+        <div id="cohortPicker">
+            <p class="readonly-hint" id="cohortPickerHint" style="margin-bottom:10px;"></p>
+            <div id="cohortPickList"></div>
+            <div class="field-row" style="margin-top:14px;">
+                <div class="field">
+                    <label>Плановая дата старта</label>
+                    <input type="date" id="c_planned_start_date">
+                </div>
+                <div class="field">
+                    <label>Ответственный за поток</label>
+                    <input type="text" id="c_manager">
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-actions">
+            <button type="button" class="secondary" onclick="closeCohortModal()">Закрыть</button>
+            <button type="button" id="cohortCreateBtn" onclick="submitCohort()"><i class="fas fa-users"></i> Сформировать группу</button>
+        </div>
+    </div>
+</div>
+
+<!-- Модалка карточки клиента -->
+<div id="clientOverlay">
+    <div id="clientModal">
+        <h2 id="clientModalTitle">Клиент</h2>
+        <p class="readonly-hint" id="clientContact" style="margin-bottom:14px;"></p>
+        <h4 style="font-size:12.5px;font-weight:600;color:var(--text-secondary);margin:0 0 8px;text-transform:uppercase;">Все заявки</h4>
+        <div id="clientDealsList"></div>
+        <div class="modal-actions">
+            <button type="button" class="secondary" onclick="closeClientModal()">Закрыть</button>
+        </div>
+    </div>
+</div>
+
+<div id="overlay">
+    <div id="modal">
+        <h2 id="modalTitle">Сделка</h2>
+        <form id="modalForm" onsubmit="return false;">
+            <div class="field-row">
+                <div class="field">
+                    <label>ФИО</label>
+                    <input type="text" id="f_fio" required>
+                </div>
+                <div class="field">
+                    <label>Статус</label>
+                    <select id="f_status">
+                        <option value="новая">Заявка</option>
+                        <option value="кп">КП отправлено</option>
+                        <option value="договор">Договор</option>
+                        <option value="счет">Счёт</option>
+                        <option value="отказ">Отказ</option>
+                    </select>
+                </div>
+            </div>
+            <div class="field-row">
+                <div class="field">
+                    <label>Email</label>
+                    <input type="text" id="f_email">
+                </div>
+                <div class="field">
+                    <label>Телефон</label>
+                    <input type="text" id="f_phone">
+                </div>
+            </div>
+            <div class="field">
+                <label>Программа</label>
+                <input type="text" id="f_program">
+            </div>
+            <div class="field-row">
+                <div class="field">
+                    <label>Сумма сделки, ₽</label>
+                    <input type="number" id="f_amount" min="0" step="1">
+                </div>
+                <div class="field">
+                    <label>Ответственный менеджер</label>
+                    <input type="text" id="f_manager">
+                </div>
+            </div>
+            <div class="field-row">
+                <div class="field">
+                    <label>Количество слушателей</label>
+                    <input type="number" id="f_participants" min="1" step="1" value="1">
+                    <div class="readonly-hint">Если юрлицо запрашивает несколько мест одной заявкой — укажите здесь, а не создавайте отдельные сделки.</div>
+                </div>
+            </div>
+            <div class="field">
+                <label>Тип договора</label>
+                <select id="f_contract_type">
+                    <option value="">Не указано</option>
+                    <option value="С физическим лицом">С физическим лицом</option>
+                    <option value="С юридическим лицом">С юридическим лицом</option>
+                </select>
+            </div>
+            <div class="field-row">
+                <div class="field">
+                    <label>Организация</label>
+                    <input type="text" id="f_org_name">
+                </div>
+                <div class="field">
+                    <label>ИНН</label>
+                    <input type="text" id="f_inn">
+                </div>
+            </div>
+            <div class="field">
+                <label>Плановая дата старта потока</label>
+                <input type="date" id="f_planned_start_date">
+            </div>
+            <div class="field">
+                <label>Комментарий</label>
+                <textarea id="f_comment"></textarea>
+            </div>
+            <div class="readonly-hint" id="sourceHint"></div>
+
+            <div class="subsection" id="tasksSection" style="display:none;">
+                <h4><i class="fas fa-list-check"></i> Задачи</h4>
+                <div id="taskList"></div>
+                <div class="task-add-row">
+                    <input type="text" id="newTaskText" placeholder="Например: перезвонить">
+                    <input type="date" id="newTaskDue">
+                    <button type="button" onclick="addTask()"><i class="fas fa-plus"></i></button>
+                </div>
+            </div>
+
+            <div class="subsection" id="intakeSection" style="display:none;">
+                <h4><i class="fas fa-file-signature"></i> Анкета для зачисления</h4>
+                <div id="intakeStatus" style="font-size:13px;color:var(--text-secondary);margin-bottom:6px;"></div>
+                <div id="intakeStudentsList" style="margin-bottom:10px;"></div>
+                <div id="intakeNoLink">
+                    <button type="button" class="secondary" onclick="createIntakeLink()"><i class="fas fa-link"></i> Создать ссылку на анкету</button>
+                </div>
+                <div id="intakeHasLink" style="display:none;">
+                    <div class="field-row" style="align-items:flex-end;">
+                        <div class="field" style="margin-bottom:0;">
+                            <input type="text" id="intakeLinkField" readonly style="font-size:12.5px;">
+                        </div>
+                        <button type="button" class="secondary" onclick="copyIntakeLink()" style="flex-shrink:0;"><i class="fas fa-copy"></i></button>
+                    </div>
+                    <button type="button" onclick="sendIntakeEmailNow()" style="margin-top:10px;font-size:12.5px;padding:8px 14px;" id="sendIntakeBtn"><i class="fas fa-paper-plane"></i> Отправить на email заявки</button>
+                </div>
+            </div>
+
+            <div class="subsection" id="documentsSection" style="display:none;">
+                <h4><i class="fas fa-file-word"></i> Документы</h4>
+                <div class="field-row">
+                    <button type="button" class="secondary" onclick="openDocumentsFor('kp')" style="flex:1;"><i class="fas fa-file-invoice"></i> Сформировать КП</button>
+                    <button type="button" class="secondary" onclick="openDocumentsFor('sz')" style="flex:1;"><i class="fas fa-envelope-open-text"></i> Сформировать СЗ на счёт</button>
+                </div>
+            </div>
+
+            <div class="subsection" id="historySection" style="display:none;">
+                <h4><i class="fas fa-clock-rotate-left"></i> История изменений</h4>
+                <div id="historyList"></div>
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" class="danger-outline" id="deleteBtn" style="display:none; margin-right:auto;" onclick="deleteCurrentLead()"><i class="fas fa-trash"></i> Удалить</button>
+                <button type="button" class="secondary" onclick="closeModal()">Отмена</button>
+                <button type="button" onclick="saveModal()"><i class="fas fa-check"></i> Сохранить</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="message">Сохранено</div>
+<div id="loading-overlay"><i class="fas fa-spinner fa-spin" style="font-size: 3rem; color: var(--primary);"></i></div>
+
+<script>
+    const API_URL = 'https://script.google.com/macros/s/AKfycbyzCnkD8216HRNLx7ARUsVQdnhm2m0ad_v6cdqJshl6t_8G4LJKGtEWf8By6_rLqtHdEw/exec';
+
+    const STAGES = [
+        { key: 'новая', label: 'Заявка' },
+        { key: 'кп', label: 'КП отправлено' },
+        { key: 'договор', label: 'Договор' },
+        { key: 'счет', label: 'Счёт' },
+        { key: 'отказ', label: 'Отказ' },
+    ];
+    const STAGE_KEYS = STAGES.map(s => s.key);
+    const GROUP_THRESHOLD = 10; // одинаковый порог набора группы для всех программ (v1)
+
+    let allDeals = [];
+    let allTasks = [];
+    let allCohorts = [];
+    let allStudents = [];
+    let editingId = null; // null => создание новой сделки
+    let currentTab = 'board';
+    let cohortContext = null; // {mode:'create', program} | {mode:'view', cohortId}
+
+    function showLoading(show) { document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none'; }
+    function showMessage(text) {
+        const msg = document.getElementById('message');
+        msg.textContent = text;
+        msg.style.display = 'block';
+        setTimeout(() => msg.style.display = 'none', 2000);
+    }
+
+    async function fetchJSON(url) {
+        const resp = await fetch(url);
+        const ct = resp.headers.get('content-type') || '';
+        if (!ct.includes('application/json')) throw new Error('Ответ не JSON — возможно, нужна авторизация');
+        return resp.json();
+    }
+    async function postJSON(action, params) {
+        const resp = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action, ...params })
+        });
+        const ct = resp.headers.get('content-type') || '';
+        if (!ct.includes('application/json')) throw new Error('Ответ не JSON — возможно, нужна авторизация');
+        return resp.json();
+    }
+
+    function normalizeStage(status) {
+        return STAGE_KEYS.includes(status) ? status : 'новая';
+    }
+
+    async function loadDeals() {
+        showLoading(true);
+        try {
+            // Один запрос вместо четырёх — у Apps Script заметные накладные расходы
+            // на каждый отдельный вызов (сек. на запуск скрипта), объединение это устраняет.
+            const res = await fetchJSON(`${API_URL}?action=getBootstrap`);
+            if (res.status !== 'success') throw new Error(res.message || 'Ошибка загрузки');
+            allDeals = res.data.leads;
+            allTasks = res.data.tasks;
+            allCohorts = res.data.cohorts;
+            allStudents = res.data.students;
+        } catch (err) {
+            console.error(err);
+            showMessage('Ошибка загрузки: ' + err.message);
+            allDeals = [];
+            allTasks = [];
+            allCohorts = [];
+            allStudents = [];
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.appendChild(document.createTextNode(text == null ? '' : String(text)));
+        return div.innerHTML;
+    }
+
+    function formatMoney(v) {
+        const n = Number(v);
+        if (!v || isNaN(n)) return '';
+        return n.toLocaleString('ru-RU') + ' ₽';
+    }
+
+    // На ~230 сделках перестройка ВСЕХ шести вкладок (доска, группы, архив, клиенты,
+    // аналитика, группы-детали) на каждое нажатие клавиши в поиске — и есть основной
+    // источник "тормозов". Рендерим только ту вкладку, что реально видна; баннер
+    // уведомлений — лёгкий, его обновляем всегда.
+    function applyFilterAndRender() {
+        const q = document.getElementById('search').value.trim().toLowerCase();
+        const mgr = document.getElementById('managerFilter').value;
+        let filtered = !q ? allDeals : allDeals.filter(d => {
+            return [d.fio, d.program, d.org_name, d.manager, d.email].some(v => String(v || '').toLowerCase().includes(q));
+        });
+        if (mgr) filtered = filtered.filter(d => (d.manager || '') === mgr);
+
+        document.getElementById('recordCount').textContent = `Сделок: ${filtered.length} из ${allDeals.length}`;
+        updateNotificationBanner(allDeals);
+        renderActiveTab(filtered);
+    }
+
+    function renderActiveTab(filtered) {
+        if (currentTab === 'board') renderBoard(filtered);
+        else if (currentTab === 'groups') renderGroups(allDeals);
+        else if (currentTab === 'cohorts') renderCohortsTab();
+        else if (currentTab === 'archive') renderArchive(filtered);
+        else if (currentTab === 'clients') renderClients(allDeals);
+        else if (currentTab === 'analytics') renderAnalytics(allDeals);
+    }
+
+    let searchDebounceTimer = null;
+    function onSearchInput() {
+        clearTimeout(searchDebounceTimer);
+        searchDebounceTimer = setTimeout(applyFilterAndRender, 200);
+    }
+
+    // ========== Архив (таблица всех заявок, включая перенесённые из старого CSV) ==========
+    let archiveFilter = '';
+    function setArchiveFilter(ct) {
+        archiveFilter = ct;
+        document.querySelectorAll('#archiveFilters .chip-filter').forEach(b => b.classList.toggle('active', b.dataset.ct === ct));
+        applyFilterAndRender();
+    }
+
+    function contractBucket(ct) {
+        const s = (ct || '').toLowerCase();
+        if (s.includes('юрид')) return 'юр';
+        if (s.includes('физ')) return 'физ';
+        return 'none';
+    }
+
+    function renderArchive(deals) {
+        let rows = archiveFilter ? deals.filter(d => contractBucket(d.contract_type) === archiveFilter) : deals;
+        rows = [...rows].sort((a, b) => String(b.timestamp || '').localeCompare(String(a.timestamp || '')));
+
+        const table = document.getElementById('archiveTable');
+        const ctLabel = { 'физ': '<span class="badge person">физ.лицо</span>', 'юр': '<span class="badge legal">юр.лицо</span>', 'none': '<span class="badge check" style="background:#eef0f4;color:#868e96;">не указано</span>' };
+
+        table.innerHTML = `
+            <tr><th>ФИО</th><th>Программа</th><th>Тип</th><th>Слуш.</th><th>Статус</th><th>Email / телефон</th><th>Менеджер</th><th>Источник</th><th>Дата</th></tr>
+            ${rows.map(d => `
+                <tr data-id="${d.id}">
+                    <td>${escapeHtml(d.fio || '—')}</td>
+                    <td>${escapeHtml(d.program || '—')}</td>
+                    <td>${ctLabel[contractBucket(d.contract_type)]}</td>
+                    <td>${Number(d.participants) > 1 ? '<b>' + d.participants + '</b>' : '1'}</td>
+                    <td>${escapeHtml(STAGES.find(s => s.key === normalizeStage(d.status))?.label || d.status)}</td>
+                    <td>${escapeHtml(d.email || '')}${d.email && d.phone ? ' · ' : ''}${escapeHtml(d.phone || '')}</td>
+                    <td>${escapeHtml(d.manager || '—')}</td>
+                    <td>${escapeHtml(d.source_form || '—')}</td>
+                    <td>${String(d.timestamp || '').slice(0, 10)}</td>
+                </tr>
+            `).join('') || '<tr><td colspan="9" style="text-align:center;padding:30px;">Ничего не найдено</td></tr>'}
+        `;
+        table.querySelectorAll('tr[data-id]').forEach(tr => {
+            tr.addEventListener('click', () => {
+                const deal = allDeals.find(d => String(d.id) === tr.dataset.id);
+                if (deal) openEditModal(deal);
+            });
+        });
+    }
+
+    function populateManagerFilter() {
+        const select = document.getElementById('managerFilter');
+        const prev = select.value;
+        const managers = [...new Set(allDeals.map(d => d.manager).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ru'));
+        select.innerHTML = '<option value="">Все менеджеры</option>' + managers.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
+        if (managers.includes(prev)) select.value = prev;
+    }
+
+    function switchTab(tab) {
+        currentTab = tab;
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+        document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === 'screen-' + tab));
+        applyFilterAndRender(); // вкладка могла давно не перерисовываться, пока была скрыта
+    }
+
+    // ========== Дашборд наборов групп + уведомления ==========
+    // Считаем только заявки, ещё НЕ включённые ни в одну группу (cohort_id пуст) —
+    // это и есть «лист ожидания»: как только людей собрали в группу, они перестают
+    // числиться в наборе следующей.
+    function computeGroups(deals) {
+        const map = new Map();
+        deals.forEach(d => {
+            const program = (d.program || '').trim();
+            if (!program) return;
+            if (normalizeStage(d.status) === 'отказ') return;
+            if (d.cohort_id) return;
+            if (!map.has(program)) map.set(program, { program, count: 0, managers: new Set(), waiting: [] });
+            const g = map.get(program);
+            g.count += Number(d.participants) || 1; // юрлицо может запросить мест на нескольких человек одной заявкой
+            if (d.manager) g.managers.add(d.manager);
+            g.waiting.push(d);
+        });
+        return [...map.values()].sort((a, b) => b.count - a.count);
+    }
+
+    function cohortsForProgram(program) {
+        return allCohorts.filter(c => c.program === program);
+    }
+    function membersOfCohort(cohortId) {
+        return allDeals.filter(d => String(d.cohort_id) === String(cohortId));
+    }
+    function sumParticipants(deals) {
+        return deals.reduce((s, d) => s + (Number(d.participants) || 1), 0);
+    }
+
+    // Лёгкая часть — только баннер уведомлений, без перестройки всей сетки карточек.
+    // Вызывается всегда (при любой вкладке), т.к. баннер виден независимо от того,
+    // какая вкладка сейчас открыта.
+    function updateNotificationBanner(deals) {
+        renderNotifications(computeGroups(deals));
+    }
+
+    function renderGroups(deals) {
+        const groups = computeGroups(deals);
+        const grid = document.getElementById('groupsGrid');
+
+        // программы, у которых уже есть хотя бы одна группа, но сейчас 0 ожидающих —
+        // тоже должны быть видны (иначе сформированная группа "исчезает" с дашборда)
+        const programsWithCohorts = new Set(allCohorts.map(c => c.program));
+        const shown = new Set(groups.map(g => g.program));
+        programsWithCohorts.forEach(p => {
+            if (!shown.has(p)) groups.push({ program: p, count: 0, managers: new Set(), waiting: [] });
+        });
+
+        grid.innerHTML = groups.length ? '' : '<p style="color:var(--text-secondary);">Пока нет сделок с указанной программой.</p>';
+
+        groups.forEach(g => {
+            const pct = Math.min(100, Math.round((g.count / GROUP_THRESHOLD) * 100));
+            const ready = g.count >= GROUP_THRESHOLD;
+            const cohorts = cohortsForProgram(g.program);
+            const card = document.createElement('div');
+            card.className = 'group-card' + (ready ? ' ready' : '');
+            card.innerHTML = `
+                <div class="gname">${ready ? '<i class="fas fa-circle-check" style="color:var(--success);"></i> ' : ''}${escapeHtml(g.program)}</div>
+                <div class="group-progress"><div class="group-progress-fill" style="width:${pct}%;"></div></div>
+                <div class="group-count-row"><span><b>${g.count}</b> из ${GROUP_THRESHOLD}</span><span>${g.count === 0 ? 'ожидающих нет' : (ready ? 'готово к набору' : (GROUP_THRESHOLD - g.count) + ' до набора')}</span></div>
+                <div class="group-managers">${[...g.managers].map(m => `<span class="manager-chip">${escapeHtml(m)}</span>`).join('') || (g.count ? '<span class="manager-chip">без менеджера</span>' : '')}</div>
+                ${cohorts.length ? `<div class="group-cohorts">${cohorts.map(c => `
+                    <div class="cohort-chip" data-cohort="${c.id}"><span>${escapeHtml(c.planned_start_date ? String(c.planned_start_date).slice(0,10) : 'без даты')} · ${sumParticipants(membersOfCohort(c.id))} чел. (${membersOfCohort(c.id).length} заявок)</span><span class="cstatus ${escapeHtml(c.status || 'набор')}">${escapeHtml(c.status || 'набор')}</span></div>
+                `).join('')}</div>` : ''}
+                ${ready ? `<button type="button" class="form-btn" data-program="${escapeHtml(g.program)}"><i class="fas fa-users"></i> Сформировать группу</button>` : ''}
+            `;
+            const btn = card.querySelector('.form-btn');
+            if (btn) btn.addEventListener('click', () => openCohortPicker(g.program));
+            card.querySelectorAll('.cohort-chip').forEach(chip => {
+                chip.addEventListener('click', () => openCohortDetail(Number(chip.dataset.cohort)));
+            });
+            grid.appendChild(card);
+        });
+    }
+
+    // Показываем баннер только для программ, которые ДОСТИГЛИ порога и ещё не были
+    // отклонены при этом же (или большем) количестве заявок — состояние держим в
+    // localStorage этого браузера, отдельно для каждого менеджера, который открывает CRM.
+    function getDismissedMap() {
+        try { return JSON.parse(localStorage.getItem('crm_dismissed_groups') || '{}'); } catch (e) { return {}; }
+    }
+    function setDismissed(program, count) {
+        const map = getDismissedMap();
+        map[program] = count;
+        localStorage.setItem('crm_dismissed_groups', JSON.stringify(map));
+        updateNotificationBanner(allDeals);
+    }
+
+    function renderNotifications(groups) {
+        const dismissed = getDismissedMap();
+        const ready = groups.filter(g => g.count >= GROUP_THRESHOLD && (dismissed[g.program] || 0) < g.count);
+        const banner = document.getElementById('notifBanner');
+        if (!ready.length) { banner.innerHTML = ''; return; }
+
+        banner.innerHTML = `<div class="notif-banner">${ready.map(g => `
+            <div class="notif-row">
+                <span class="text"><i class="fas fa-champagne-glasses"></i> Группа набрана: <b>${escapeHtml(g.program)}</b> — ${g.count} заявок. Ответственные: ${[...g.managers].map(escapeHtml).join(', ') || '—'}</span>
+                <button type="button" onclick="setDismissed('${g.program.replace(/'/g, "\\'")}', ${g.count})">Скрыть</button>
+            </div>
+        `).join('')}</div>`;
+    }
+
+    // ========== Модалка формирования / просмотра группы ==========
+    function closeCohortModal() {
+        document.getElementById('cohortOverlay').classList.remove('open');
+        cohortContext = null;
+    }
+
+    function openCohortPicker(program) {
+        cohortContext = { mode: 'create', program };
+        const waiting = allDeals.filter(d => (d.program || '').trim() === program && normalizeStage(d.status) !== 'отказ' && !d.cohort_id);
+
+        document.getElementById('cohortModalTitle').textContent = 'Сформировать группу: ' + program;
+        document.getElementById('cohortExisting').style.display = 'none';
+        document.getElementById('cohortPicker').style.display = 'block';
+        document.getElementById('cohortCreateBtn').style.display = 'inline-flex';
+        document.getElementById('c_planned_start_date').value = '';
+        document.getElementById('c_manager').value = '';
+
+        document.getElementById('cohortPickList').innerHTML = waiting.map(d => {
+            const n = Number(d.participants) || 1;
+            return `
+            <label class="pick-item">
+                <input type="checkbox" class="pick-cb" value="${d.id}" data-n="${n}" checked>
+                <span><span class="pi-name">${escapeHtml(d.fio || '(без имени)')}${n > 1 ? ` <b>× ${n} слушателей</b>` : ''}</span><br><span class="pi-meta">${escapeHtml(d.email || d.phone || '')}${d.contract_type ? ' · ' + escapeHtml(d.contract_type) : ''}</span></span>
+            </label>`;
+        }).join('') || '<p class="readonly-hint">Нет заявок в ожидании.</p>';
+
+        document.getElementById('cohortPickList').querySelectorAll('.pick-cb').forEach(cb => cb.addEventListener('change', updateCohortPickerHint));
+        updateCohortPickerHint();
+
+        document.getElementById('cohortOverlay').classList.add('open');
+    }
+
+    function updateCohortPickerHint() {
+        const boxes = [...document.querySelectorAll('#cohortPickList .pick-cb')];
+        const total = boxes.reduce((s, cb) => s + (Number(cb.dataset.n) || 1), 0);
+        const selected = boxes.filter(cb => cb.checked).reduce((s, cb) => s + (Number(cb.dataset.n) || 1), 0);
+        document.getElementById('cohortPickerHint').textContent = `В ожидании: ${total} чел. Выбрано в группу: ${selected} чел. Снимите галочку у тех, кто пока не идёт.`;
+    }
+
+    async function submitCohort() {
+        if (!cohortContext || cohortContext.mode !== 'create') return;
+        const ids = [...document.querySelectorAll('#cohortPickList .pick-cb:checked')].map(cb => Number(cb.value));
+        if (!ids.length) { alert('Выберите хотя бы одного человека'); return; }
+
+        showLoading(true);
+        try {
+            const res = await postJSON('createCohort', { data: {
+                program: cohortContext.program,
+                planned_start_date: document.getElementById('c_planned_start_date').value,
+                manager: document.getElementById('c_manager').value.trim(),
+            } });
+            if (res.status !== 'success') throw new Error(res.message || 'Ошибка создания группы');
+
+            const res2 = await postJSON('assignLeadsToCohort', { data: { cohort_id: res.id, lead_ids: ids } });
+            if (res2.status !== 'success') throw new Error(res2.message || 'Группа создана, но не удалось добавить участников');
+
+            closeCohortModal();
+            await loadDeals();
+            applyFilterAndRender();
+            showMessage(`Группа сформирована: ${ids.length} чел.`);
+        } catch (err) {
+            alert('Ошибка: ' + err.message);
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    function openCohortDetail(cohortId) {
+        const cohort = allCohorts.find(c => c.id === cohortId);
+        if (!cohort) return;
+        cohortContext = { mode: 'view', cohortId };
+
+        document.getElementById('cohortModalTitle').innerHTML = `Группа: ${escapeHtml(cohort.program)} <a href="#" style="font-size:12px;font-weight:400;margin-left:10px;" onclick="closeCohortModal(); switchTab('cohorts'); selectCohortInTab(${cohort.id}); return false;">открыть полную карточку →</a>`;
+        document.getElementById('cohortExisting').style.display = 'block';
+        document.getElementById('cohortCreateBtn').style.display = 'none';
+        document.getElementById('c_status').value = cohort.status || 'набор';
+        document.getElementById('c_planned_start_date_view').value = (cohort.planned_start_date || '').toString().slice(0, 10);
+        document.getElementById('c_manager_view').value = cohort.manager || '';
+
+        renderCohortMembers(cohort);
+        document.getElementById('cohortOverlay').classList.add('open');
+    }
+
+    function renderCohortMembers(cohort) {
+        const members = membersOfCohort(cohort.id);
+        const waiting = allDeals.filter(d => (d.program || '').trim() === cohort.program && normalizeStage(d.status) !== 'отказ' && !d.cohort_id);
+
+        document.getElementById('cohortMembers').innerHTML = `
+            <p class="readonly-hint" style="margin:0 0 8px;">Всего в группе: <b>${sumParticipants(members)} чел.</b> (${members.length} заявок)</p>
+            ${members.map(d => {
+                const filled = allStudents.filter(s => String(s.lead_id) === String(d.id)).length;
+                const need = Number(d.participants) || 1;
+                const okBadge = filled >= need ? '<i class="fas fa-circle-check" style="color:var(--success);"></i>' : `<span class="readonly-hint">анкета: ${filled}/${need}</span>`;
+                return `<div class="member-row"><span>${escapeHtml(d.fio || '(без имени)')}${need > 1 ? ` <b>× ${need}</b>` : ''}</span><span>${okBadge}</span></div>`;
+            }).join('') || '<p class="readonly-hint">Пока никого нет.</p>'}
+            ${members.length ? `
+                <div style="margin-top:12px;">
+                    <button type="button" id="sendAllIntakeBtn" style="font-size:12.5px;padding:7px 12px;"><i class="fas fa-paper-plane"></i> Отправить анкеты всем в группе</button>
+                </div>` : ''}
+            ${waiting.length ? `
+                <div style="margin-top:8px;">
+                    <button type="button" class="secondary" id="addMoreBtn" style="font-size:12.5px;padding:7px 12px;"><i class="fas fa-plus"></i> Добавить ещё (в ожидании: ${sumParticipants(waiting)} чел.)</button>
+                </div>` : ''}
+        `;
+        const addBtn = document.getElementById('addMoreBtn');
+        if (addBtn) addBtn.addEventListener('click', () => addWaitingToCohort(cohort, waiting));
+        const sendAllBtn = document.getElementById('sendAllIntakeBtn');
+        if (sendAllBtn) sendAllBtn.addEventListener('click', () => sendAllIntakeEmails(members));
+    }
+
+    async function sendAllIntakeEmails(members) {
+        const targets = members.filter(d => d.email);
+        const skipped = members.length - targets.length;
+        if (!targets.length) { alert('Ни у одной заявки в группе нет email'); return; }
+        if (!confirm(`Отправить анкету на email ${targets.length} заявкам?${skipped ? ` (${skipped} без email — пропущены)` : ''}`)) return;
+
+        showLoading(true);
+        try {
+            for (const d of targets) {
+                let token = d.intake_token;
+                if (!token) {
+                    const res = await postJSON('generateIntakeLink', { leadId: d.id });
+                    if (res.status === 'success') { token = res.token; d.intake_token = token; }
+                }
+                if (!token) continue;
+                await postJSON('sendIntakeEmail', { leadId: d.id, link: intakeLinkFor(d) });
+                await new Promise(r => setTimeout(r, 150));
+            }
+            showMessage(`Анкеты отправлены: ${targets.length}`);
+        } catch (err) {
+            alert('Часть писем могла не отправиться: ' + err.message);
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    async function addWaitingToCohort(cohort, waiting) {
+        const ids = waiting.map(d => d.id);
+        showLoading(true);
+        try {
+            const res = await postJSON('assignLeadsToCohort', { data: { cohort_id: cohort.id, lead_ids: ids } });
+            if (res.status !== 'success') throw new Error(res.message || 'Ошибка');
+            await loadDeals();
+            renderCohortMembers(allCohorts.find(c => c.id === cohort.id));
+            applyFilterAndRender();
+            showMessage('Добавлено в группу');
+        } catch (err) {
+            alert('Ошибка: ' + err.message);
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    async function saveCohortMeta() {
+        if (!cohortContext || cohortContext.mode !== 'view') return;
+        showLoading(true);
+        try {
+            const res = await postJSON('updateCohort', { data: {
+                id: cohortContext.cohortId,
+                status: document.getElementById('c_status').value,
+                planned_start_date: document.getElementById('c_planned_start_date_view').value,
+                manager: document.getElementById('c_manager_view').value.trim(),
+            } });
+            if (res.status !== 'success') throw new Error(res.message || 'Ошибка сохранения');
+            await loadDeals();
+            applyFilterAndRender();
+            showMessage('Группа обновлена');
+        } catch (err) {
+            alert('Ошибка: ' + err.message);
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    document.getElementById('cohortOverlay').addEventListener('click', (e) => {
+        if (e.target.id === 'cohortOverlay') closeCohortModal();
+    });
+
+    // ========== Вкладка "Группы" — список сформированных потоков + полная детализация ==========
+    let activeCohortTabId = null;
+
+    function renderCohortsTab() {
+        const listCol = document.getElementById('cohortsListCol');
+        const sorted = [...allCohorts].sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
+
+        listCol.innerHTML = sorted.length ? sorted.map(c => {
+            const members = membersOfCohort(c.id);
+            return `
+            <div class="cohort-list-item${c.id === activeCohortTabId ? ' active' : ''}" data-cohort="${c.id}">
+                <div class="cli-prog">${escapeHtml(c.program)}</div>
+                <div class="cli-meta">
+                    <span>${c.planned_start_date ? String(c.planned_start_date).slice(0, 10) : 'дата не задана'} · ${sumParticipants(members)} чел.</span>
+                    <span class="cstatus ${escapeHtml(c.status || 'набор')}">${escapeHtml(c.status || 'набор')}</span>
+                </div>
+            </div>`;
+        }).join('') : '<p class="readonly-hint" style="padding:8px;">Сформированных групп пока нет — создайте их на вкладке «Наборы групп».</p>';
+
+        listCol.querySelectorAll('.cohort-list-item').forEach(el => {
+            el.addEventListener('click', () => selectCohortInTab(Number(el.dataset.cohort)));
+        });
+
+        // Если открытая группа удалена/недоступна — сбрасываем выбор; иначе перерисовываем
+        // деталь на случай, если данные (например, статус анкеты) обновились.
+        if (activeCohortTabId !== null && sorted.some(c => c.id === activeCohortTabId)) {
+            selectCohortInTab(activeCohortTabId);
+        } else if (sorted.length && activeCohortTabId === null) {
+            // ничего не выбираем автоматически — пусть пользователь выберет сам
+        }
+    }
+
+    function selectCohortInTab(cohortId) {
+        activeCohortTabId = cohortId;
+        const cohort = allCohorts.find(c => c.id === cohortId);
+        document.querySelectorAll('.cohort-list-item').forEach(el => el.classList.toggle('active', Number(el.dataset.cohort) === cohortId));
+        if (!cohort) return;
+
+        const members = membersOfCohort(cohort.id);
+        const totalHeads = sumParticipants(members);
+
+        const col = document.getElementById('cohortDetailCol');
+        col.innerHTML = `
+            <div class="cohort-detail-head">
+                <div>
+                    <h2>${escapeHtml(cohort.program)}</h2>
+                    <div class="cohort-detail-sub">${members.length} заявок · ${totalHeads} слушателей</div>
+                </div>
+                <span class="cstatus ${escapeHtml(cohort.status || 'набор')}" style="font-size:12.5px;padding:5px 14px;">${escapeHtml(cohort.status || 'набор')}</span>
+            </div>
+
+            <div class="cohort-meta-row">
+                <div class="cohort-meta-field">
+                    <label>Статус</label>
+                    <select id="ct_status">
+                        <option value="набор">Набор</option>
+                        <option value="идёт">Идёт обучение</option>
+                        <option value="завершён">Завершён</option>
+                    </select>
+                </div>
+                <div class="cohort-meta-field">
+                    <label>Плановая дата старта</label>
+                    <input type="date" id="ct_planned_start_date">
+                </div>
+                <div class="cohort-meta-field">
+                    <label>Ответственный</label>
+                    <input type="text" id="ct_manager">
+                </div>
+                <div class="cohort-meta-field" style="align-self:flex-end;">
+                    <button type="button" class="secondary" style="font-size:12.5px;padding:8px 14px;" onclick="saveCohortMetaTab(${cohort.id})"><i class="fas fa-check"></i> Сохранить</button>
+                </div>
+            </div>
+
+            <button type="button" style="font-size:12.5px;padding:8px 14px;margin-bottom:16px;" onclick="sendAllIntakeEmails(membersOfCohort(${cohort.id}))"><i class="fas fa-paper-plane"></i> Отправить анкеты всем</button>
+
+            <div class="student-cards-grid" id="cohortTabStudents"></div>
+        `;
+        document.getElementById('ct_status').value = cohort.status || 'набор';
+        document.getElementById('ct_planned_start_date').value = (cohort.planned_start_date || '').toString().slice(0, 10);
+        document.getElementById('ct_manager').value = cohort.manager || '';
+
+        document.getElementById('cohortTabStudents').innerHTML = members.map(d => renderStudentCard(d)).join('');
+        document.getElementById('cohortTabStudents').querySelectorAll('.sc-scan-link').forEach(a => {
+            a.addEventListener('click', (e) => { e.preventDefault(); openScan(a.dataset.fileId); });
+        });
+    }
+
+    async function saveCohortMetaTab(cohortId) {
+        showLoading(true);
+        try {
+            const res = await postJSON('updateCohort', { data: {
+                id: cohortId,
+                status: document.getElementById('ct_status').value,
+                planned_start_date: document.getElementById('ct_planned_start_date').value,
+                manager: document.getElementById('ct_manager').value.trim(),
+            } });
+            if (res.status !== 'success') throw new Error(res.message || 'Ошибка сохранения');
+            await loadDeals();
+            applyFilterAndRender();
+            showMessage('Группа обновлена');
+        } catch (err) {
+            alert('Ошибка: ' + err.message);
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    // Одна карточка слушателя внутри сделки: показывает ВСЕ собранные через анкету
+    // поля (если их несколько на одну заявку — участников > 1 — показываем каждого).
+    function renderStudentCard(deal) {
+        const students = allStudents.filter(s => String(s.lead_id) === String(deal.id));
+        const need = Number(deal.participants) || 1;
+
+        if (!students.length) {
+            return `
+                <div class="student-card pending">
+                    <div class="sc-name">${escapeHtml(deal.fio || '(без имени)')}${need > 1 ? ` (${need} чел.)` : ''}</div>
+                    <div class="sc-empty"><i class="fas fa-hourglass-half"></i> Анкета не заполнена</div>
+                </div>`;
+        }
+
+        return students.map(s => `
+            <div class="student-card filled">
+                <div class="sc-name">${escapeHtml(s.fio || deal.fio || '(без имени)')}</div>
+                <dl>
+                    <dt>Пол</dt><dd>${escapeHtml(s.gender || '—')}</dd>
+                    <dt>Дата рождения</dt><dd>${String(s.birth_date || '').slice(0, 10) || '—'}</dd>
+                    <dt>СНИЛС</dt><dd>${escapeHtml(s.snils || '—')}</dd>
+                    <dt>Вуз</dt><dd>${escapeHtml(s.diploma_org || '—')}</dd>
+                    <dt>Специальность</dt><dd>${escapeHtml(s.diploma_specialty || '—')}</dd>
+                    <dt>Квалификация</dt><dd>${escapeHtml(s.diploma_qualification || '—')}</dd>
+                    <dt>Год окончания</dt><dd>${escapeHtml(s.diploma_year || '—')}</dd>
+                    <dt>Серия/номер</dt><dd>${escapeHtml(s.diploma_series || '—')} ${escapeHtml(s.diploma_number || '')}</dd>
+                </dl>
+                ${s.diploma_scan_url
+                    ? `<a href="#" class="sc-scan-link" data-file-id="${escapeHtml(s.diploma_scan_url)}"><i class="fas fa-file-image"></i> Открыть скан диплома</a>`
+                    : '<div class="sc-empty" style="margin-top:6px;">Скан не приложен</div>'}
+            </div>
+        `).join('');
+    }
+
+    // ========== Клиенты (агрегация заявок по email/телефону) ==========
+    function clientKey(d) {
+        // Google Sheets иногда отдаёт телефон как число (если ячейка распозналась как числовая),
+        // а не строку — приводим явно, иначе .replace() падает.
+        const email = String(d.email || '').trim().toLowerCase();
+        const phone = String(d.phone || '').replace(/\D/g, '');
+        return email || (phone ? 'phone:' + phone : '');
+    }
+
+    function renderClients(deals) {
+        const map = new Map();
+        deals.forEach(d => {
+            const key = clientKey(d);
+            if (!key || key === 'phone:') return;
+            if (!map.has(key)) map.set(key, { fio: d.fio, email: d.email, phone: d.phone, deals: [] });
+            const c = map.get(key);
+            if (!c.fio && d.fio) c.fio = d.fio;
+            c.deals.push(d);
+        });
+        const clients = [...map.values()].sort((a, b) => b.deals.length - a.deals.length);
+
+        const table = document.getElementById('clientsTable');
+        table.innerHTML = `
+            <tr><th>ФИО</th><th>Email</th><th>Телефон</th><th>Заявок</th><th>Программы</th><th>Первая</th><th>Последняя</th></tr>
+            ${clients.map((c, i) => {
+                const dates = c.deals.map(d => String(d.timestamp || '')).filter(Boolean).sort();
+                const programs = [...new Set(c.deals.map(d => d.program).filter(Boolean))];
+                return `
+                <tr data-idx="${i}">
+                    <td>${escapeHtml(c.fio || '(без имени)')}</td>
+                    <td>${escapeHtml(c.email || '—')}</td>
+                    <td>${escapeHtml(c.phone || '—')}</td>
+                    <td><b>${c.deals.length}</b></td>
+                    <td>${escapeHtml(programs.slice(0, 2).join(', '))}${programs.length > 2 ? ` +${programs.length - 2}` : ''}</td>
+                    <td>${(dates[0] || '').slice(0, 10)}</td>
+                    <td>${(dates[dates.length - 1] || '').slice(0, 10)}</td>
+                </tr>`;
+            }).join('') || '<tr><td colspan="7" style="text-align:center;padding:30px;">Нет данных</td></tr>'}
+        `;
+        table.querySelectorAll('tr[data-idx]').forEach(tr => {
+            tr.addEventListener('click', () => openClientDetail(clients[Number(tr.dataset.idx)]));
+        });
+    }
+
+    function openClientDetail(client) {
+        document.getElementById('clientModalTitle').textContent = client.fio || '(без имени)';
+        document.getElementById('clientContact').textContent = [client.email, client.phone].filter(Boolean).join(' · ') || 'Контакты не указаны';
+
+        const deals = [...client.deals].sort((a, b) => String(b.timestamp || '').localeCompare(String(a.timestamp || '')));
+        document.getElementById('clientDealsList').innerHTML = deals.map(d => `
+            <div class="client-deal-row" data-id="${d.id}">
+                <span class="cdr-date">${String(d.timestamp || '').slice(0, 10)}</span>
+                <span class="cdr-program">${escapeHtml(d.program || '(без программы)')}</span>
+                <span class="cdr-status">${escapeHtml(STAGES.find(s => s.key === normalizeStage(d.status))?.label || '')}</span>
+            </div>
+        `).join('');
+        document.getElementById('clientDealsList').querySelectorAll('.client-deal-row').forEach(row => {
+            row.addEventListener('click', () => {
+                const deal = allDeals.find(d => String(d.id) === row.dataset.id);
+                if (!deal) return;
+                closeClientModal();
+                openEditModal(deal);
+            });
+        });
+
+        document.getElementById('clientOverlay').classList.add('open');
+    }
+
+    function closeClientModal() {
+        document.getElementById('clientOverlay').classList.remove('open');
+    }
+
+    document.getElementById('clientOverlay').addEventListener('click', (e) => {
+        if (e.target.id === 'clientOverlay') closeClientModal();
+    });
+
+    // ========== Аналитика ==========
+    function renderAnalytics(deals) {
+        const counts = {};
+        STAGE_KEYS.forEach(k => counts[k] = 0);
+        deals.forEach(d => counts[normalizeStage(d.status)]++);
+        const maxCount = Math.max(1, ...Object.values(counts));
+
+        document.getElementById('funnelChart').innerHTML = STAGES.map(s => `
+            <div class="funnel-row${s.key === 'отказ' ? ' otkaz' : ''}">
+                <div class="funnel-label">${s.label}</div>
+                <div class="funnel-track"><div class="funnel-fill" style="width:${Math.max(6, counts[s.key] / maxCount * 100)}%;">${counts[s.key]}</div></div>
+            </div>
+        `).join('');
+
+        const activeDeals = deals.filter(d => normalizeStage(d.status) !== 'отказ');
+        const withAmount = deals.filter(d => Number(d.amount) > 0);
+        const avgCheck = withAmount.length ? withAmount.reduce((s, d) => s + Number(d.amount), 0) / withAmount.length : 0;
+        const sumInWork = activeDeals.reduce((s, d) => s + (Number(d.amount) || 0), 0);
+        const conversion = activeDeals.length ? Math.round((counts['счет'] / activeDeals.length) * 100) : 0;
+
+        document.getElementById('statTiles').innerHTML = `
+            <div class="stat-tile"><div class="label">Сделок в работе</div><div class="value">${activeDeals.length}</div></div>
+            <div class="stat-tile"><div class="label">Конверсия в счёт</div><div class="value">${conversion}%</div></div>
+            <div class="stat-tile"><div class="label">Средний чек</div><div class="value">${avgCheck ? Math.round(avgCheck).toLocaleString('ru-RU') + ' ₽' : '—'}</div></div>
+            <div class="stat-tile"><div class="label">Сумма в работе</div><div class="value">${sumInWork ? sumInWork.toLocaleString('ru-RU') + ' ₽' : '—'}</div></div>
+        `;
+
+        const byMgr = new Map();
+        deals.forEach(d => {
+            const name = d.manager || '(без менеджера)';
+            if (!byMgr.has(name)) byMgr.set(name, { count: 0, sum: 0 });
+            const m = byMgr.get(name);
+            m.count++;
+            m.sum += Number(d.amount) || 0;
+        });
+        const mgrRows = [...byMgr.entries()].sort((a, b) => b[1].count - a[1].count);
+        document.getElementById('mgrTable').innerHTML = `
+            <tr><th>Менеджер</th><th>Сделок</th><th>Сумма</th></tr>
+            ${mgrRows.map(([name, m]) => `<tr><td>${escapeHtml(name)}</td><td>${m.count}</td><td>${formatMoney(m.sum)}</td></tr>`).join('') || '<tr><td colspan="3">Нет данных</td></tr>'}
+        `;
+    }
+
+    function renderBoard(deals) {
+        const board = document.getElementById('board');
+        board.innerHTML = '';
+
+        STAGES.forEach(stage => {
+            const items = deals.filter(d => normalizeStage(d.status) === stage.key);
+            const sum = items.reduce((s, d) => s + (Number(d.amount) || 0), 0);
+
+            const col = document.createElement('div');
+            col.className = 'column' + (stage.key === 'отказ' ? ' stage-otkaz' : '');
+            col.dataset.stage = stage.key;
+
+            col.innerHTML = `
+                <div class="column-head">
+                    <div class="title"><span>${stage.label}</span><span class="count">${items.length}</span></div>
+                    ${sum > 0 ? `<div class="sum">${formatMoney(sum)}</div>` : ''}
+                </div>
+                <div class="column-body" data-stage="${stage.key}"></div>
+            `;
+
+            const body = col.querySelector('.column-body');
+            items.forEach(d => body.appendChild(renderCard(d, stage.key)));
+
+            body.addEventListener('dragover', (e) => { e.preventDefault(); col.classList.add('drag-over'); });
+            body.addEventListener('dragleave', () => col.classList.remove('drag-over'));
+            body.addEventListener('drop', (e) => {
+                e.preventDefault();
+                col.classList.remove('drag-over');
+                const id = Number(e.dataTransfer.getData('text/plain'));
+                moveDealToStage(id, stage.key);
+            });
+
+            board.appendChild(col);
+        });
+    }
+
+    function renderCard(d, stageKey) {
+        const card = document.createElement('div');
+        card.className = 'card' + (stageKey === 'отказ' ? ' stage-otkaz-card' : '');
+        card.draggable = true;
+        card.dataset.id = d.id;
+
+        let badges = '';
+        if (Number(d.participants) > 1) badges += `<span class="badge legal" style="background:#fef3c7;color:#92400e;">× ${d.participants} слушателей</span>`;
+        if (d.contract_type === 'С юридическим лицом') badges += '<span class="badge legal">юр.лицо</span>';
+        else if (d.contract_type === 'С физическим лицом') badges += '<span class="badge person">физ.лицо</span>';
+        if (d.source_form === 'manual') badges += '<span class="badge manual">вручную</span>';
+        const today = new Date().toISOString().slice(0, 10);
+        const hasOverdue = allTasks.some(t => String(t.lead_id) === String(d.id) && !t.done && t.due_date && String(t.due_date).slice(0, 10) < today);
+        if (hasOverdue) badges += '<span class="badge overdue"><i class="fas fa-clock"></i> просрочена задача</span>';
+
+        card.innerHTML = `
+            <div class="fio">${escapeHtml(d.fio || '(без имени)')}</div>
+            <div class="program">${escapeHtml(d.program || '')}</div>
+            <div class="meta-row">
+                <span class="manager">${d.manager ? '<i class="fas fa-user"></i> ' + escapeHtml(d.manager) : ''}</span>
+                <span class="amount">${formatMoney(d.amount)}</span>
+            </div>
+            ${badges ? `<div class="badges">${badges}</div>` : ''}
+        `;
+
+        card.addEventListener('click', () => openEditModal(d));
+        card.addEventListener('dragstart', (e) => {
+            e.dataTransfer.setData('text/plain', String(d.id));
+            setTimeout(() => card.classList.add('dragging'), 0);
+        });
+        card.addEventListener('dragend', () => card.classList.remove('dragging'));
+
+        return card;
+    }
+
+    async function moveDealToStage(id, newStage) {
+        const deal = allDeals.find(d => d.id === id);
+        if (!deal || normalizeStage(deal.status) === newStage) return;
+        const prevStatus = deal.status;
+        deal.status = newStage;
+        applyFilterAndRender();
+        try {
+            const res = await postJSON('updateLead', { data: { id, status: newStage } });
+            if (res.status !== 'success') throw new Error(res.message || 'Ошибка сохранения');
+            showMessage('Статус обновлён');
+        } catch (err) {
+            deal.status = prevStatus;
+            applyFilterAndRender();
+            showMessage('Не удалось сохранить статус');
+        }
+    }
+
+    // Тильда шлёт "Формат_договора" с разным регистром на разных формах
+    // ("С физическим лицом" / "С Юридическим лицом") — сравниваем без учёта регистра,
+    // иначе <select> не подсвечивает уже выбранный вариант.
+    function setSelectCaseInsensitive(selectId, value) {
+        const select = document.getElementById(selectId);
+        const target = String(value || '').trim().toLowerCase();
+        const match = Array.from(select.options).find(o => o.value.toLowerCase() === target);
+        select.value = match ? match.value : '';
+    }
+
+    function openCreateModal() {
+        editingId = null;
+        document.getElementById('modalTitle').textContent = 'Новая сделка';
+        document.getElementById('modalForm').reset();
+        document.getElementById('f_status').value = 'новая';
+        document.getElementById('sourceHint').textContent = 'Сделка будет добавлена вручную (не с сайта).';
+        document.getElementById('tasksSection').style.display = 'none';
+        document.getElementById('intakeSection').style.display = 'none';
+        document.getElementById('documentsSection').style.display = 'none';
+        document.getElementById('historySection').style.display = 'none';
+        document.getElementById('deleteBtn').style.display = 'none';
+        document.getElementById('overlay').classList.add('open');
+    }
+
+    function openEditModal(d) {
+        editingId = d.id;
+        document.getElementById('modalTitle').textContent = 'Сделка';
+        document.getElementById('f_fio').value = d.fio || '';
+        document.getElementById('f_email').value = d.email || '';
+        document.getElementById('f_phone').value = d.phone || '';
+        document.getElementById('f_program').value = d.program || '';
+        document.getElementById('f_amount').value = d.amount || '';
+        document.getElementById('f_manager').value = d.manager || '';
+        document.getElementById('f_participants').value = Number(d.participants) || 1;
+        setSelectCaseInsensitive('f_contract_type', d.contract_type);
+        document.getElementById('f_org_name').value = d.org_name || '';
+        document.getElementById('f_inn').value = d.inn || '';
+        document.getElementById('f_planned_start_date').value = (d.planned_start_date || '').toString().slice(0, 10);
+        document.getElementById('f_comment').value = d.comment || '';
+        document.getElementById('f_status').value = normalizeStage(d.status);
+        const src = d.source_form === 'manual' ? 'Добавлено вручную' : `Источник: ${d.source_form || '—'}`;
+        document.getElementById('sourceHint').textContent = `${src}. Заявка получена: ${(d.timestamp || '').toString().slice(0, 16).replace('T', ' ')}`;
+
+        document.getElementById('tasksSection').style.display = 'block';
+        document.getElementById('intakeSection').style.display = 'block';
+        document.getElementById('documentsSection').style.display = 'block';
+        document.getElementById('historySection').style.display = 'block';
+        document.getElementById('deleteBtn').style.display = 'inline-flex';
+        renderTasksForLead(d.id);
+        renderIntakeSection(d);
+        document.getElementById('historyList').innerHTML = '<div class="history-item">Загрузка…</div>';
+        loadHistoryForLead(d.id);
+
+        document.getElementById('overlay').classList.add('open');
+    }
+
+    // Скан хранится в приватном Drive-файле — открываем его через getScan (base64 в JSON),
+    // а не прямой ссылкой, иначе внешний слушатель/сотрудник может упереться в экран
+    // "Запросить доступ" из-за политики Workspace. Открываем вкладку сразу (синхронно
+    // по клику), иначе браузер блокирует её как всплывающее окно после await.
+    async function openScan(fileId) {
+        const tab = window.open('', '_blank');
+        if (tab) tab.document.write('Загрузка скана…');
+        try {
+            const res = await fetchJSON(`${API_URL}?action=getScan&fileId=${encodeURIComponent(fileId)}`);
+            if (res.status !== 'success') throw new Error(res.message || 'Не удалось загрузить скан');
+            const bytes = atob(res.base64);
+            const arr = new Uint8Array(bytes.length);
+            for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+            const blob = new Blob([arr], { type: res.mimeType || 'application/octet-stream' });
+            const url = URL.createObjectURL(blob);
+            if (tab) tab.location.href = url; else window.open(url, '_blank');
+        } catch (err) {
+            if (tab) tab.document.body.textContent = 'Ошибка: ' + err.message;
+            else alert('Ошибка: ' + err.message);
+        }
+    }
+
+    // ========== Документы (КП / СЗ на счёт) ==========
+    // documents.html лежит рядом с crm.html, данные сделки передаём через query-параметры,
+    // а не через API — сама генерация docx полностью на стороне клиента (как и анкета/удостоверения).
+    function openDocumentsFor(docType) {
+        const d = allDeals.find(x => x.id === editingId);
+        if (!d) return;
+        const params = new URLSearchParams({
+            doc: docType,
+            org: d.org_name || d.fio || '',
+            inn: d.inn || '',
+            program: d.program || '',
+            participants: Number(d.participants) || 1,
+        });
+        const base = `${location.origin}${location.pathname.replace(/crm\.html$/, '')}documents.html`;
+        window.open(`${base}?${params.toString()}`, '_blank');
+    }
+
+    // ========== Анкета для зачисления ==========
+    function intakeLinkFor(lead) {
+        // intake.html лежит рядом с crm.html — строим ссылку относительно текущего расположения,
+        // чтобы не хардкодить домен (он может смениться, если поменяется хостинг статики).
+        return `${location.origin}${location.pathname.replace(/crm\.html$/, '')}intake.html?lead=${lead.id}&token=${encodeURIComponent(lead.intake_token)}`;
+    }
+
+    function renderIntakeSection(d) {
+        const submitted = allStudents.filter(s => String(s.lead_id) === String(d.id));
+        const statusEl = document.getElementById('intakeStatus');
+        statusEl.textContent = submitted.length > 0
+            ? `Анкета заполнена на ${submitted.length} чел. из ${Number(d.participants) || 1} заявленных.`
+            : `Анкета пока не заполнена (заявлено слушателей: ${Number(d.participants) || 1}).`;
+
+        // renderStudentCard сам находит всех студентов по d.id, вызывать его нужно один раз.
+        const listEl = document.getElementById('intakeStudentsList');
+        if (submitted.length) {
+            listEl.innerHTML = `<div class="student-cards-grid">${renderStudentCard(d)}</div>`;
+            listEl.querySelectorAll('.sc-scan-link').forEach(a => {
+                a.addEventListener('click', (e) => { e.preventDefault(); openScan(a.dataset.fileId); });
+            });
+        } else {
+            listEl.innerHTML = '';
+        }
+
+        if (d.intake_token) {
+            document.getElementById('intakeNoLink').style.display = 'none';
+            document.getElementById('intakeHasLink').style.display = 'block';
+            document.getElementById('intakeLinkField').value = intakeLinkFor(d);
+        } else {
+            document.getElementById('intakeNoLink').style.display = 'block';
+            document.getElementById('intakeHasLink').style.display = 'none';
+        }
+    }
+
+    async function createIntakeLink() {
+        if (editingId === null) return;
+        showLoading(true);
+        try {
+            const res = await postJSON('generateIntakeLink', { leadId: editingId });
+            if (res.status !== 'success') throw new Error(res.message || 'Ошибка');
+            const deal = allDeals.find(d => d.id === editingId);
+            if (deal) deal.intake_token = res.token;
+            renderIntakeSection(deal);
+            showMessage('Ссылка создана');
+        } catch (err) {
+            alert('Ошибка: ' + err.message);
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    function copyIntakeLink() {
+        const field = document.getElementById('intakeLinkField');
+        field.select();
+        navigator.clipboard?.writeText(field.value).then(() => showMessage('Ссылка скопирована')).catch(() => {
+            document.execCommand('copy');
+            showMessage('Ссылка скопирована');
+        });
+    }
+
+    async function sendIntakeEmailNow() {
+        if (editingId === null) return;
+        const deal = allDeals.find(d => d.id === editingId);
+        if (!deal || !deal.email) { alert('У этой сделки не указан email'); return; }
+        if (!confirm(`Отправить анкету на ${deal.email}?`)) return;
+
+        showLoading(true);
+        try {
+            const res = await postJSON('sendIntakeEmail', { leadId: editingId, link: intakeLinkFor(deal) });
+            if (res.status !== 'success') throw new Error(res.message || 'Ошибка отправки');
+            showMessage('Письмо отправлено на ' + deal.email);
+        } catch (err) {
+            alert('Ошибка: ' + err.message);
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    // ========== Задачи по сделке ==========
+    function renderTasksForLead(leadId) {
+        const tasks = allTasks.filter(t => String(t.lead_id) === String(leadId));
+        const today = new Date().toISOString().slice(0, 10);
+        const list = document.getElementById('taskList');
+        list.innerHTML = tasks.length ? tasks.map(t => {
+            const overdue = !t.done && t.due_date && String(t.due_date).slice(0, 10) < today;
+            return `
+                <div class="task-item${t.done ? ' done' : ''}">
+                    <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTask(${t.id}, this.checked)">
+                    <span>${escapeHtml(t.text)}${t.due_date ? `<span class="due${overdue ? ' badge overdue' : ''}">${overdue ? 'просрочено ' : 'до '}${String(t.due_date).slice(0, 10)}</span>` : ''}</span>
+                </div>`;
+        }).join('') : '<div class="history-item">Задач пока нет</div>';
+    }
+
+    async function addTask() {
+        const text = document.getElementById('newTaskText').value.trim();
+        if (!text) return;
+        if (editingId === null) { alert('Сначала сохраните сделку'); return; }
+        const due_date = document.getElementById('newTaskDue').value;
+        const manager = document.getElementById('f_manager').value.trim();
+        try {
+            const res = await postJSON('addTask', { data: { lead_id: editingId, text, due_date, manager } });
+            if (res.status !== 'success') throw new Error(res.message || 'Ошибка');
+            const tasksRes = await fetchJSON(`${API_URL}?action=getTasks`);
+            if (tasksRes.status === 'success') allTasks = tasksRes.data;
+            document.getElementById('newTaskText').value = '';
+            document.getElementById('newTaskDue').value = '';
+            renderTasksForLead(editingId);
+        } catch (err) {
+            alert('Не удалось добавить задачу: ' + err.message);
+        }
+    }
+
+    async function toggleTask(taskId, done) {
+        try {
+            await postJSON('updateTask', { data: { id: taskId, done } });
+            const t = allTasks.find(x => x.id === taskId);
+            if (t) t.done = done;
+            renderTasksForLead(editingId);
+        } catch (err) {
+            showMessage('Не удалось сохранить задачу');
+        }
+    }
+
+    // ========== История изменений ==========
+    async function loadHistoryForLead(leadId) {
+        try {
+            const res = await fetchJSON(`${API_URL}?action=getLeadHistory&leadId=${leadId}`);
+            const list = document.getElementById('historyList');
+            if (res.status !== 'success' || !res.data.length) {
+                list.innerHTML = '<div class="history-item">История пока пуста</div>';
+                return;
+            }
+            list.innerHTML = res.data.map(h => `
+                <div class="history-item"><span class="ts">${String(h.timestamp || '').slice(0, 16).replace('T', ' ')}</span>${escapeHtml(h.details || h.action)}</div>
+            `).join('');
+        } catch (err) {
+            document.getElementById('historyList').innerHTML = '<div class="history-item">Не удалось загрузить историю</div>';
+        }
+    }
+
+    function closeModal() {
+        document.getElementById('overlay').classList.remove('open');
+    }
+
+    async function deleteCurrentLead() {
+        if (editingId === null) return;
+        const deal = allDeals.find(d => d.id === editingId);
+        const label = deal ? `«${deal.fio || 'без имени'}» (${deal.program || 'без программы'})` : 'эту заявку';
+        if (!confirm(`Удалить ${label}? Действие необратимо.`)) return;
+        showLoading(true);
+        try {
+            const res = await postJSON('deleteLead', { id: editingId });
+            if (res.status !== 'success') throw new Error(res.message || 'Ошибка удаления');
+            closeModal();
+            // ВАЖНО: id — это номер строки в листе, не постоянный идентификатор.
+            // После удаления строки все последующие id на сервере сдвигаются —
+            // локальный кэш обязательно нужно перезагрузить целиком, иначе
+            // следующие клики будут бить не по тем строкам.
+            await loadDeals();
+            populateManagerFilter();
+            applyFilterAndRender();
+            showMessage('Заявка удалена');
+        } catch (err) {
+            alert('Не удалось удалить: ' + err.message);
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    async function saveModal() {
+        const fio = document.getElementById('f_fio').value.trim();
+        if (!fio) { alert('Укажите ФИО'); return; }
+
+        const payload = {
+            fio,
+            email: document.getElementById('f_email').value.trim(),
+            phone: document.getElementById('f_phone').value.trim(),
+            program: document.getElementById('f_program').value.trim(),
+            amount: document.getElementById('f_amount').value,
+            manager: document.getElementById('f_manager').value.trim(),
+            contract_type: document.getElementById('f_contract_type').value,
+            org_name: document.getElementById('f_org_name').value.trim(),
+            inn: document.getElementById('f_inn').value.trim(),
+            planned_start_date: document.getElementById('f_planned_start_date').value,
+            comment: document.getElementById('f_comment').value.trim(),
+            status: document.getElementById('f_status').value,
+            participants: Number(document.getElementById('f_participants').value) || 1,
+        };
+
+        showLoading(true);
+        try {
+            if (editingId === null) {
+                const res = await postJSON('addLead', { data: payload });
+                if (res.status !== 'success') throw new Error(res.message || 'Ошибка добавления');
+                // Добавление новой строки не сдвигает номера уже существующих —
+                // можно просто дописать в локальный массив, без похода на сервер за всем.
+                allDeals.push({ id: res.id, timestamp: new Date().toISOString(), source_form: 'manual', cohort_id: '', ...payload });
+                showMessage('Сделка добавлена');
+            } else {
+                const res = await postJSON('updateLead', { data: { id: editingId, ...payload } });
+                if (res.status !== 'success') throw new Error(res.message || 'Ошибка сохранения');
+                // Обновление поля тоже не меняет номера строк — мержим на месте.
+                const deal = allDeals.find(d => d.id === editingId);
+                if (deal) Object.assign(deal, payload);
+                showMessage('Сохранено');
+            }
+            closeModal();
+            populateManagerFilter();
+            applyFilterAndRender();
+        } catch (err) {
+            console.error(err);
+            alert('Ошибка: ' + err.message);
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    document.getElementById('overlay').addEventListener('click', (e) => {
+        if (e.target.id === 'overlay') closeModal();
+    });
+
+    (async () => {
+        await loadDeals();
+        populateManagerFilter();
+        applyFilterAndRender();
+    })();
+</script>
+</body>
+</html>

@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Документы · ДПО</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --primary: #4361ee; --primary-light: #4895ef; --primary-dark: #3f37c9;
+            --success: #2ecc71; --danger: #f72585; --warning: #f8961e;
+            --bg: #f8f9fa; --card-bg: #ffffff; --text: #212529;
+            --text-secondary: #495057; --border: #dee2e6;
+            --shadow: 0 4px 12px rgba(0,0,0,0.05); --radius: 12px; --transition: 0.2s ease;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0; padding: 24px 16px 60px;
+            background: linear-gradient(135deg, #e0e7ff 0%, #f8f9fa 100%);
+            color: var(--text);
+        }
+        .container { max-width: 820px; margin: auto; }
+        header { margin-bottom: 20px; }
+        h1 { color: var(--primary-dark); font-size: 22px; margin: 0 0 6px; font-weight: 600; }
+        .lede { color: var(--text-secondary); font-size: 14px; line-height: 1.5; }
+
+        .tabs { display: flex; gap: 8px; margin-bottom: 18px; }
+        .tab-btn {
+            flex: 1; padding: 12px; border-radius: 10px; border: 1px solid var(--border);
+            background: var(--card-bg); cursor: pointer; font-size: 14px; font-weight: 600;
+            color: var(--text-secondary); transition: var(--transition);
+        }
+        .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        .card {
+            background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow);
+            padding: 22px; margin-bottom: 18px;
+        }
+        .field { margin-bottom: 14px; }
+        .field label { display: block; font-size: 12.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 5px; }
+        .field input, .field select {
+            width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px;
+            font-size: 14px; font-family: inherit;
+        }
+        .field input:focus, .field select:focus {
+            outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(67,97,238,0.15);
+        }
+        .field-row { display: flex; gap: 12px; }
+        .field-row .field { flex: 1; }
+        .hint { font-size: 11.5px; color: #adb5bd; margin-top: 3px; }
+
+        .program-row {
+            border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 12px; position: relative;
+        }
+        .program-row .remove-row {
+            position: absolute; top: 10px; right: 10px; background: transparent; color: var(--danger);
+            border: none; cursor: pointer; font-size: 12.5px; padding: 4px 8px;
+        }
+        .row-sum { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
+        .row-sum strong { color: var(--text); }
+
+        button {
+            padding: 11px 20px; background: var(--primary); color: white; border: none;
+            border-radius: 25px; cursor: pointer; font-size: 14px; transition: var(--transition);
+            font-weight: 500; display: inline-flex; align-items: center; gap: 6px;
+        }
+        button:hover { background: var(--primary-dark); }
+        button.secondary { background: transparent; color: var(--primary); border: 1px solid var(--primary); }
+        button.secondary:hover { background: #eef1ff; }
+        button.danger-outline { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
+        #genKpBtn, #genSzBtn { width: 100%; justify-content: center; padding: 14px; font-size: 15px; margin-top: 6px; }
+
+        .status { padding: 12px 16px; border-radius: 8px; margin-top: 14px; font-size: 13.5px; display: none; }
+        .status.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+
+        [hidden] { display: none !important; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1><i class="fas fa-file-word"></i> Документы отдела ДПО</h1>
+        <p class="lede">Коммерческое предложение и служебная записка на счёт — формируются автоматически по официальному бланку СПбГМТУ.</p>
+    </header>
+
+    <div class="tabs">
+        <button class="tab-btn active" id="tabKpBtn" onclick="switchTab('kp')"><i class="fas fa-file-invoice"></i> Коммерческое предложение</button>
+        <button class="tab-btn" id="tabSzBtn" onclick="switchTab('sz')"><i class="fas fa-envelope-open-text"></i> Служебная записка на счёт</button>
+    </div>
+
+    <!-- ===== КП ===== -->
+    <div id="kpScreen">
+        <div class="card">
+            <div class="field">
+                <label>Организация / получатель КП <span style="color:var(--danger)">*</span></label>
+                <input type="text" id="kp_org" placeholder="Например, ООО «Игрушки»">
+                <div class="hint">Подставится в поле адресата на бланке (правый верхний угол)</div>
+            </div>
+            <div id="kpRows"></div>
+            <button type="button" class="secondary" onclick="addKpRow()"><i class="fas fa-plus"></i> Добавить программу</button>
+        </div>
+        <div class="card">
+            <div class="field">
+                <label>Исполнитель</label>
+                <select id="kp_staff" onchange="onKpStaffChange()">
+                    <option value="ababin">Абабин М.С.</option>
+                    <option value="soldatenkova">Солдатенкова А.А.</option>
+                    <option value="pudov">Пудов М.Г.</option>
+                    <option value="manual">Ввести вручную…</option>
+                </select>
+            </div>
+            <div class="field" id="kp_manualRow" hidden>
+                <label>ФИО исполнителя</label>
+                <input type="text" id="kp_manualFio" placeholder="Иванов И.И.">
+            </div>
+        </div>
+        <button id="genKpBtn" onclick="generateKP()"><i class="fas fa-file-word"></i> Сформировать КП</button>
+        <div class="status" id="kpStatus"></div>
+    </div>
+
+    <!-- ===== СЗ ===== -->
+    <div id="szScreen" hidden>
+        <div class="card">
+            <div class="field">
+                <label>Дата формирования СЗ</label>
+                <input type="text" id="sz_formdate" placeholder="09.09.2026">
+                <div class="hint">Подставится в шапку бланка (дата исходящего)</div>
+            </div>
+            <div class="field-row">
+                <div class="field">
+                    <label>Дата договора</label>
+                    <input type="text" id="sz_dogdate" placeholder="25.06.2025">
+                </div>
+                <div class="field">
+                    <label>Номер договора</label>
+                    <input type="text" id="sz_dognum" placeholder="132-ОУП/еп">
+                </div>
+            </div>
+            <div class="field">
+                <label>Контрагент (полное наименование) <span style="color:var(--danger)">*</span></label>
+                <input type="text" id="sz_contragent" placeholder="АО «ЦМКБ «Алмаз»">
+            </div>
+            <div class="field">
+                <label>ИНН</label>
+                <input type="text" id="sz_inn" placeholder="7810537558">
+            </div>
+            <div class="field">
+                <label>Программа <span style="color:var(--danger)">*</span></label>
+                <input type="text" id="sz_program" list="programsList" placeholder="Начните вводить название программы">
+            </div>
+            <div class="field-row">
+                <div class="field">
+                    <label>Количество слушателей</label>
+                    <input type="number" id="sz_count" min="1" step="1" value="1">
+                </div>
+                <div class="field">
+                    <label>Сумма, ₽</label>
+                    <input type="number" id="sz_sum" min="0" step="1">
+                </div>
+            </div>
+            <div class="hint" id="sz_priceHint" style="margin-bottom:14px;"></div>
+
+            <div class="field">
+                <label>Заявитель (кто подаёт СЗ)</label>
+                <select id="sz_staff" onchange="onStaffChange()">
+                    <option value="ababin">Абабин М.С. — специалист ОДПО</option>
+                    <option value="soldatenkova">Солдатенкова А.А. — специалист ОДПО</option>
+                    <option value="pudov">Пудов М.Г. — вед. специалист ОДПО</option>
+                    <option value="manual">Ввести вручную…</option>
+                </select>
+            </div>
+            <div class="field-row" id="sz_manualRow" hidden>
+                <div class="field">
+                    <label>Должность</label>
+                    <input type="text" id="sz_manualPos" placeholder="Специалист ОДПО">
+                </div>
+                <div class="field">
+                    <label>ФИО</label>
+                    <input type="text" id="sz_manualFio" placeholder="Иванов И.И.">
+                </div>
+            </div>
+            <div class="field">
+                <label>Мобильный телефон заявителя</label>
+                <input type="text" id="sz_phone" placeholder="8 (9__) ___-__-__">
+                <div class="hint">Проверьте номер перед отправкой — он подставляется в документ как есть.</div>
+            </div>
+        </div>
+        <button id="genSzBtn" onclick="generateSZ()"><i class="fas fa-file-word"></i> Сформировать СЗ</button>
+        <div class="status" id="szStatus"></div>
+    </div>
+
+    <datalist id="programsList"></datalist>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<script>
+(function () {
+    const STAFF_PHONE = '+7 921 418 77 72';
+    const STAFF = {
+        ababin: { fio: 'Абабин М.С.', position: 'Специалист ОДПО', phone: STAFF_PHONE },
+        soldatenkova: { fio: 'Солдатенкова А.А.', position: 'Специалист ОДПО', phone: STAFF_PHONE },
+        pudov: { fio: 'Пудов М.Г.', position: 'Вед. специалист ОДПО', phone: STAFF_PHONE },
+    };
+    function formatDateDDMMYYYY(d) {
+        const dd = String(d.getDate()).padStart(2, '0');
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        return `${dd}.${mm}.${d.getFullYear()}`;
+    }
+
+    let programs = [];
+    let kpRowCount = 0;
+
+    const params = new URLSearchParams(location.search);
+
+    function escapeXml(s) {
+        return String(s == null ? '' : s)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+    }
+    function formatMoney(n) {
+        n = Math.round(Number(n) || 0);
+        return n.toLocaleString('ru-RU').replace(/ /g, ' ');
+    }
+    function sanitizeFilename(s) {
+        return String(s || 'документ').replace(/["«»/\\:*?<>|]/g, '').trim().slice(0, 60) || 'документ';
+    }
+    function showStatus(id, msg, type) {
+        const el = document.getElementById(id);
+        el.textContent = msg; el.className = 'status ' + type; el.style.display = 'block';
+    }
+    function findProgram(name) {
+        if (!name) return null;
+        const norm = String(name).trim().toLowerCase();
+        return programs.find(p => p.name.toLowerCase() === norm)
+            || programs.find(p => p.name.toLowerCase().includes(norm) || norm.includes(p.name.toLowerCase()));
+    }
+
+    function switchTab(tab) {
+        document.getElementById('tabKpBtn').classList.toggle('active', tab === 'kp');
+        document.getElementById('tabSzBtn').classList.toggle('active', tab === 'sz');
+        document.getElementById('kpScreen').hidden = tab !== 'kp';
+        document.getElementById('szScreen').hidden = tab !== 'sz';
+    }
+    window.switchTab = switchTab;
+
+    // ===== КП: строки программ =====
+    function addKpRow(prefill) {
+        prefill = prefill || {};
+        kpRowCount++;
+        const n = kpRowCount;
+        const div = document.createElement('div');
+        div.className = 'program-row';
+        div.dataset.n = n;
+        div.innerHTML = `
+            <button type="button" class="remove-row" onclick="removeKpRow(${n})"><i class="fas fa-times"></i> убрать</button>
+            <div class="field">
+                <label>Программа обучения</label>
+                <input type="text" id="kp_name_${n}" list="programsList" oninput="onKpProgramChange(${n})" placeholder="Начните вводить название">
+            </div>
+            <div class="field-row">
+                <div class="field">
+                    <label>Вид обучения</label>
+                    <input type="text" id="kp_type_${n}" placeholder="Очная, очно-заочная">
+                </div>
+                <div class="field">
+                    <label>Часов</label>
+                    <input type="number" id="kp_hours_${n}" min="0" step="1">
+                </div>
+            </div>
+            <div class="field-row">
+                <div class="field">
+                    <label>Стоимость 1 слушателя, ₽</label>
+                    <input type="number" id="kp_price_${n}" min="0" step="1" oninput="recalcKpRow(${n})">
+                </div>
+                <div class="field">
+                    <label>Кол-во человек</label>
+                    <input type="number" id="kp_count_${n}" min="1" step="1" value="1" oninput="recalcKpRow(${n})">
+                </div>
+                <div class="field">
+                    <label>Сумма, ₽</label>
+                    <input type="number" id="kp_sum_${n}" min="0" step="1">
+                </div>
+            </div>`;
+        document.getElementById('kpRows').appendChild(div);
+
+        if (prefill.name) document.getElementById(`kp_name_${n}`).value = prefill.name;
+        if (prefill.count) document.getElementById(`kp_count_${n}`).value = prefill.count;
+        const match = findProgram(prefill.name);
+        if (match) {
+            document.getElementById(`kp_type_${n}`).value = match.format || '';
+            document.getElementById(`kp_hours_${n}`).value = match.hours || '';
+            document.getElementById(`kp_price_${n}`).value = match.price || '';
+        }
+        recalcKpRow(n);
+    }
+    function removeKpRow(n) {
+        const el = document.querySelector(`.program-row[data-n="${n}"]`);
+        if (el) el.remove();
+    }
+    function onKpProgramChange(n) {
+        const name = document.getElementById(`kp_name_${n}`).value;
+        const match = findProgram(name);
+        if (match) {
+            document.getElementById(`kp_type_${n}`).value = match.format || '';
+            document.getElementById(`kp_hours_${n}`).value = match.hours || '';
+            document.getElementById(`kp_price_${n}`).value = match.price || '';
+            recalcKpRow(n);
+        }
+    }
+    function recalcKpRow(n) {
+        const price = Number(document.getElementById(`kp_price_${n}`).value) || 0;
+        const count = Number(document.getElementById(`kp_count_${n}`).value) || 0;
+        document.getElementById(`kp_sum_${n}`).value = price * count;
+    }
+    window.addKpRow = addKpRow;
+    window.removeKpRow = removeKpRow;
+    window.onKpProgramChange = onKpProgramChange;
+    window.recalcKpRow = recalcKpRow;
+
+    function onKpStaffChange() {
+        document.getElementById('kp_manualRow').hidden = document.getElementById('kp_staff').value !== 'manual';
+    }
+    window.onKpStaffChange = onKpStaffChange;
+
+    async function generateKP() {
+        const org = document.getElementById('kp_org').value.trim();
+        if (!org) { showStatus('kpStatus', 'Укажите организацию / получателя КП', 'error'); return; }
+        const kpStaffKey = document.getElementById('kp_staff').value;
+        const staffFio = kpStaffKey === 'manual'
+            ? document.getElementById('kp_manualFio').value.trim()
+            : STAFF[kpStaffKey].fio;
+        const rowEls = document.querySelectorAll('#kpRows .program-row');
+        if (!rowEls.length) { showStatus('kpStatus', 'Добавьте хотя бы одну программу', 'error'); return; }
+        const rows = [];
+        for (const el of rowEls) {
+            const n = el.dataset.n;
+            const name = document.getElementById(`kp_name_${n}`).value.trim();
+            if (!name) continue;
+            rows.push({
+                name,
+                type: document.getElementById(`kp_type_${n}`).value.trim(),
+                hours: document.getElementById(`kp_hours_${n}`).value,
+                price: Number(document.getElementById(`kp_price_${n}`).value) || 0,
+                count: Number(document.getElementById(`kp_count_${n}`).value) || 1,
+                sum: Number(document.getElementById(`kp_sum_${n}`).value) || 0,
+            });
+        }
+        if (!rows.length) { showStatus('kpStatus', 'Заполните название хотя бы одной программы', 'error'); return; }
+
+        try {
+            const buf = await fetch('templates/kp_template.docx').then(r => {
+                if (!r.ok) throw new Error('Не удалось загрузить шаблон КП (' + r.status + ')');
+                return r.arrayBuffer();
+            });
+            const zip = await JSZip.loadAsync(buf);
+            let xml = await zip.file('word/document.xml').async('string');
+            xml = xml.split('{ORG_NAME}').join(escapeXml(org));
+            xml = xml.split('{STAFF_FIO}').join(escapeXml(staffFio));
+            xml = xml.split('{STAFF_PHONE}').join(escapeXml(STAFF_PHONE));
+
+            const rowMatch = xml.match(/<w:tr>(?:(?!<\/w:tr>)[\s\S])*\{NUM\}(?:(?!<\/w:tr>)[\s\S])*<\/w:tr>/);
+            if (!rowMatch) throw new Error('В шаблоне не найдена строка таблицы для программ');
+            const rowTpl = rowMatch[0];
+            const builtRows = rows.map((r, i) => rowTpl
+                .replace('{NUM}', String(i + 1) + '.')
+                .replace('{NAME}', escapeXml(r.name))
+                .replace('{TYPE}', escapeXml(r.type))
+                .replace('{HOURS}', escapeXml(r.hours ? String(r.hours) : ''))
+                .replace('{PRICE}', escapeXml(formatMoney(r.price)))
+                .replace('{COUNT}', escapeXml(String(r.count)))
+                .replace('{SUM}', escapeXml(formatMoney(r.sum)))
+            ).join('');
+            xml = xml.replace(rowTpl, builtRows);
+
+            zip.file('word/document.xml', xml);
+            const out = await zip.generateAsync({ type: 'blob' });
+            saveAs(out, `КП_${sanitizeFilename(org)}.docx`);
+            showStatus('kpStatus', 'Готово — файл скачан', 'success');
+        } catch (err) {
+            showStatus('kpStatus', 'Ошибка: ' + err.message, 'error');
+        }
+    }
+    window.generateKP = generateKP;
+
+    // ===== СЗ =====
+    function onStaffChange() {
+        const key = document.getElementById('sz_staff').value;
+        document.getElementById('sz_manualRow').hidden = key !== 'manual';
+        if (key !== 'manual') {
+            const s = STAFF[key];
+            document.getElementById('sz_phone').value = s.phone || '';
+        } else {
+            document.getElementById('sz_phone').value = '';
+        }
+    }
+    window.onStaffChange = onStaffChange;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('sz_program').addEventListener('input', () => {
+            const match = findProgram(document.getElementById('sz_program').value);
+            const hint = document.getElementById('sz_priceHint');
+            if (match) {
+                hint.textContent = `Цена по прайс-листу: ${formatMoney(match.price)} ₽/чел., ${match.hours} ч., ${match.format || ''}`;
+                const count = Number(document.getElementById('sz_count').value) || 1;
+                document.getElementById('sz_sum').value = match.price * count;
+            } else {
+                hint.textContent = '';
+            }
+        });
+        document.getElementById('sz_count').addEventListener('input', () => {
+            const match = findProgram(document.getElementById('sz_program').value);
+            if (match) {
+                const count = Number(document.getElementById('sz_count').value) || 1;
+                document.getElementById('sz_sum').value = match.price * count;
+            }
+        });
+    });
+
+    async function generateSZ() {
+        const contragent = document.getElementById('sz_contragent').value.trim();
+        const program = document.getElementById('sz_program').value.trim();
+        if (!contragent) { showStatus('szStatus', 'Укажите наименование контрагента', 'error'); return; }
+        if (!program) { showStatus('szStatus', 'Укажите программу', 'error'); return; }
+
+        const staffKey = document.getElementById('sz_staff').value;
+        let position, fio;
+        if (staffKey === 'manual') {
+            position = document.getElementById('sz_manualPos').value.trim();
+            fio = document.getElementById('sz_manualFio').value.trim();
+        } else {
+            position = STAFF[staffKey].position;
+            fio = STAFF[staffKey].fio;
+        }
+        const phone = document.getElementById('sz_phone').value.trim();
+
+        const data = {
+            formDate: document.getElementById('sz_formdate').value.trim(),
+            dogDate: document.getElementById('sz_dogdate').value.trim(),
+            dogNum: document.getElementById('sz_dognum').value.trim(),
+            contragentName: contragent,
+            inn: document.getElementById('sz_inn').value.trim(),
+            program,
+            count: Number(document.getElementById('sz_count').value) || 1,
+            sum: Number(document.getElementById('sz_sum').value) || 0,
+            position, fio, phone,
+        };
+
+        try {
+            const buf = await fetch('templates/sz_template.docx').then(r => {
+                if (!r.ok) throw new Error('Не удалось загрузить шаблон СЗ (' + r.status + ')');
+                return r.arrayBuffer();
+            });
+            const zip = await JSZip.loadAsync(buf);
+            let xml = await zip.file('word/document.xml').async('string');
+            const reps = {
+                DOG_DATE: data.dogDate,
+                DOG_NUM: data.dogNum,
+                CONTRAGENT: data.inn ? `${data.contragentName} (ИНН ${data.inn})` : data.contragentName,
+                COUNT: String(data.count),
+                PROGRAM: data.program,
+                SUM: formatMoney(data.sum),
+                ZAYAVITEL_POS: data.position,
+                ZAYAVITEL_FIO: data.fio,
+                ZAYAVITEL_PHONE: data.phone,
+            };
+            for (const [k, v] of Object.entries(reps)) {
+                xml = xml.split(`{${k}}`).join(escapeXml(v));
+            }
+            zip.file('word/document.xml', xml);
+
+            const hdrFile = zip.file('word/header2.xml');
+            if (hdrFile) {
+                let hdr = await hdrFile.async('string');
+                hdr = hdr.split('{SZ_DATE}').join(escapeXml(data.formDate));
+                zip.file('word/header2.xml', hdr);
+            }
+
+            const out = await zip.generateAsync({ type: 'blob' });
+            saveAs(out, `СЗ_${sanitizeFilename(contragent)}.docx`);
+            showStatus('szStatus', 'Готово — файл скачан', 'success');
+        } catch (err) {
+            showStatus('szStatus', 'Ошибка: ' + err.message, 'error');
+        }
+    }
+    window.generateSZ = generateSZ;
+
+    // ===== Инициализация =====
+    async function init() {
+        try {
+            programs = await fetch('templates/programs.json').then(r => r.json());
+        } catch (err) {
+            console.error('Не удалось загрузить прайс-лист программ:', err);
+            programs = [];
+        }
+        const dl = document.getElementById('programsList');
+        dl.innerHTML = programs.map(p => `<option value="${escapeXml(p.name)}">`).join('');
+
+        const docType = params.get('doc');
+        const org = params.get('org') || '';
+        const program = params.get('program') || '';
+        const participants = params.get('participants') || 1;
+        const inn = params.get('inn') || '';
+
+        document.getElementById('kp_org').value = org;
+        addKpRow({ name: program, count: participants });
+
+        document.getElementById('sz_formdate').value = formatDateDDMMYYYY(new Date());
+        onStaffChange();
+        document.getElementById('sz_contragent').value = org;
+        document.getElementById('sz_inn').value = inn;
+        document.getElementById('sz_program').value = program;
+        document.getElementById('sz_count').value = participants;
+        document.getElementById('sz_program').dispatchEvent(new Event('input'));
+
+        if (docType === 'sz') switchTab('sz');
+        else switchTab('kp');
+    }
+    init();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Генератор приложения к диплому (финальная версия)</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Стили без изменений (можно оставить как в исходном коде) */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
+        .container { background: white; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); padding: 40px; width: 100%; max-width: 1200px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 40px; }
+        .header h1 { color: #333; font-size: 32px; margin-bottom: 10px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .header p { color: #666; font-size: 16px; line-height: 1.6; max-width: 800px; margin: 0 auto; }
+        .content { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px; }
+        @media (max-width: 900px) { .content { grid-template-columns: 1fr; } }
+        .section { background: #f8f9fa; border-radius: 10px; padding: 25px; border: 1px solid #e9ecef; }
+        .section-title { color: #495057; margin-bottom: 20px; font-size: 1.4rem; display: flex; align-items: center; }
+        .section-title i { margin-right: 10px; color: #667eea; }
+        .upload-area { border: 2px dashed #dee2e6; border-radius: 10px; padding: 25px 20px; text-align: center; cursor: pointer; transition: all 0.3s ease; margin-bottom: 15px; }
+        .upload-area:hover { border-color: #667eea; background: #f0f2ff; }
+        .upload-icon { font-size: 36px; color: #667eea; margin-bottom: 10px; }
+        .upload-text { font-size: 16px; color: #495057; margin-bottom: 5px; }
+        .upload-subtext { font-size: 12px; color: #6c757d; margin-bottom: 10px; }
+        .btn { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: 600; transition: all 0.3s ease; text-decoration: none; display: inline-block; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .btn-secondary { background: #6c757d; }
+        .selected-file { margin-top: 15px; padding: 12px; background: #e8f4ff; border-radius: 6px; border-left: 4px solid #667eea; font-size: 14px; }
+        .file-info { display: flex; justify-content: space-between; margin-top: 5px; font-size: 12px; color: #6c757d; }
+        .people-list { max-height: 300px; overflow-y: auto; border-radius: 8px; border: 1px solid #dee2e6; }
+        table { width: 100%; border-collapse: collapse; }
+        thead { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; position: sticky; top: 0; }
+        th { padding: 12px; text-align: left; font-weight: 600; font-size: 14px; }
+        tbody tr { border-bottom: 1px solid #dee2e6; cursor: pointer; transition: background 0.2s; }
+        tbody tr:hover { background: #f1f3ff; }
+        tbody tr.selected { background: #e3e7ff; border-left: 4px solid #667eea; }
+        td { padding: 12px; color: #495057; font-size: 14px; }
+        .actions { display: flex; gap: 15px; flex-wrap: wrap; margin-top: 30px; }
+        .action-btn { flex: 1; min-width: 180px; }
+        .status { padding: 12px 16px; border-radius: 6px; margin-top: 20px; display: none; }
+        .status.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .status.info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .loading { display: none; text-align: center; margin: 20px 0; }
+        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #667eea; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 10px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .footer { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #dee2e6; color: #6c757d; font-size: 14px; }
+        .instructions { margin-top: 20px; padding: 15px; background: #e8f4ff; border-radius: 6px; font-size: 14px; }
+        .instructions h4 { margin-bottom: 10px; color: #495057; display: flex; align-items: center; }
+        .instructions h4 i { margin-right: 8px; color: #667eea; }
+        .preview { margin-top: 20px; padding: 15px; background: white; border-radius: 8px; border: 1px solid #dee2e6; font-size: 14px; }
+        .preview h4 { margin-bottom: 10px; color: #495057; }
+        .preview-item { margin-bottom: 8px; display: flex; }
+        .preview-label { font-weight: 600; color: #495057; min-width: 220px; }
+        .preview-value { color: #333; white-space: pre-line; }
+        .error { color: #dc3545; margin-top: 10px; font-size: 14px; text-align: center; }
+        .step { display: flex; align-items: center; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed #dee2e6; }
+        .step-number { width: 30px; height: 30px; background: #667eea; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 15px; font-weight: bold; }
+        .step-content h4 { margin-bottom: 5px; color: #495057; }
+        .step-content p { color: #6c757d; font-size: 14px; }
+        .debug-info { font-size: 12px; color: #666; background: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 10px; display: none; }
+        .test-buttons { margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap; }
+        .test-btn { background: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px; }
+        .test-btn:hover { background: #218838; }
+        .replacement-info { margin-top: 15px; padding: 10px; background: #e7f3ff; border-radius: 5px; font-size: 13px; border-left: 4px solid #0066cc; }
+        .highlight { background-color: #fffacd; padding: 2px 4px; border-radius: 3px; font-weight: bold; }
+        .xml-viewer { font-family: 'Courier New', monospace; background: #2b2b2b; color: #f8f8f2; padding: 15px; border-radius: 5px; overflow-x: auto; margin-top: 10px; max-height: 400px; overflow-y: auto; font-size: 12px; }
+        .warning { background-color: #fff3cd; border-color: #ffeaa7; color: #856404; padding: 10px; border-radius: 5px; margin: 10px 0; }
+        .template-btn { background: #ff9900; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px; }
+        .template-btn:hover { background: #e68a00; }
+        .fio-test-btn { background: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px; }
+        .fio-test-btn:hover { background: #c82333; }
+        .additional-info { margin-top: 15px; padding: 12px; background: #e8f4ff; border-radius: 6px; border-left: 4px solid #28a745; font-size: 14px; }
+        .info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px; }
+        .info-item { padding: 8px; background: white; border-radius: 4px; border: 1px solid #dee2e6; }
+        .info-label { font-weight: bold; color: #495057; font-size: 12px; }
+        .info-value { color: #333; margin-top: 3px; }
+        .fio-pattern { margin-top: 20px; padding: 15px; background: #e7f3ff; border-left: 4px solid #0066cc; border-radius: 6px; }
+        .fio-pattern label { font-weight: 600; color: #004080; }
+        .fio-pattern input { width: 100%; padding: 10px; margin-top: 8px; border: 1px solid #0066cc; border-radius: 4px; font-size: 14px; }
+        .fio-pattern small { display: block; margin-top: 5px; color: #6c757d; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-graduation-cap"></i> Генератор приложения к диплому (финальная версия)</h1>
+            <p>Загрузите файл Excel с данными (лист выдачи) и Word-шаблон, выберите человека и скачайте готовый диплом</p>
+        </div>
+
+        <div class="content">
+            <div class="section">
+                <h2 class="section-title"><i class="fas fa-upload"></i> Загрузка файлов</h2>
+
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h4>Загрузите Excel файл</h4>
+                        <p>Файл "Лист выдачи.xlsx" с данными выпускников</p>
+                        <div class="upload-area" id="excelDropArea">
+                            <div class="upload-icon"><i class="fas fa-file-excel"></i></div>
+                            <div class="upload-text">Файл Excel с данными</div>
+                            <div class="upload-subtext">Перетащите или нажмите для выбора</div>
+                            <input type="file" id="excelFile" accept=".xlsx,.xls" style="display: none;">
+                            <button class="btn" id="excelBrowseBtn" style="margin-top: 10px;"><i class="fas fa-folder-open"></i> Выбрать Excel файл</button>
+                        </div>
+                        <div class="selected-file" id="excelSelectedFile" style="display: none;">
+                            <div><strong>Файл:</strong> <span id="excelFileName"></span></div>
+                            <div class="file-info"><span id="excelFileSize"></span><span id="excelRecordCount"></span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h4>Загрузите Word шаблон</h4>
+                        <p>Шаблон диплома с маркерами {N}, {U}, {Y}, {X}, {Z}, {T}, {O}, {P}, {Q}, {W}</p>
+                        <div class="upload-area" id="wordDropArea">
+                            <div class="upload-icon"><i class="fas fa-file-word"></i></div>
+                            <div class="upload-text">Word шаблон документа</div>
+                            <div class="upload-subtext">Перетащите или нажмите для выбора</div>
+                            <input type="file" id="wordFile" accept=".docx" style="display: none;">
+                            <button class="btn" id="wordBrowseBtn" style="margin-top: 10px;"><i class="fas fa-folder-open"></i> Выбрать Word шаблон</button>
+                        </div>
+                        <div class="selected-file" id="wordSelectedFile" style="display: none;">
+                            <div><strong>Файл:</strong> <span id="wordFileName"></span></div>
+                            <div class="file-info"><span id="wordFileSize"></span><span>Шаблон готов</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="fio-pattern">
+                    <label for="fioPatternInput"><i class="fas fa-user-tag"></i> Образец ФИО в шаблоне (для обратной совместимости):</label>
+                    <input type="text" id="fioPatternInput" value="Абабин Михаил Сергеевич" placeholder="Например, Иванов Иван Иванович">
+                    <small>Если в шаблоне встречается полное ФИО (как здесь), оно будет заменено на полное ФИО выпускника. Для раздельного вывода используйте {N} и {U}.</small>
+                </div>
+
+                <div class="instructions">
+                    <h4><i class="fas fa-info-circle"></i> Маркеры шаблона</h4>
+                    <ul style="margin: 10px 0 10px 20px; color: #495057;">
+                        <li><span class="highlight">{N}</span> — Фамилия выпускника (если в шаблоне есть {U}, иначе полное ФИО)</li>
+                        <li><span class="highlight">{U}</span> — Имя и отчество выпускника (если есть)</li>
+                        <li><span class="highlight">{Y}</span> — Регистрационный номер (столбец A)</li>
+                        <li><span class="highlight">{X}</span> — Дата зачисления (из приказа, столбец I)</li>
+                        <li><span class="highlight">{Z}</span> — Дата окончания (из протокола ГАК, столбец H)</li>
+                        <li><span class="highlight">{T}</span> — Дата выдачи диплома (столбец J)</li>
+                        <li><span class="highlight">{O}</span> — Оценка (столбец K)</li>
+                        <li><span class="highlight">{P}</span> — Оценка прописью (отлично/хорошо/удовл.)</li>
+                        <li><span class="highlight">{Q}</span> — Уровень образования (столбец L)</li>
+                        <li><span class="highlight">{W}</span> — Год выдачи диплома (из столбца L)</li>
+                    </ul>
+                    <p>Правила формирования {Q} и {W}: если в столбце L есть "СПО" → {Q}="Диплом о среднем профессиональном образовании", иначе {Q}="Диплом о высшем образовании". Год ({W}) извлекается из этого же столбца (первое четырёхзначное число). Если год не найден, поле остаётся пустым.</p>
+                </div>
+
+                <div class="test-buttons">
+                    <button class="test-btn" id="testReplaceBtn"><i class="fas fa-vial"></i> Тест замены</button>
+                    <button class="test-btn" id="inspectTemplateBtn"><i class="fas fa-search"></i> Структура шаблона</button>
+                    <button class="fio-test-btn" id="fioTestBtn"><i class="fas fa-user-check"></i> Тест ФИО</button>
+                    <button class="template-btn" id="createTemplateBtn"><i class="fas fa-file-medical"></i> Создать шаблон с {N} и {U}</button>
+                </div>
+
+                <div class="debug-info" id="debugInfo">
+                    <strong>Отладочная информация:</strong>
+                    <div id="debugContent"></div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title"><i class="fas fa-users"></i> Выбор выпускника</h2>
+
+                <div class="people-list" id="peopleList">
+                    <div style="padding: 40px; text-align: center; color: #6c757d;">
+                        <i class="fas fa-users" style="font-size: 48px; margin-bottom: 15px; color: #dee2e6;"></i>
+                        <div>Загрузите Excel файл, чтобы увидеть список</div>
+                    </div>
+                </div>
+
+                <div class="status" id="statusMessage"></div>
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <div id="loadingText">Обработка...</div>
+                </div>
+
+                <div class="preview" id="preview" style="display: none;">
+                    <h4>Информация о выбранном выпускнике:</h4>
+                    <div class="preview-item"><span class="preview-label">Фамилия ({N}):</span><span class="preview-value" id="previewSurname"></span></div>
+                    <div class="preview-item"><span class="preview-label">Имя Отчество ({U}):</span><span class="preview-value" id="previewRestName"></span></div>
+                    <div class="preview-item"><span class="preview-label">Рег. номер ({Y}):</span><span class="preview-value" id="previewRegNumber"></span></div>
+                    <div class="preview-item"><span class="preview-label">Дата зачисления ({X}):</span><span class="preview-value" id="previewEnrollDate"></span></div>
+                    <div class="preview-item"><span class="preview-label">Дата окончания ({Z}):</span><span class="preview-value" id="previewGradDate"></span></div>
+                    <div class="preview-item"><span class="preview-label">Дата выдачи ({T}):</span><span class="preview-value" id="previewIssueDate"></span></div>
+                    <div class="preview-item"><span class="preview-label">Оценка ({O}):</span><span class="preview-value" id="previewGrade"></span></div>
+                    <div class="preview-item"><span class="preview-label">Оценка прописью ({P}):</span><span class="preview-value" id="previewGradeText"></span></div>
+                    <div class="preview-item"><span class="preview-label">Уровень образования ({Q}):</span><span class="preview-value" id="previewEduLevel"></span></div>
+                    <div class="preview-item"><span class="preview-label">Год выдачи ({W}):</span><span class="preview-value" id="previewYear"></span></div>
+                </div>
+
+                <div class="actions">
+                    <div class="action-btn"><button class="btn" id="generateBtn" disabled><i class="fas fa-file-word"></i> Скачать диплом</button></div>
+                    <div class="action-btn"><button class="btn" id="generateAllBtn" disabled><i class="fas fa-file-archive"></i> Скачать все (ZIP)</button></div>
+                    <div class="action-btn"><button class="btn btn-secondary" id="clearBtn"><i class="fas fa-redo"></i> Очистить все</button></div>
+                    <div class="action-btn"><button class="btn" id="debugBtn" style="background: #17a2b8;"><i class="fas fa-bug"></i> Отладка</button></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p><i class="fas fa-shield-alt"></i> Приложение работает полностью в браузере. Данные не отправляются на сервер.</p>
+            <p><i class="fas fa-browser"></i> Для работы необходим современный браузер (Chrome, Firefox, Edge)</p>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+    <script>
+        // =============== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ===============
+        let peopleData = [];
+        let selectedPersonIndex = null;
+        let wordTemplateContent = null;
+
+        // =============== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ===============
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function escapeRegExp(string) {
+            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+
+        // Экранирование специальных символов XML
+        function escapeXml(unsafe) {
+            if (unsafe === undefined || unsafe === null) return '';
+            return String(unsafe).replace(/[<>&'"]/g, function (c) {
+                switch (c) {
+                    case '<': return '&lt;';
+                    case '>': return '&gt;';
+                    case '&': return '&amp;';
+                    case '\'': return '&apos;';
+                    case '"': return '&quot;';
+                    default: return c;
+                }
+            });
+        }
+
+        // Преобразование Excel serial date в строку ДД.ММ.ГГГГ
+        function excelDateToDateStr(serial) {
+            const date = new Date(Math.round((serial - 25569) * 86400 * 1000));
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}.${month}.${year}`;
+        }
+
+        // Извлекает дату из ячейки (число или строка)
+        function extractDateFromCell(cell) {
+            if (cell === undefined || cell === null) return '';
+            if (typeof cell === 'number') {
+                return excelDateToDateStr(cell);
+            } else if (typeof cell === 'string') {
+                const match = cell.match(/\d{2}\.\d{2}\.\d{4}/);
+                return match ? match[0] : '';
+            }
+            return '';
+        }
+
+        // Форматирование даты ДД.ММ.ГГГГ в русский формат (без "г.")
+        function formatDateToRussian(dateStr) {
+            if (!dateStr || typeof dateStr !== 'string') return dateStr || '';
+
+            const cleanDate = dateStr.trim();
+            const dateRegex = /^(\d{2})\.(\d{2})\.(\d{4})$/;
+            const match = cleanDate.match(dateRegex);
+
+            if (!match) return dateStr;
+
+            const day = match[1];
+            const month = parseInt(match[2], 10);
+            const year = match[3];
+
+            const months = [
+                'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
+                'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'
+            ];
+
+            if (month < 1 || month > 12) return dateStr;
+            const monthName = months[month - 1];
+
+            return `${day} ${monthName} ${year}`;
+        }
+
+        // =============== ПОЛУЧЕНИЕ НОМЕРА ===============
+        function getDocumentNumber(person) {
+            return person.regNumber || '—';
+        }
+
+        // =============== СКЛЕЙКА ПРОГОНОВ, РАЗОРВАННЫХ WORD'OM ===============
+        // Word иногда хранит {N} как три отдельных <w:r>: "{", "N", "}" —
+        // эта функция объединяет соседние прогоны, пока их текст вместе не образует маркер.
+        function mergeRunsForMarkers(xml, markerList) {
+            let changed = true, limit = 30;
+            while (changed && limit-- > 0) {
+                changed = false;
+                xml = xml.replace(
+                    /(<w:t(?:[^>]*)?>)([^<]*\{[A-Z]*)<\/w:t><\/w:r>(?:<[^>]+\/>[^<]*)*<w:r(?:[^>]*)?>(?:<w:rPr>[\s\S]*?<\/w:rPr>)?(<w:t(?:[^>]*)?>)([^<]*)(<\/w:t>)/g,
+                    (match, open1, text1, open2, text2, closeT) => {
+                        const combined = text1 + text2;
+                        const ok = markerList.some(m => {
+                            if (!m || m.length < 2) return false;
+                            if (combined.includes(m)) return true;
+                            for (let i = 1; i < m.length; i++)
+                                if (text1.endsWith(m.slice(0, i)) && text2.startsWith(m[i])) return true;
+                            return false;
+                        });
+                        if (ok) {
+                            changed = true;
+                            const preserve = open1.includes('preserve') || open2.includes('preserve');
+                            return `${preserve ? '<w:t xml:space="preserve">' : '<w:t>'}${combined}${closeT}`;
+                        }
+                        return match;
+                    }
+                );
+            }
+            return xml;
+        }
+
+        // =============== УЛУЧШЕННАЯ ЗАМЕНА ВО ВСЕХ XML-ФАЙЛАХ ===============
+        async function replaceTextInDocx(person) {
+            try {
+                if (!wordTemplateContent) throw new Error('Шаблон не загружен');
+
+                // Получаем образец ФИО из поля ввода
+                const fioPattern = document.getElementById('fioPatternInput').value.trim() || 'Абабин Михаил Сергеевич';
+
+                // Сырое ФИО
+                const rawFio = person['Фамилия Имя Отчество'] || '';
+
+                // Разделяем на части
+                const fioParts = rawFio.split(/\s+/);
+                let surname = '';
+                let rest = '';
+                if (fioParts.length >= 1) {
+                    surname = fioParts[0];
+                    rest = fioParts.slice(1).join(' ');
+                }
+
+                // Экранируем все значения для безопасной вставки в XML
+                const fioFullEscaped = escapeXml(rawFio);
+                const surnameEscaped = escapeXml(surname);
+                const restEscaped = escapeXml(rest);
+                const regNumber = escapeXml(person.regNumber || '');
+                const enrollDate = escapeXml(person.enrollDate || '');
+                const gradDate = escapeXml(person.gradDate || '');
+                const issueDate = escapeXml(person.issueDate || '');
+                const grade = escapeXml(person.grade !== undefined && person.grade !== '' ? String(person.grade) : '');
+                const gradeText = escapeXml(person.gradeText || '');
+                const eduLevel = escapeXml(person.educationLevel || '');
+                const year = escapeXml(person.year || '');
+
+                // Загружаем архив
+                const zip = await JSZip.loadAsync(wordTemplateContent);
+
+                // Список файлов для обработки (все XML)
+                const xmlFiles = [];
+                zip.forEach((relativePath, file) => {
+                    if (relativePath.match(/\.xml$/)) {
+                        xmlFiles.push(relativePath);
+                    }
+                });
+
+                console.log('Найдены XML-файлы для обработки:', xmlFiles);
+
+                // Определим, есть ли в шаблоне маркер {U}
+                let hasU = false;
+                for (const filePath of xmlFiles) {
+                    const file = zip.file(filePath);
+                    if (file) {
+                        const contentSample = await file.async('string');
+                        const plainSample = contentSample.replace(/<[^>]*>/g, '');
+                        if (plainSample.includes('{U}')) {
+                            hasU = true;
+                            break;
+                        }
+                    }
+                }
+
+                console.log('Наличие маркера {U} в шаблоне:', hasU);
+
+                // Устанавливаем значения для {N} и {U} в зависимости от наличия {U}
+                let nValue, uValue;
+                if (hasU) {
+                    nValue = surnameEscaped;
+                    uValue = restEscaped;
+                } else {
+                    nValue = fioFullEscaped; // полное ФИО для обратной совместимости
+                    uValue = ''; // не используется, но можно оставить пустым
+                }
+
+                // Для каждого XML-файла выполняем замену
+                for (const filePath of xmlFiles) {
+                    const file = zip.file(filePath);
+                    if (!file) continue;
+
+                    let content = await file.async('string');
+                    let modified = false;
+
+                    // 1. Замена образца ФИО на реальное (только внутри <w:t>) – для обратной совместимости
+                    if (fioPattern && fioFullEscaped) {
+                        function replaceInTextTags(xml, search, replacement) {
+                            const tagPattern = /(<w:t[^>]*>)(.*?)(<\/w:t>)/gs;
+                            return xml.replace(tagPattern, (match, openTag, innerText, closeTag) => {
+                                if (innerText.includes(search)) {
+                                    const newInner = innerText.replace(new RegExp(escapeRegExp(search), 'g'), replacement);
+                                    return openTag + newInner + closeTag;
+                                }
+                                return match;
+                            });
+                        }
+
+                        content = replaceInTextTags(content, fioPattern, fioFullEscaped);
+                        modified = true;
+                    }
+
+                    // 2. Склейка прогонов, разорванных Word'ом (перед заменой маркеров)
+                    content = mergeRunsForMarkers(content, ['{N}','{U}','{Y}','{X}','{Z}','{T}','{O}','{P}','{Q}','{W}']);
+
+                    // 3. Замена маркеров внутри <w:t>
+                    const markers = [
+                        { marker: '{N}', value: nValue },
+                        { marker: '{U}', value: uValue },
+                        { marker: '{Y}', value: regNumber },
+                        { marker: '{X}', value: enrollDate },
+                        { marker: '{Z}', value: gradDate },
+                        { marker: '{T}', value: issueDate },
+                        { marker: '{O}', value: grade },
+                        { marker: '{P}', value: gradeText },
+                        { marker: '{Q}', value: eduLevel },
+                        { marker: '{W}', value: year }
+                    ];
+
+                    markers.forEach(({ marker, value }) => {
+                        if (value !== undefined && value !== null) { // разрешаем пустую строку (если надо удалить маркер)
+                            const tagPattern = /(<w:t[^>]*>)(.*?)(<\/w:t>)/gs;
+                            content = content.replace(tagPattern, (match, openTag, innerText, closeTag) => {
+                                if (innerText.includes(marker)) {
+                                    const newInner = innerText.replace(new RegExp(escapeRegExp(marker), 'g'), value);
+                                    return openTag + newInner + closeTag;
+                                }
+                                return match;
+                            });
+                            modified = true;
+                        }
+                    });
+
+                    // 4. Замена старых форматов номера (если есть) внутри <w:t>
+                    if (regNumber) {
+                        const oldPatterns = ['{Y}/B-C', '{Y}/94-25', '№ {Y}/B-C', '№ {Y}/94-25'];
+                        oldPatterns.forEach(pattern => {
+                            const tagPattern = /(<w:t[^>]*>)(.*?)(<\/w:t>)/gs;
+                            content = content.replace(tagPattern, (match, openTag, innerText, closeTag) => {
+                                if (innerText.includes(pattern)) {
+                                    const newInner = innerText.replace(new RegExp(escapeRegExp(pattern), 'g'), regNumber);
+                                    return openTag + newInner + closeTag;
+                                }
+                                return match;
+                            });
+                            modified = true;
+                        });
+                    }
+
+                    if (modified) {
+                        zip.file(filePath, content);
+                        console.log(`Файл ${filePath} изменён`);
+                    }
+                }
+
+                // Генерируем новый архив
+                const newZipContent = await zip.generateAsync({ type: 'arraybuffer' });
+                return newZipContent;
+
+            } catch (error) {
+                console.error('Ошибка в replaceTextInDocx:', error);
+                throw error;
+            }
+        }
+
+        // =============== ЗАГРУЗКА И ПАРСИНГ ===============
+        document.addEventListener('DOMContentLoaded', function() {
+            // Элементы DOM
+            const excelFileInput = document.getElementById('excelFile');
+            const excelBrowseBtn = document.getElementById('excelBrowseBtn');
+            const excelDropArea = document.getElementById('excelDropArea');
+            const excelSelectedFile = document.getElementById('excelSelectedFile');
+            const excelFileName = document.getElementById('excelFileName');
+            const excelFileSize = document.getElementById('excelFileSize');
+            const excelRecordCount = document.getElementById('excelRecordCount');
+
+            const wordFileInput = document.getElementById('wordFile');
+            const wordBrowseBtn = document.getElementById('wordBrowseBtn');
+            const wordDropArea = document.getElementById('wordDropArea');
+            const wordSelectedFile = document.getElementById('wordSelectedFile');
+            const wordFileName = document.getElementById('wordFileName');
+            const wordFileSize = document.getElementById('wordFileSize');
+
+            const generateBtn = document.getElementById('generateBtn');
+            const generateAllBtn = document.getElementById('generateAllBtn');
+            const clearBtn = document.getElementById('clearBtn');
+            const debugBtn = document.getElementById('debugBtn');
+            const testReplaceBtn = document.getElementById('testReplaceBtn');
+            const inspectTemplateBtn = document.getElementById('inspectTemplateBtn');
+            const fioTestBtn = document.getElementById('fioTestBtn');
+            const createTemplateBtn = document.getElementById('createTemplateBtn');
+            const peopleList = document.getElementById('peopleList');
+            const statusMessage = document.getElementById('statusMessage');
+            const loading = document.getElementById('loading');
+            const preview = document.getElementById('preview');
+            const previewSurname = document.getElementById('previewSurname');
+            const previewRestName = document.getElementById('previewRestName');
+            const previewRegNumber = document.getElementById('previewRegNumber');
+            const previewEnrollDate = document.getElementById('previewEnrollDate');
+            const previewGradDate = document.getElementById('previewGradDate');
+            const previewIssueDate = document.getElementById('previewIssueDate');
+            const previewGrade = document.getElementById('previewGrade');
+            const previewGradeText = document.getElementById('previewGradeText');
+            const previewEduLevel = document.getElementById('previewEduLevel');
+            const previewYear = document.getElementById('previewYear');
+            const debugInfo = document.getElementById('debugInfo');
+            const debugContent = document.getElementById('debugContent');
+
+            // Поле для образца ФИО
+            const fioPatternInput = document.getElementById('fioPatternInput');
+
+            // Обработчики событий
+            excelBrowseBtn.addEventListener('click', () => excelFileInput.click());
+            excelFileInput.addEventListener('change', (e) => handleFileSelect(e, 'excel'));
+            wordBrowseBtn.addEventListener('click', () => wordFileInput.click());
+            wordFileInput.addEventListener('change', (e) => handleFileSelect(e, 'word'));
+            generateBtn.addEventListener('click', generateDocument);
+            generateAllBtn.addEventListener('click', generateAllDocuments);
+            clearBtn.addEventListener('click', clearData);
+            debugBtn.addEventListener('click', showDebugInfo);
+            testReplaceBtn.addEventListener('click', testTemplateReplace);
+            inspectTemplateBtn.addEventListener('click', inspectTemplateStructure);
+            fioTestBtn.addEventListener('click', testFioReplacement);
+            createTemplateBtn.addEventListener('click', createTestTemplate);
+
+            // Drag and drop
+            excelDropArea.addEventListener('dragover', (e) => { e.preventDefault(); excelDropArea.style.borderColor = '#667eea'; excelDropArea.style.background = '#f0f2ff'; });
+            excelDropArea.addEventListener('dragleave', () => { excelDropArea.style.borderColor = '#dee2e6'; excelDropArea.style.background = ''; });
+            excelDropArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                excelDropArea.style.borderColor = '#dee2e6';
+                excelDropArea.style.background = '';
+                if (e.dataTransfer.files.length > 0) {
+                    const file = e.dataTransfer.files[0];
+                    if (file.name.match(/\.(xlsx|xls)$/)) {
+                        const event = { target: { files: [file] } };
+                        handleFileSelect(event, 'excel');
+                    } else {
+                        showStatus('Пожалуйста, выберите файл Excel (.xlsx или .xls)', 'error');
+                    }
+                }
+            });
+
+            wordDropArea.addEventListener('dragover', (e) => { e.preventDefault(); wordDropArea.style.borderColor = '#667eea'; wordDropArea.style.background = '#f0f2ff'; });
+            wordDropArea.addEventListener('dragleave', () => { wordDropArea.style.borderColor = '#dee2e6'; wordDropArea.style.background = ''; });
+            wordDropArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                wordDropArea.style.borderColor = '#dee2e6';
+                wordDropArea.style.background = '';
+                if (e.dataTransfer.files.length > 0) {
+                    const file = e.dataTransfer.files[0];
+                    if (file.name.match(/\.(docx)$/)) {
+                        const event = { target: { files: [file] } };
+                        handleFileSelect(event, 'word');
+                    } else {
+                        showStatus('Пожалуйста, выберите файл Word в формате .docx', 'error');
+                    }
+                }
+            });
+
+            function handleFileSelect(event, type) {
+                const file = event.target.files[0];
+                if (!file) return;
+                showLoading('Чтение файла...');
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        if (type === 'excel') handleExcelFile(file, e.target.result);
+                        else if (type === 'word') handleWordFile(file, e.target.result);
+                    } catch (error) {
+                        console.error('Ошибка чтения файла:', error);
+                        showStatus(`Ошибка при чтении ${type === 'excel' ? 'Excel' : 'Word'} файла: ${error.message}`, 'error');
+                        hideLoading();
+                    }
+                };
+                reader.onerror = function() {
+                    showStatus('Ошибка при чтении файла', 'error');
+                    hideLoading();
+                };
+                reader.readAsArrayBuffer(file);
+            }
+
+            function handleWordFile(file, fileContent) {
+                try {
+                    wordTemplateContent = fileContent;
+                    wordFileName.textContent = file.name;
+                    wordFileSize.textContent = formatFileSize(file.size);
+                    wordSelectedFile.style.display = 'block';
+                    showStatus('Word шаблон успешно загружен', 'success');
+                    hideLoading();
+                    checkGenerationReady();
+                } catch (error) {
+                    console.error('Ошибка обработки Word:', error);
+                    showStatus('Ошибка при обработке Word файла: ' + error.message, 'error');
+                    hideLoading();
+                }
+            }
+
+            function handleExcelFile(file, fileContent) {
+                try {
+                    excelFileName.textContent = file.name;
+                    excelFileSize.textContent = formatFileSize(file.size);
+                    excelSelectedFile.style.display = 'block';
+
+                    const data = new Uint8Array(fileContent);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    parseExcelData(workbook);
+
+                } catch (error) {
+                    console.error('Ошибка обработки Excel:', error);
+                    showStatus('Ошибка при обработке Excel файла: ' + error.message, 'error');
+                    hideLoading();
+                }
+            }
+
+            // ===== ПАРСИНГ С ДОБАВЛЕННЫМИ ПОЛЯМИ O, P, Q, W =====
+            function parseExcelData(workbook) {
+                try {
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                    console.log('Все данные Excel:', jsonData);
+
+                    const headerRowIndex = 0;
+                    const headers = jsonData[headerRowIndex] || [];
+
+                    // Определяем индексы столбцов по заголовкам
+                    let colIndexReg = headers.findIndex(h => String(h).includes('Рег. номер') || String(h).includes('Рег'));
+                    let colIndexFio = headers.findIndex(h => String(h).includes('Фамилия, Имя, Отчество') || String(h).includes('Фамилия'));
+                    let colIndexGak = headers.findIndex(h => String(h).includes('протокола ГАК'));
+                    let colIndexPri = headers.findIndex(h => String(h).includes('приказа о зачислении'));
+                    let colIndexIssue = headers.findIndex(h => String(h).includes('Дата выдачи'));
+                    let colIndexGrade = headers.findIndex(h => String(h).includes('Оценка'));
+
+                    // !!! ВАЖНО: столбец L (год/СПО) — это последний столбец с индексом 11.
+                    let colIndexProgram = 11;
+                    if (colIndexProgram >= headers.length) {
+                        colIndexProgram = headers.findIndex(h =>
+                            String(h).toLowerCase().includes('год') ||
+                            String(h).toLowerCase().includes('образование') ||
+                            String(h).toLowerCase().includes('спо')
+                        );
+                        if (colIndexProgram === -1) colIndexProgram = headers.length - 1;
+                    }
+
+                    // Если поиск не дал результатов, устанавливаем фиксированные позиции
+                    if (colIndexReg === -1) colIndexReg = 0;
+                    if (colIndexFio === -1) colIndexFio = 5;
+                    if (colIndexGak === -1) colIndexGak = 7;
+                    if (colIndexPri === -1) colIndexPri = 8;
+                    if (colIndexIssue === -1) colIndexIssue = 9;
+                    if (colIndexGrade === -1) colIndexGrade = 10;
+
+                    console.log('Индексы колонок:', {
+                        colIndexReg, colIndexFio, colIndexGak, colIndexPri, colIndexIssue, colIndexGrade, colIndexProgram
+                    });
+
+                    peopleData = [];
+
+                    for (let i = headerRowIndex + 1; i < jsonData.length; i++) {
+                        const row = jsonData[i];
+                        if (!row || row.length === 0) continue;
+
+                        const fio = row[colIndexFio] ? String(row[colIndexFio]).trim() : '';
+                        if (!fio) continue;
+
+                        const regNumber = row[colIndexReg] ? String(row[colIndexReg]).trim() : '';
+
+                        // Даты
+                        const gradRaw = row[colIndexGak];
+                        const enrollRaw = row[colIndexPri];
+                        const issueRaw = row[colIndexIssue];
+
+                        const gradDateStr = extractDateFromCell(gradRaw);
+                        const enrollDateStr = extractDateFromCell(enrollRaw);
+                        const issueDateStr = extractDateFromCell(issueRaw);
+
+                        const gradDateRussian = formatDateToRussian(gradDateStr);
+                        const enrollDateRussian = formatDateToRussian(enrollDateStr);
+                        const issueDateRussian = formatDateToRussian(issueDateStr);
+
+                        // --- Оценка ({O}) ---
+                        let grade = '';
+                        if (row[colIndexGrade] !== undefined && row[colIndexGrade] !== null) {
+                            const cell = row[colIndexGrade];
+                            if (typeof cell === 'number') {
+                                grade = cell.toString();
+                            } else if (typeof cell === 'string') {
+                                const match = cell.match(/\d+/);
+                                grade = match ? match[0] : '';
+                            } else {
+                                grade = '';
+                            }
+                        }
+
+                        // --- Оценка прописью ({P}) ---
+                        let gradeText = '';
+                        const gradeNum = parseFloat(grade);
+                        if (gradeNum === 5) gradeText = 'отлично';
+                        else if (gradeNum === 4) gradeText = 'хорошо';
+                        else if (gradeNum === 3) gradeText = 'удовл.';
+
+                        // --- Образование (L) ---
+                        let programStr = '';
+                        if (row[colIndexProgram] !== undefined && row[colIndexProgram] !== null) {
+                            if (typeof row[colIndexProgram] === 'number') {
+                                programStr = row[colIndexProgram].toString();
+                            } else {
+                                programStr = String(row[colIndexProgram]).trim();
+                            }
+                        }
+                        console.log(`Строка ${i} (${fio}): сырая ячейка L =`, row[colIndexProgram], 'преобразовано = "' + programStr + '"');
+
+                        // --- Уровень образования ({Q}) ---
+                        let educationLevel = 'Диплом о высшем образовании';
+                        if (programStr.toLowerCase().includes('спо')) {
+                            educationLevel = 'Диплом о среднем профессиональном образовании';
+                        }
+
+                        // --- Год выдачи ({W}) - ТОЛЬКО ИЗ СТОЛБЦА L ---
+                        let year = '';
+                        const yearMatch = programStr.match(/\b(19|20)\d{2}\b/);
+                        if (yearMatch) {
+                            year = yearMatch[0];
+                        }
+
+                        console.log(`  -> {Q}: ${educationLevel}, {W}: ${year}`);
+
+                        const person = {
+                            'Фамилия Имя Отчество': fio,
+                            regNumber: regNumber,
+                            enrollDate: enrollDateRussian,
+                            gradDate: gradDateRussian,
+                            issueDate: issueDateRussian,
+                            grade: grade,
+                            gradeText: gradeText,
+                            educationLevel: educationLevel,
+                            year: year,
+                            _rawRow: row
+                        };
+
+                        peopleData.push(person);
+                    }
+
+                    if (peopleData.length === 0) {
+                        showStatus('В файле не найдены данные о людях', 'error');
+                        hideLoading();
+                        return;
+                    }
+
+                    excelRecordCount.textContent = `${peopleData.length} записей`;
+                    displayPeopleList();
+                    showStatus(`Успешно загружено ${peopleData.length} записей.`, 'success');
+                    hideLoading();
+                    checkGenerationReady();
+
+                } catch (error) {
+                    console.error('Ошибка парсинга Excel:', error);
+                    showStatus('Ошибка при обработке данных из файла: ' + error.message, 'error');
+                    hideLoading();
+                }
+            }
+
+            // ===== Отображение списка =====
+            function displayPeopleList() {
+                peopleList.innerHTML = '';
+                const table = document.createElement('table');
+                table.innerHTML = `
+                    <thead><tr><th>№</th><th>ФИО</th><th>Рег. номер</th><th>Дата зачисления</th><th>Дата выдачи</th></tr></thead>
+                    <tbody id="peopleTableBody"></tbody>
+                `;
+                peopleList.appendChild(table);
+                const tbody = document.getElementById('peopleTableBody');
+
+                peopleData.forEach((person, index) => {
+                    const row = document.createElement('tr');
+                    row.dataset.index = index;
+                    row.innerHTML = `
+                        <td>${index+1}</td>
+                        <td>${escapeHtml(person['Фамилия Имя Отчество'] || '')}</td>
+                        <td>${escapeHtml(person.regNumber || '—')}</td>
+                        <td>${escapeHtml(person.enrollDate || '—')}</td>
+                        <td>${escapeHtml(person.issueDate || '—')}</td>
+                    `;
+                    row.addEventListener('click', () => selectPerson(index));
+                    tbody.appendChild(row);
+                });
+            }
+
+            // ===== Выбор человека =====
+            function selectPerson(index) {
+                const rows = document.querySelectorAll('#peopleTableBody tr');
+                rows.forEach(row => row.classList.remove('selected'));
+                rows[index].classList.add('selected');
+                selectedPersonIndex = index;
+                generateBtn.disabled = !wordTemplateContent;
+
+                const person = peopleData[index];
+                const fioParts = person['Фамилия Имя Отчество'].split(/\s+/);
+                previewSurname.textContent = fioParts[0] || '—';
+                previewRestName.textContent = fioParts.slice(1).join(' ') || '—';
+                previewRegNumber.textContent = person.regNumber || '—';
+                previewEnrollDate.textContent = person.enrollDate || '—';
+                previewGradDate.textContent = person.gradDate || '—';
+                previewIssueDate.textContent = person.issueDate || '—';
+                previewGrade.textContent = person.grade !== undefined && person.grade !== '' ? person.grade : '—';
+                previewGradeText.textContent = person.gradeText || '—';
+                previewEduLevel.textContent = person.educationLevel || '—';
+                previewYear.textContent = person.year || '—';
+
+                preview.style.display = 'block';
+                showStatus(`Выбран: ${person['Фамилия Имя Отчество']}`, 'info');
+
+                console.log('Выбранный человек:', person);
+            }
+
+            function checkGenerationReady() {
+                if (peopleData.length > 0 && wordTemplateContent) {
+                    generateAllBtn.disabled = false;
+                    showStatus('Все файлы загружены. Выберите выпускника.', 'success');
+                }
+            }
+
+            // ===== Генерация документов =====
+            async function generateDocument() {
+                if (selectedPersonIndex === null) { showStatus('Сначала выберите человека из списка', 'error'); return; }
+                if (!wordTemplateContent) { showStatus('Сначала загрузите Word шаблон', 'error'); return; }
+
+                showLoading('Создание диплома...');
+                try {
+                    const person = peopleData[selectedPersonIndex];
+                    const docContent = await replaceTextInDocx(person);
+                    if (!docContent) throw new Error('Не удалось создать документ');
+
+                    const fio = person['Фамилия Имя Отчество'];
+                    const safeName = fio.replace(/[^a-zA-Zа-яА-Я0-9\s]/g, '').replace(/\s+/g, '_');
+                    const filename = `диплом_${safeName}.docx`;
+
+                    const blob = new Blob([docContent], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+                    saveAs(blob, filename);
+
+                    showStatus('Диплом успешно создан!', 'success');
+                    hideLoading();
+                } catch (error) {
+                    console.error(error);
+                    showStatus('Ошибка при создании диплома: ' + error.message, 'error');
+                    hideLoading();
+                }
+            }
+
+            async function generateAllDocuments() {
+                if (peopleData.length === 0) { showStatus('Нет данных для создания документов', 'error'); return; }
+                if (!wordTemplateContent) { showStatus('Сначала загрузите Word шаблон', 'error'); return; }
+
+                showLoading(`Создание ${peopleData.length} дипломов...`);
+                try {
+                    const zip = new JSZip();
+                    let successCount = 0, errorCount = 0;
+
+                    for (let i = 0; i < peopleData.length; i++) {
+                        const person = peopleData[i];
+                        try {
+                            const docContent = await replaceTextInDocx(person);
+                            if (docContent) {
+                                const fio = person['Фамилия Имя Отчество'] || `Выпускник_${i+1}`;
+                                const safeName = fio.replace(/[^a-zA-Zа-яА-Я0-9\s]/g, '').replace(/\s+/g, '_');
+                                zip.file(`диплом_${safeName}.docx`, docContent);
+                                successCount++;
+                            } else {
+                                errorCount++;
+                            }
+                        } catch (e) {
+                            console.error(e);
+                            errorCount++;
+                        }
+
+                        if (i % 10 === 0 || i === peopleData.length - 1) {
+                            showLoading(`Создание: ${i+1} из ${peopleData.length}`);
+                        }
+                    }
+
+                    if (successCount === 0) throw new Error('Не удалось создать ни одного диплома');
+
+                    const zipBlob = await zip.generateAsync({ type: 'blob' });
+                    saveAs(zipBlob, 'все_дипломы.zip');
+
+                    let message = `Создано ${successCount} дипломов!`;
+                    if (errorCount > 0) message += ` Не удалось создать ${errorCount}.`;
+                    showStatus(message, errorCount > 0 ? 'info' : 'success');
+                    hideLoading();
+                } catch (error) {
+                    console.error(error);
+                    showStatus('Ошибка при создании архива: ' + error.message, 'error');
+                    hideLoading();
+                }
+            }
+
+            // ===== Тестовые функции =====
+            async function testTemplateReplace() {
+                if (!wordTemplateContent) { showStatus('Сначала загрузите Word шаблон', 'error'); return; }
+                showLoading('Тестирование замены...');
+                try {
+                    const testPerson = {
+                        'Фамилия Имя Отчество': 'Иванов Иван Иванович',
+                        regNumber: '4339',
+                        enrollDate: '30 сентября 2024',
+                        gradDate: '26 декабря 2024',
+                        issueDate: '27 декабря 2024',
+                        grade: '5',
+                        gradeText: 'отлично',
+                        educationLevel: 'Диплом о высшем образовании',
+                        year: '2024'
+                    };
+
+                    const modifiedContent = await replaceTextInDocx(testPerson);
+                    const blob = new Blob([modifiedContent], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+                    const url = URL.createObjectURL(blob);
+
+                    let debugHtml = `
+                        <div><strong>Тестирование замены (диплом):</strong></div>
+                        <div>Тестовые данные:</div>
+                        <div style="margin-left:20px;">
+                            <div>ФИО: ${testPerson['Фамилия Имя Отчество']}</div>
+                            <div>Рег. номер ({Y}): ${testPerson.regNumber}</div>
+                            <div>Дата зачисления ({X}): ${testPerson.enrollDate}</div>
+                            <div>Дата окончания ({Z}): ${testPerson.gradDate}</div>
+                            <div>Дата выдачи ({T}): ${testPerson.issueDate}</div>
+                            <div>Оценка ({O}): ${testPerson.grade}</div>
+                            <div>Оценка прописью ({P}): ${testPerson.gradeText}</div>
+                            <div>Уровень образования ({Q}): ${testPerson.educationLevel}</div>
+                            <div>Год выдачи ({W}): ${testPerson.year}</div>
+                        </div>
+                        <div style="margin-top:10px;">
+                            <a href="${url}" download="тест_диплома.docx" class="btn" style="padding:5px 10px;">Скачать тестовый файл</a>
+                        </div>
+                    `;
+                    debugContent.innerHTML = debugHtml;
+                    debugInfo.style.display = 'block';
+                    hideLoading();
+                    setTimeout(() => URL.revokeObjectURL(url), 30000);
+                } catch (error) {
+                    debugContent.innerHTML = `<div style="color:red;">Ошибка: ${error.message}</div>`;
+                    debugInfo.style.display = 'block';
+                    hideLoading();
+                }
+            }
+
+            async function inspectTemplateStructure() {
+                if (!wordTemplateContent) { showStatus('Сначала загрузите Word шаблон', 'error'); return; }
+                showLoading('Анализ шаблона...');
+                try {
+                    const zip = await JSZip.loadAsync(wordTemplateContent);
+
+                    let debugHtml = '<div><strong>Содержимое шаблона:</strong></div>';
+                    const xmlFiles = [];
+                    zip.forEach((relativePath, file) => {
+                        if (relativePath.match(/\.xml$/)) xmlFiles.push(relativePath);
+                    });
+
+                    debugHtml += '<div>Найденные XML-файлы:</div><ul>';
+                    xmlFiles.forEach(f => debugHtml += `<li>${f}</li>`);
+                    debugHtml += '</ul>';
+
+                    const markers = ['{N}', '{U}', '{Y}', '{X}', '{Z}', '{T}', '{O}', '{P}', '{Q}', '{W}', fioPatternInput.value];
+                    for (const filePath of xmlFiles.slice(0, 3)) {
+                        const file = zip.file(filePath);
+                        if (file) {
+                            const content = await file.async('string');
+                            debugHtml += `<div><strong>${filePath}:</strong> `;
+                            markers.forEach(m => {
+                                if (content.includes(m)) debugHtml += `✅${m} `;
+                            });
+                            debugHtml += '</div>';
+                        }
+                    }
+
+                    debugContent.innerHTML = debugHtml;
+                    debugInfo.style.display = 'block';
+                    hideLoading();
+                } catch (error) {
+                    debugContent.innerHTML = `Ошибка: ${error.message}`;
+                    debugInfo.style.display = 'block';
+                    hideLoading();
+                }
+            }
+
+            async function testFioReplacement() {
+                if (!wordTemplateContent) { showStatus('Сначала загрузите Word шаблон', 'error'); return; }
+                showLoading('Тест ФИО...');
+                try {
+                    const zip = await JSZip.loadAsync(wordTemplateContent);
+                    const pattern = fioPatternInput.value.trim() || 'Абабин Михаил Сергеевич';
+
+                    let msg = `<div>Ищем образец: "${pattern}"</div>`;
+                    let foundAny = false;
+
+                    zip.forEach(async (relativePath, file) => {
+                        if (relativePath.match(/\.xml$/)) {
+                            const content = await file.async('string');
+                            if (content.includes(pattern)) {
+                                foundAny = true;
+                                msg += `<div>✅ Найден в ${relativePath}</div>`;
+                            }
+                        }
+                    });
+
+                    setTimeout(() => {
+                        if (!foundAny) {
+                            msg += `<div style="color:red;">❌ Образец ФИО не найден ни в одном XML-файле. Проверьте точность написания.</div>`;
+                        }
+                        debugContent.innerHTML = msg;
+                        debugInfo.style.display = 'block';
+                        hideLoading();
+                    }, 500);
+
+                } catch (error) {
+                    debugContent.innerHTML = `Ошибка: ${error.message}`;
+                    debugInfo.style.display = 'block';
+                    hideLoading();
+                }
+            }
+
+            async function createTestTemplate() {
+                showLoading('Создание тестового шаблона с {N} и {U}...');
+                try {
+                    // Шаблон, в котором фамилия ({N}) и имя-отчество ({U}) расположены на разных строках
+                    const templateContent = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+    <w:body>
+        <w:p><w:r><w:t>ДИПЛОМ № {Y}</w:t></w:r></w:p>
+        <w:p><w:r><w:t>Выдан:</w:t></w:r></w:p>
+        <w:p><w:r><w:t>{N}</w:t></w:r></w:p>
+        <w:p><w:r><w:t>{U}</w:t></w:r></w:p>
+        <w:p><w:r><w:t>Дата зачисления: {X}</w:t></w:r></w:p>
+        <w:p><w:r><w:t>Дата окончания: {Z}</w:t></w:r></w:p>
+        <w:p><w:r><w:t>Дата выдачи: {T}</w:t></w:r></w:p>
+        <w:p><w:r><w:t>Оценка: {O} ({P})</w:t></w:r></w:p>
+        <w:p><w:r><w:t>Уровень образования: {Q}</w:t></w:r></w:p>
+        <w:p><w:r><w:t>Год выдачи: {W}</w:t></w:r></w:p>
+    </w:body>
+</w:document>`;
+
+                    const zip = new JSZip();
+                    zip.file('[Content_Types].xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+    <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+    <Default Extension="xml" ContentType="application/xml"/>
+    <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+</Types>`);
+                    zip.folder('_rels');
+                    zip.folder('word');
+                    zip.folder('word/_rels');
+                    zip.file('word/document.xml', templateContent);
+                    zip.file('_rels/.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+    <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+</Relationships>`);
+                    zip.file('word/_rels/document.xml.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>`);
+
+                    const blob = await zip.generateAsync({ type: 'blob' });
+                    saveAs(blob, 'шаблон_с_N_и_U.docx');
+                    showStatus('Шаблон с {N} и {U} создан!', 'success');
+                    hideLoading();
+                } catch (error) {
+                    console.error(error);
+                    showStatus('Ошибка создания шаблона', 'error');
+                    hideLoading();
+                }
+            }
+
+            function showDebugInfo() {
+                if (selectedPersonIndex !== null) {
+                    const person = peopleData[selectedPersonIndex];
+                    const fioParts = person['Фамилия Имя Отчество'].split(/\s+/);
+                    let html = `<div><strong>Выбранный выпускник:</strong></div>`;
+                    html += `<div>Фамилия ({N}): ${fioParts[0] || '—'}</div>`;
+                    html += `<div>Имя Отчество ({U}): ${fioParts.slice(1).join(' ') || '—'}</div>`;
+                    html += `<div>Рег. номер ({Y}): ${person.regNumber}</div>`;
+                    html += `<div>Дата зачисления ({X}): ${person.enrollDate}</div>`;
+                    html += `<div>Дата окончания ({Z}): ${person.gradDate}</div>`;
+                    html += `<div>Дата выдачи ({T}): ${person.issueDate}</div>`;
+                    html += `<div>Оценка ({O}): ${person.grade}</div>`;
+                    html += `<div>Оценка прописью ({P}): ${person.gradeText}</div>`;
+                    html += `<div>Уровень образования ({Q}): ${person.educationLevel}</div>`;
+                    html += `<div>Год выдачи ({W}): ${person.year}</div>`;
+                    debugContent.innerHTML = html;
+                    debugInfo.style.display = 'block';
+                } else {
+                    showStatus('Выберите человека из списка', 'error');
+                }
+            }
+
+            function clearData() {
+                peopleData = [];
+                selectedPersonIndex = null;
+                wordTemplateContent = null;
+
+                excelSelectedFile.style.display = 'none';
+                wordSelectedFile.style.display = 'none';
+                peopleList.innerHTML = `
+                    <div style="padding:40px; text-align:center; color:#6c757d;">
+                        <i class="fas fa-users" style="font-size:48px; margin-bottom:15px;"></i>
+                        <div>Загрузите Excel файл, чтобы увидеть список</div>
+                    </div>
+                `;
+                generateBtn.disabled = true;
+                generateAllBtn.disabled = true;
+                preview.style.display = 'none';
+                debugInfo.style.display = 'none';
+                excelFileInput.value = '';
+                wordFileInput.value = '';
+                showStatus('Все данные очищены', 'info');
+            }
+
+            function formatFileSize(bytes) {
+                if (bytes === 0) return '0 Байт';
+                const k = 1024;
+                const sizes = ['Байт', 'КБ', 'МБ'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+            }
+
+            function showStatus(message, type = 'info') {
+                statusMessage.textContent = message;
+                statusMessage.className = `status ${type}`;
+                statusMessage.style.display = 'block';
+                setTimeout(() => {
+                    if (type !== 'error') statusMessage.style.display = 'none';
+                }, 5000);
+            }
+
+            function showLoading(text = 'Обработка...') {
+                document.getElementById('loadingText').textContent = text;
+                loading.style.display = 'block';
+            }
+
+            function hideLoading() {
+                loading.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

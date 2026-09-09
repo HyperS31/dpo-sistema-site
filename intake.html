@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Анкета для зачисления</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --primary: #4361ee; --primary-light: #4895ef; --primary-dark: #3f37c9;
+            --success: #2ecc71; --danger: #f72585; --warning: #f8961e;
+            --bg: #f8f9fa; --card-bg: #ffffff; --text: #212529;
+            --text-secondary: #495057; --border: #dee2e6;
+            --shadow: 0 4px 12px rgba(0,0,0,0.05); --radius: 12px; --transition: 0.2s ease;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0; padding: 24px 16px 60px;
+            background: linear-gradient(135deg, #e0e7ff 0%, #f8f9fa 100%);
+            color: var(--text);
+        }
+        .container { max-width: 720px; margin: auto; }
+        header { margin-bottom: 24px; }
+        h1 { color: var(--primary-dark); font-size: 22px; margin: 0 0 6px; font-weight: 600; }
+        .lede { color: var(--text-secondary); font-size: 14.5px; line-height: 1.5; }
+        .context-card {
+            background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow);
+            padding: 16px 20px; margin-bottom: 20px; font-size: 14px;
+        }
+        .context-card .prog { font-weight: 600; color: var(--primary-dark); margin-bottom: 4px; }
+        .context-card .meta { color: var(--text-secondary); font-size: 13px; }
+
+        .student-block {
+            background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow);
+            padding: 20px 22px; margin-bottom: 18px; position: relative;
+        }
+        .student-block h3 { font-size: 15px; color: var(--primary-dark); margin: 0 0 16px; display: flex; align-items: center; gap: 8px; }
+        .remove-block {
+            position: absolute; top: 16px; right: 16px; background: transparent; color: var(--danger);
+            border: none; cursor: pointer; font-size: 13px; padding: 4px 8px;
+        }
+        .field { margin-bottom: 14px; }
+        .field label { display: block; font-size: 12.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 5px; }
+        .field label .req { color: var(--danger); }
+        .field input, .field select {
+            width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px;
+            font-size: 14px; font-family: inherit;
+        }
+        .field input:focus, .field select:focus {
+            outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(67,97,238,0.15);
+        }
+        .field-row { display: flex; gap: 12px; }
+        .field-row .field { flex: 1; }
+        .hint { font-size: 11.5px; color: #adb5bd; margin-top: 3px; }
+        .radio-group { display: flex; gap: 16px; }
+        .radio-group label { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 400; color: var(--text); }
+        .radio-group input { width: auto; }
+        .section-divider { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; color: var(--text-secondary); margin: 18px 0 12px; padding-top: 12px; border-top: 1px dashed var(--border); }
+
+        button {
+            padding: 11px 22px; background: var(--primary); color: white; border: none;
+            border-radius: 25px; cursor: pointer; font-size: 14px; transition: var(--transition);
+            font-weight: 500; display: inline-flex; align-items: center; gap: 6px;
+        }
+        button:hover { background: var(--primary-dark); }
+        button.secondary { background: transparent; color: var(--primary); border: 1px solid var(--primary); }
+        button.secondary:hover { background: #eef1ff; }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .actions { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+        #submitBtn { width: 100%; justify-content: center; padding: 14px; font-size: 15px; margin-top: 10px; }
+
+        #errorScreen, #successScreen { text-align: center; padding: 60px 20px; }
+        #errorScreen i, #successScreen i { font-size: 42px; margin-bottom: 16px; }
+        #errorScreen i { color: var(--danger); }
+        #successScreen i { color: var(--success); }
+        #errorScreen h2, #successScreen h2 { font-size: 19px; margin: 0 0 8px; }
+        #errorScreen p, #successScreen p { color: var(--text-secondary); }
+
+        #loading-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.75); display: none; justify-content: center;
+            align-items: center; z-index: 2000; flex-direction: column; gap: 12px;
+        }
+        #loading-overlay span { color: var(--text-secondary); font-size: 13.5px; }
+
+        [hidden] { display: none !important; }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <div id="errorScreen" hidden>
+        <i class="fas fa-circle-exclamation"></i>
+        <h2>Ссылка недействительна</h2>
+        <p id="errorText">Проверьте, что вы перешли по полной ссылке из письма. Если проблема повторяется — свяжитесь с отделом ДПО.</p>
+    </div>
+
+    <div id="successScreen" hidden>
+        <i class="fas fa-circle-check"></i>
+        <h2>Спасибо, данные отправлены</h2>
+        <p>Отдел ДПО получил анкету и свяжется с вами при необходимости.</p>
+    </div>
+
+    <div id="formScreen" hidden>
+        <header>
+            <h1><i class="fas fa-user-pen"></i> Анкета для зачисления</h1>
+            <p class="lede">Заполните данные всех слушателей, которых нужно зачислить на программу. Эти сведения понадобятся для приказа о зачислении, ведомостей и итоговых документов.</p>
+        </header>
+
+        <div class="context-card">
+            <div class="prog" id="ctxProgram"></div>
+            <div class="meta" id="ctxMeta"></div>
+        </div>
+
+        <div id="studentsContainer"></div>
+
+        <div class="actions">
+            <button type="button" class="secondary" onclick="addStudentBlock()"><i class="fas fa-plus"></i> Добавить ещё слушателя</button>
+        </div>
+
+        <button id="submitBtn" onclick="submitForm()"><i class="fas fa-paper-plane"></i> Отправить анкету</button>
+    </div>
+
+</div>
+
+<div id="loading-overlay">
+    <i class="fas fa-spinner fa-spin" style="font-size: 2.5rem; color: var(--primary);"></i>
+    <span id="loadingText">Загрузка…</span>
+</div>
+
+<script>
+    const API_URL = 'https://script.google.com/macros/s/AKfycbyzCnkD8216HRNLx7ARUsVQdnhm2m0ad_v6cdqJshl6t_8G4LJKGtEWf8By6_rLqtHdEw/exec';
+    const MAX_FILE_MB = 8;
+
+    const params = new URLSearchParams(location.search);
+    const leadId = params.get('lead');
+    const token = params.get('token');
+
+    let blockCount = 0;
+
+    function showLoading(show, text) {
+        document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none';
+        if (text) document.getElementById('loadingText').textContent = text;
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.appendChild(document.createTextNode(text == null ? '' : String(text)));
+        return div.innerHTML;
+    }
+
+    function addStudentBlock(prefillFio) {
+        blockCount++;
+        const n = blockCount;
+        const div = document.createElement('div');
+        div.className = 'student-block';
+        div.dataset.n = n;
+        div.innerHTML = `
+            <h3><i class="fas fa-user"></i> Слушатель ${n}</h3>
+            ${n > 1 ? '<button type="button" class="remove-block" onclick="this.closest(\'.student-block\').remove()"><i class="fas fa-xmark"></i> Убрать</button>' : ''}
+
+            <div class="field">
+                <label>ФИО полностью <span class="req">*</span></label>
+                <input type="text" class="s-fio" required value="${escapeHtml(prefillFio || '')}">
+            </div>
+            <div class="field-row">
+                <div class="field">
+                    <label>Пол <span class="req">*</span></label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="gender-${n}" class="s-gender" value="М" checked> Мужской</label>
+                        <label><input type="radio" name="gender-${n}" class="s-gender" value="Ж"> Женский</label>
+                    </div>
+                </div>
+                <div class="field">
+                    <label>Дата рождения <span class="req">*</span></label>
+                    <input type="date" class="s-birth">
+                </div>
+            </div>
+            <div class="field">
+                <label>СНИЛС <span class="req">*</span></label>
+                <input type="text" class="s-snils" placeholder="XXX-XXX-XXX YY">
+                <div class="hint">11 цифр, можно с пробелами и дефисами — как на самом документе</div>
+            </div>
+
+            <div class="section-divider">Образование</div>
+            <div class="field-row">
+                <div class="field">
+                    <label>Вуз / учреждение, выдавшее диплом <span class="req">*</span></label>
+                    <input type="text" class="s-org">
+                </div>
+            </div>
+            <div class="field-row">
+                <div class="field">
+                    <label>Специальность / направление <span class="req">*</span></label>
+                    <input type="text" class="s-specialty">
+                </div>
+                <div class="field">
+                    <label>Квалификация (кем по диплому)</label>
+                    <input type="text" class="s-qualification">
+                </div>
+            </div>
+            <div class="field-row">
+                <div class="field">
+                    <label>Год окончания</label>
+                    <input type="number" class="s-year" min="1950" max="2100">
+                </div>
+                <div class="field">
+                    <label>Серия диплома</label>
+                    <input type="text" class="s-series">
+                </div>
+                <div class="field">
+                    <label>Номер диплома</label>
+                    <input type="text" class="s-number">
+                </div>
+            </div>
+            <div class="field">
+                <label>Скан диплома (фото или PDF) <span class="req">*</span></label>
+                <input type="file" class="s-scan" accept="image/*,.pdf">
+                <div class="hint">До ${MAX_FILE_MB} МБ. Разборчивое фото или скан разворота с квалификацией.</div>
+            </div>
+        `;
+        document.getElementById('studentsContainer').appendChild(div);
+    }
+
+    function fileToBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result.split(',')[1]);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
+
+    async function submitForm() {
+        const blocks = [...document.querySelectorAll('.student-block')];
+        if (!blocks.length) { alert('Добавьте хотя бы одного слушателя'); return; }
+
+        const students = [];
+        for (const block of blocks) {
+            const fio = block.querySelector('.s-fio').value.trim();
+            const birth = block.querySelector('.s-birth').value;
+            const snils = block.querySelector('.s-snils').value.trim();
+            const org = block.querySelector('.s-org').value.trim();
+            const specialty = block.querySelector('.s-specialty').value.trim();
+            const scanInput = block.querySelector('.s-scan');
+            const file = scanInput.files[0];
+
+            if (!fio || !birth || !snils || !org || !specialty) {
+                alert(`Заполните обязательные поля (отмечены *) для слушателя "${fio || block.dataset.n}"`);
+                return;
+            }
+            if (!file) {
+                alert(`Прикрепите скан диплома для "${fio}"`);
+                return;
+            }
+            if (file.size > MAX_FILE_MB * 1024 * 1024) {
+                alert(`Файл для "${fio}" больше ${MAX_FILE_MB} МБ — уменьшите размер (например, сделайте фото вместо скана в высоком разрешении)`);
+                return;
+            }
+
+            students.push({
+                fio,
+                gender: block.querySelector('.s-gender:checked')?.value || '',
+                birth_date: birth,
+                snils,
+                diploma_org: org,
+                diploma_specialty: specialty,
+                diploma_qualification: block.querySelector('.s-qualification').value.trim(),
+                diploma_year: block.querySelector('.s-year').value,
+                diploma_series: block.querySelector('.s-series').value.trim(),
+                diploma_number: block.querySelector('.s-number').value.trim(),
+                _file: file,
+            });
+        }
+
+        showLoading(true, 'Загружаем сканы документов…');
+        document.getElementById('submitBtn').disabled = true;
+        try {
+            for (const s of students) {
+                s.scan_base64 = await fileToBase64(s._file);
+                s.scan_filename = s._file.name;
+                s.scan_mimetype = s._file.type;
+                delete s._file;
+            }
+
+            showLoading(true, 'Отправляем анкету…');
+            const resp = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: 'submitEnrollment', leadId, token, students }),
+            });
+            const result = await resp.json();
+            if (result.status !== 'success') throw new Error(result.message || 'Не удалось отправить анкету');
+
+            document.getElementById('formScreen').hidden = true;
+            document.getElementById('successScreen').hidden = false;
+        } catch (err) {
+            alert('Ошибка отправки: ' + err.message + '\nПопробуйте ещё раз.');
+            document.getElementById('submitBtn').disabled = false;
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    async function init() {
+        if (!leadId || !token) {
+            document.getElementById('errorText').textContent = 'В ссылке не хватает параметров. Используйте ссылку из письма целиком.';
+            document.getElementById('errorScreen').hidden = false;
+            return;
+        }
+
+        showLoading(true, 'Загрузка анкеты…');
+        try {
+            const resp = await fetch(`${API_URL}?action=getIntakeContext&leadId=${encodeURIComponent(leadId)}&token=${encodeURIComponent(token)}`);
+            const result = await resp.json();
+            if (result.status !== 'success') throw new Error(result.message || 'Ссылка недействительна');
+
+            const ctx = result.data;
+            document.getElementById('ctxProgram').textContent = ctx.program || '(программа не указана)';
+            let meta = `Заявитель: ${ctx.fio || '—'}`;
+            if (ctx.org_name) meta += ` · ${ctx.org_name}`;
+            if (ctx.participants > 1) meta += ` · заявлено слушателей: ${ctx.participants}`;
+            if (ctx.already_submitted > 0) meta += ` · уже отправлено анкет: ${ctx.already_submitted}`;
+            document.getElementById('ctxMeta').textContent = meta;
+
+            const blocksToCreate = Math.max(1, Number(ctx.participants) || 1);
+            for (let i = 0; i < blocksToCreate; i++) {
+                addStudentBlock(blocksToCreate === 1 ? ctx.fio : '');
+            }
+
+            document.getElementById('formScreen').hidden = false;
+        } catch (err) {
+            document.getElementById('errorText').textContent = err.message;
+            document.getElementById('errorScreen').hidden = false;
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    init();
+</script>
+</body>
+</html>
