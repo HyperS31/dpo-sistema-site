@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CRM · Воронка сделок</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {
             --primary: #4361ee; --primary-light: #4895ef; --primary-dark: #3f37c9;
@@ -164,6 +165,13 @@
         .cohort-meta-field select, .cohort-meta-field input {
             padding: 7px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px;
         }
+        .report-filters { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 18px; padding: 14px 16px; background: #f8f9fc; border-radius: 10px; }
+        .report-filter-field label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: var(--text-secondary); margin-bottom: 4px; }
+        .report-filter-field select, .report-filter-field input {
+            padding: 7px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px;
+        }
+        .report-summary { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; }
+        .report-summary .stat-tile .value { font-size: 20px; }
         .cohort-docs-section { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--border); }
         .cohort-docs-section h4 { font-size: 12.5px; font-weight: 600; color: var(--text-secondary); margin: 0 0 10px; text-transform: uppercase; }
         .cohort-doc-buttons { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
@@ -376,6 +384,7 @@
         <button class="tab-btn" data-tab="clients" onclick="switchTab('clients')"><i class="fas fa-address-book"></i> Клиенты</button>
         <button class="tab-btn" data-tab="analytics" onclick="switchTab('analytics')"><i class="fas fa-chart-simple"></i> Аналитика</button>
         <button class="tab-btn" data-tab="programs" onclick="switchTab('programs')"><i class="fas fa-book"></i> Программы</button>
+        <button class="tab-btn" data-tab="reports" onclick="switchTab('reports')"><i class="fas fa-file-lines"></i> Отчётность</button>
     </div>
 
     <div id="screen-board" class="screen active">
@@ -435,6 +444,65 @@
             <table class="archive-table" id="programsTable"></table>
         </div>
     </div>
+
+    <div id="screen-reports" class="screen">
+        <div class="report-filters">
+            <div class="report-filter-field">
+                <label>Дата завершения с</label>
+                <input type="date" id="rep_dateFrom" onchange="renderReports()">
+            </div>
+            <div class="report-filter-field">
+                <label>по</label>
+                <input type="date" id="rep_dateTo" onchange="renderReports()">
+            </div>
+            <div class="report-filter-field">
+                <label>Программа</label>
+                <select id="rep_program" onchange="renderReports()"><option value="">Все программы</option></select>
+            </div>
+            <div class="report-filter-field">
+                <label>ОКВЭД / направление</label>
+                <select id="rep_okved" onchange="renderReports()"><option value="">Все направления</option></select>
+            </div>
+            <div class="report-filter-field">
+                <label>Тип программы</label>
+                <select id="rep_type" onchange="renderReports()">
+                    <option value="">Все</option>
+                    <option value="ПК">Повышение квалификации</option>
+                    <option value="ПП">Профессиональная переподготовка</option>
+                </select>
+            </div>
+            <div class="report-filter-field">
+                <label>Заказчик</label>
+                <select id="rep_orgtype" onchange="renderReports()">
+                    <option value="">Все</option>
+                    <option value="ЮЛ">Юр. лицо</option>
+                    <option value="ФЛ">Физ. лицо</option>
+                </select>
+            </div>
+            <div class="report-filter-field">
+                <label>Ответственный</label>
+                <select id="rep_manager" onchange="renderReports()"><option value="">Все</option></select>
+            </div>
+            <div class="report-filter-field" style="align-self:flex-end;">
+                <button type="button" class="secondary" onclick="resetReportFilters()"><i class="fas fa-rotate-left"></i> Сбросить</button>
+            </div>
+            <div class="report-filter-field" style="align-self:flex-end;">
+                <button type="button" onclick="exportReportToExcel()"><i class="fas fa-file-excel"></i> Экспорт в Excel</button>
+            </div>
+        </div>
+
+        <div class="report-summary" id="reportSummary"></div>
+
+        <h3 style="margin:22px 0 10px;">По направлениям (ОКВЭД)</h3>
+        <div class="archive-table-wrap">
+            <table class="archive-table" id="reportOkvedTable"></table>
+        </div>
+
+        <h3 style="margin:22px 0 10px;">Группы, попавшие в отбор</h3>
+        <div class="archive-table-wrap">
+            <table class="archive-table" id="reportGroupsTable"></table>
+        </div>
+    </div>
 </div>
 
 <!-- Модалка программы (справочник) -->
@@ -462,6 +530,22 @@
         <div class="field">
             <label>Руководитель программы</label>
             <input type="text" id="p_manager">
+        </div>
+        <div class="field">
+            <label>Направление деятельности (ОКВЭД) — для отчётности</label>
+            <input type="text" id="p_okved" list="okvedDatalist" placeholder="Начните вводить или выберите из списка">
+            <datalist id="okvedDatalist">
+                <option value="Деятельность в области информации и связи">
+                <option value="Деятельность административная и сопутствующие дополнительные услуги">
+                <option value="Деятельность профессиональная, научная и техническая">
+                <option value="Образование">
+                <option value="Обеспечение электрической энергией, газом и паром; кондиционирование воздуха">
+                <option value="Государственное управление и обеспечение военной безопасности; социальное обеспечение">
+                <option value="Деятельность финансовая и страховая">
+                <option value="Водоснабжение, водоотведение, организация сбора и утилизации отходов, деятельность по ликвидации загрязнений">
+                <option value="Добыча полезных ископаемых">
+                <option value="Транспортировка и хранение">
+            </datalist>
         </div>
         <div class="field" id="p_activeRow" style="display:none;">
             <label><input type="checkbox" id="p_active" style="width:auto;"> Активна (показывается в подборе программ)</label>
@@ -783,7 +867,7 @@
             if (res.status !== 'success') throw new Error(res.message || 'Ошибка загрузки справочника');
             allPrograms = res.data;
             populateProgramsDatalist();
-            if (currentTab === 'programs') applyFilterAndRender();
+            if (currentTab === 'programs' || currentTab === 'reports') applyFilterAndRender();
         } catch (err) {
             console.error('Не удалось загрузить справочник программ:', err);
         }
@@ -826,6 +910,7 @@
         else if (currentTab === 'clients') renderClients(allDeals);
         else if (currentTab === 'analytics') renderAnalytics(allDeals);
         else if (currentTab === 'programs') renderPrograms();
+        else if (currentTab === 'reports') renderReports();
     }
 
     let searchDebounceTimer = null;
@@ -911,7 +996,7 @@
         const table = document.getElementById('programsTable');
         const sorted = [...allPrograms].sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ru'));
         table.innerHTML = `
-            <tr><th>Название</th><th>Стоимость, ₽</th><th>Часов</th><th>Формат</th><th>Руководитель</th><th>Статус</th></tr>
+            <tr><th>Название</th><th>Стоимость, ₽</th><th>Часов</th><th>Формат</th><th>Руководитель</th><th>ОКВЭД</th><th>Статус</th></tr>
             ${sorted.map(p => `
                 <tr data-id="${p.id}">
                     <td>${escapeHtml(p.name || '')}</td>
@@ -919,9 +1004,10 @@
                     <td>${p.hours || '—'}</td>
                     <td>${escapeHtml(p.format || '—')}</td>
                     <td>${escapeHtml(p.manager || '—')}</td>
+                    <td>${p.okved ? escapeHtml(p.okved) : '<span style="color:var(--warning);">не указан</span>'}</td>
                     <td>${p.active === false ? '<span class="badge" style="background:#eef0f4;color:#868e96;">архив</span>' : '<span class="badge check">активна</span>'}</td>
                 </tr>
-            `).join('') || '<tr><td colspan="6" style="text-align:center;padding:30px;">Программ пока нет</td></tr>'}
+            `).join('') || '<tr><td colspan="7" style="text-align:center;padding:30px;">Программ пока нет</td></tr>'}
         `;
         table.querySelectorAll('tr[data-id]').forEach(tr => {
             tr.addEventListener('click', () => openProgramModal(Number(tr.dataset.id)));
@@ -936,6 +1022,7 @@
             document.getElementById('p_hours').value = '';
             document.getElementById('p_format').value = '';
             document.getElementById('p_manager').value = '';
+            document.getElementById('p_okved').value = '';
             document.getElementById('p_active').checked = true;
             document.getElementById('p_activeRow').style.display = 'none';
             document.getElementById('p_deleteBtn').style.display = 'none';
@@ -947,6 +1034,7 @@
             document.getElementById('p_hours').value = p.hours || '';
             document.getElementById('p_format').value = p.format || '';
             document.getElementById('p_manager').value = p.manager || '';
+            document.getElementById('p_okved').value = p.okved || '';
             document.getElementById('p_active').checked = p.active !== false;
             document.getElementById('p_activeRow').style.display = 'block';
             document.getElementById('p_deleteBtn').style.display = 'inline-flex';
@@ -971,6 +1059,7 @@
             hours: Number(document.getElementById('p_hours').value) || 0,
             format: document.getElementById('p_format').value.trim(),
             manager: document.getElementById('p_manager').value.trim(),
+            okved: document.getElementById('p_okved').value.trim(),
         };
         showLoading(true);
         try {
@@ -1019,6 +1108,176 @@
         } finally {
             showLoading(false);
         }
+    }
+
+    // ========== Отчётность (для форм 1-ПК/2.2/2.6 и внутренних сводок) ==========
+    // Официальные формы считают программы ПК/ПП по одному и тому же признаку — числу
+    // часов (16–72/72+ = ПК, 250–500/500+ = ПП), поэтому тип программы не заводится
+    // отдельным полем, а всегда выводится из часов справочника — так он не может
+    // разойтись с реальной длительностью программы.
+    function reportProgramType(hours) {
+        const h = Number(hours) || 0;
+        if (h <= 0) return '';
+        return h >= 250 ? 'ПП' : 'ПК';
+    }
+    function reportHoursBucket(hours) {
+        const h = Number(hours) || 0;
+        if (h >= 500) return '500 ч и выше';
+        if (h >= 250) return 'от 250 до 500 ч';
+        if (h >= 72) return 'от 72 до 250 ч';
+        if (h >= 16) return 'от 16 до 72 ч';
+        return 'не указано';
+    }
+
+    // Строит одну строку отчёта на каждую группу: подтягивает часы/ОКВЭД из
+    // справочника программ по названию и считает фактических слушателей (из
+    // поданных анкет) отдельно от заявленного числа мест — как и везде в CRM.
+    function buildReportRows() {
+        return allCohorts.map(c => {
+            const program = allPrograms.find(p => p.name === c.program) || {};
+            const hours = Number(program.hours) || 0;
+            const members = membersOfCohort(c.id);
+            const leadIds = members.map(d => String(d.id));
+            const students = allStudents.filter(s => leadIds.indexOf(String(s.lead_id)) !== -1);
+            const heads = sumParticipants(members);
+            return {
+                cohort: c,
+                program: c.program || '',
+                hours,
+                okved: program.okved || '',
+                type: reportProgramType(hours),
+                bucket: reportHoursBucket(hours),
+                orgType: c.org_name ? 'ЮЛ' : 'ФЛ',
+                heads,
+                managers: students.filter(s => isTrue(s.is_manager)).length,
+                employees: students.filter(s => isTrue(s.is_own_employee)).length,
+            };
+        });
+    }
+
+    function populateReportFilters() {
+        const programSel = document.getElementById('rep_program');
+        const okvedSel = document.getElementById('rep_okved');
+        const mgrSel = document.getElementById('rep_manager');
+        if (!programSel) return;
+        const keepProgram = programSel.value, keepOkved = okvedSel.value, keepMgr = mgrSel.value;
+
+        const programs = [...new Set(allCohorts.map(c => c.program).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ru'));
+        programSel.innerHTML = '<option value="">Все программы</option>' + programs.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
+
+        const okvedSet = new Set(allPrograms.map(p => p.okved).filter(Boolean));
+        okvedSel.innerHTML = '<option value="">Все направления</option>' + [...okvedSet].sort((a, b) => a.localeCompare(b, 'ru')).map(o => `<option value="${escapeHtml(o)}">${escapeHtml(o)}</option>`).join('');
+
+        const mgrs = [...new Set(allCohorts.map(c => c.manager).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ru'));
+        mgrSel.innerHTML = '<option value="">Все</option>' + mgrs.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
+
+        programSel.value = keepProgram; okvedSel.value = keepOkved; mgrSel.value = keepMgr;
+    }
+
+    function filteredReportRows() {
+        const dateFrom = document.getElementById('rep_dateFrom').value;
+        const dateTo = document.getElementById('rep_dateTo').value;
+        const program = document.getElementById('rep_program').value;
+        const okved = document.getElementById('rep_okved').value;
+        const type = document.getElementById('rep_type').value;
+        const orgType = document.getElementById('rep_orgtype').value;
+        const manager = document.getElementById('rep_manager').value;
+
+        return buildReportRows().filter(r => {
+            const endDate = (r.cohort.end_date || '').toString().slice(0, 10);
+            if (dateFrom || dateTo) {
+                if (!endDate) return false;
+                if (dateFrom && endDate < dateFrom) return false;
+                if (dateTo && endDate > dateTo) return false;
+            }
+            if (program && r.program !== program) return false;
+            if (okved && r.okved !== okved) return false;
+            if (type && r.type !== type) return false;
+            if (orgType && r.orgType !== orgType) return false;
+            if (manager && (r.cohort.manager || '') !== manager) return false;
+            return true;
+        });
+    }
+
+    function resetReportFilters() {
+        ['rep_dateFrom', 'rep_dateTo', 'rep_program', 'rep_okved', 'rep_type', 'rep_orgtype', 'rep_manager'].forEach(id => {
+            document.getElementById(id).value = '';
+        });
+        renderReports();
+    }
+
+    function reportSumBy(rows, keyFn) {
+        return rows.reduce((s, r) => s + keyFn(r), 0);
+    }
+
+    function renderReports() {
+        populateReportFilters();
+        const rows = filteredReportRows();
+
+        const tile = (label, value) => `<div class="stat-tile"><div class="label">${escapeHtml(label)}</div><div class="value">${value}</div></div>`;
+        document.getElementById('reportSummary').innerHTML = [
+            tile('Групп в отборе', rows.length),
+            tile('Программ', new Set(rows.map(r => r.program)).size),
+            tile('Всего обучено', reportSumBy(rows, r => r.heads)),
+            tile('из них ПК', reportSumBy(rows.filter(r => r.type === 'ПК'), r => r.heads)),
+            tile('из них ПП', reportSumBy(rows.filter(r => r.type === 'ПП'), r => r.heads)),
+            tile('16–72 ч', reportSumBy(rows.filter(r => r.bucket === 'от 16 до 72 ч'), r => r.heads)),
+            tile('72–250 ч', reportSumBy(rows.filter(r => r.bucket === 'от 72 до 250 ч'), r => r.heads)),
+            tile('250–500 ч', reportSumBy(rows.filter(r => r.bucket === 'от 250 до 500 ч'), r => r.heads)),
+            tile('500 ч и выше', reportSumBy(rows.filter(r => r.bucket === '500 ч и выше'), r => r.heads)),
+            tile('из них руководителей', reportSumBy(rows, r => r.managers)),
+            tile('из них сотрудников организации', reportSumBy(rows, r => r.employees)),
+        ].join('');
+
+        const okvedMap = new Map();
+        rows.forEach(r => {
+            const key = r.okved || 'Не указано';
+            if (!okvedMap.has(key)) okvedMap.set(key, { groups: 0, programs: new Set(), heads: 0 });
+            const agg = okvedMap.get(key);
+            agg.groups++; agg.programs.add(r.program); agg.heads += r.heads;
+        });
+        const okvedTable = document.getElementById('reportOkvedTable');
+        const okvedRows = [...okvedMap.entries()].sort((a, b) => b[1].heads - a[1].heads);
+        okvedTable.innerHTML = `
+            <tr><th>Направление (ОКВЭД)</th><th>Групп</th><th>Программ</th><th>Обучено</th></tr>
+            ${okvedRows.map(([k, v]) => `<tr><td>${escapeHtml(k)}</td><td>${v.groups}</td><td>${v.programs.size}</td><td>${v.heads}</td></tr>`).join('')
+                || '<tr><td colspan="4" style="text-align:center;padding:20px;">Нет данных по текущим фильтрам</td></tr>'}
+        `;
+
+        const groupsTable = document.getElementById('reportGroupsTable');
+        const sortedRows = [...rows].sort((a, b) => (b.cohort.end_date || '').localeCompare(a.cohort.end_date || ''));
+        groupsTable.innerHTML = `
+            <tr><th>Программа</th><th>ОКВЭД</th><th>Часов</th><th>Тип</th><th>Заказчик</th><th>Обучено</th><th>Рук.</th><th>Сотр.</th><th>Дата завершения</th><th>Ответственный</th></tr>
+            ${sortedRows.map(r => `
+                <tr style="cursor:pointer;" onclick="closeCohortModal(); switchTab('cohorts'); selectCohortInTab(${r.cohort.id});">
+                    <td>${escapeHtml(r.program)}</td>
+                    <td>${escapeHtml(r.okved || '—')}</td>
+                    <td>${r.hours || '—'}</td>
+                    <td>${r.type || '—'}</td>
+                    <td>${r.orgType === 'ЮЛ' ? escapeHtml(r.cohort.org_name || 'ЮЛ') : 'Физ. лицо'}</td>
+                    <td>${r.heads}</td>
+                    <td>${r.managers}</td>
+                    <td>${r.employees}</td>
+                    <td>${(r.cohort.end_date || '').toString().slice(0, 10) || '—'}</td>
+                    <td>${escapeHtml(r.cohort.manager || '—')}</td>
+                </tr>
+            `).join('') || '<tr><td colspan="10" style="text-align:center;padding:30px;">Нет групп по текущим фильтрам</td></tr>'}
+        `;
+    }
+
+    function exportReportToExcel() {
+        const rows = filteredReportRows();
+        const aoa = [
+            ['Программа', 'ОКВЭД', 'Часов', 'Тип', 'Заказчик', 'Обучено', 'Из них руководителей', 'Из них сотрудников организации', 'Дата завершения', 'Ответственный', 'Статус группы'],
+            ...rows.map(r => [
+                r.program, r.okved, r.hours || '', r.type, r.orgType === 'ЮЛ' ? (r.cohort.org_name || 'ЮЛ') : 'Физ. лицо',
+                r.heads, r.managers, r.employees, (r.cohort.end_date || '').toString().slice(0, 10), r.cohort.manager || '', r.cohort.status || '',
+            ]),
+        ];
+        const ws = XLSX.utils.aoa_to_sheet(aoa);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Отчёт');
+        XLSX.writeFile(wb, `Отчёт_ДПО_${new Date().toISOString().slice(0, 10)}.xlsx`);
     }
 
     // ========== Дашборд наборов групп + уведомления ==========
@@ -1374,6 +1633,10 @@
                     <input type="date" id="ct_planned_start_date">
                 </div>
                 <div class="cohort-meta-field">
+                    <label>Дата завершения обучения</label>
+                    <input type="date" id="ct_end_date">
+                </div>
+                <div class="cohort-meta-field">
                     <label>Ответственный</label>
                     <input type="text" id="ct_manager">
                 </div>
@@ -1414,6 +1677,7 @@
         `;
         document.getElementById('ct_status').value = cohort.status || 'набор';
         document.getElementById('ct_planned_start_date').value = (cohort.planned_start_date || '').toString().slice(0, 10);
+        document.getElementById('ct_end_date').value = (cohort.end_date || '').toString().slice(0, 10);
         document.getElementById('ct_manager').value = cohort.manager || '';
         document.getElementById('ct_org_name').value = cohort.org_name || '';
         document.getElementById('ct_inn').value = cohort.inn || '';
@@ -1433,6 +1697,7 @@
                 id: cohortId,
                 status: document.getElementById('ct_status').value,
                 planned_start_date: document.getElementById('ct_planned_start_date').value,
+                end_date: document.getElementById('ct_end_date').value,
                 manager: document.getElementById('ct_manager').value.trim(),
                 org_name: document.getElementById('ct_org_name').value.trim(),
                 inn: document.getElementById('ct_inn').value.trim(),
@@ -1595,8 +1860,41 @@
                 ${s.diploma_scan_url
                     ? `<a href="#" class="sc-scan-link" data-file-id="${escapeHtml(s.diploma_scan_url)}"><i class="fas fa-file-image"></i> Открыть скан диплома</a>`
                     : '<div class="sc-empty" style="margin-top:6px;">Скан не приложен</div>'}
+                <div style="margin-top:8px;font-size:12px;display:flex;flex-direction:column;gap:4px;">
+                    <label style="display:flex;align-items:center;gap:6px;font-weight:400;">
+                        <input type="checkbox" style="width:auto;" ${isTrue(s.is_manager) ? 'checked' : ''} onchange="toggleStudentFlag(${s.id}, 'is_manager', this)">
+                        Руководитель организации-заказчика
+                    </label>
+                    <label style="display:flex;align-items:center;gap:6px;font-weight:400;">
+                        <input type="checkbox" style="width:auto;" ${isTrue(s.is_own_employee) ? 'checked' : ''} onchange="toggleStudentFlag(${s.id}, 'is_own_employee', this)">
+                        Сотрудник организации-заказчика
+                    </label>
+                </div>
             </div>
         `).join('');
+    }
+
+    function isTrue(v) {
+        return v === true || String(v).toUpperCase() === 'TRUE';
+    }
+
+    // Для отчётности (форма 1-ПК): эти два флага не всегда собраны через анкету
+    // (поля появились не сразу, часть групп уже прошла), поэтому разрешаем
+    // сотруднику ДПО проставить/поправить их прямо в карточке слушателя.
+    async function toggleStudentFlag(studentId, field, checkbox) {
+        const value = checkbox.checked;
+        checkbox.disabled = true;
+        try {
+            const res = await postJSON('updateStudent', { data: { id: studentId, [field]: value } });
+            if (res.status !== 'success') throw new Error(res.message || 'Ошибка сохранения');
+            const s = allStudents.find(x => Number(x.id) === Number(studentId));
+            if (s) s[field] = value;
+        } catch (err) {
+            checkbox.checked = !value; // откатываем визуальное состояние — сохранить не удалось
+            alert('Не удалось сохранить: ' + err.message);
+        } finally {
+            checkbox.disabled = false;
+        }
     }
 
     // ========== Клиенты (агрегация заявок по email/телефону) ==========

@@ -220,6 +220,14 @@
                 <input type="file" class="s-scan" accept="image/*,.pdf">
                 <div class="hint">До ${MAX_FILE_MB} МБ. Разборчивое фото или скан разворота с квалификацией.</div>
             </div>
+            <div class="field-row">
+                <div class="field">
+                    <label><input type="checkbox" class="s-is-manager" style="width:auto;margin-right:6px;"> Руководитель организации-заказчика</label>
+                </div>
+                <div class="field">
+                    <label><input type="checkbox" class="s-is-employee" style="width:auto;margin-right:6px;"> Сотрудник организации, направившей на обучение</label>
+                </div>
+            </div>
         `;
         document.getElementById('studentsContainer').appendChild(div);
     }
@@ -271,6 +279,8 @@
                 diploma_year: block.querySelector('.s-year').value,
                 diploma_series: block.querySelector('.s-series').value.trim(),
                 diploma_number: block.querySelector('.s-number').value.trim(),
+                is_manager: block.querySelector('.s-is-manager').checked,
+                is_own_employee: block.querySelector('.s-is-employee').checked,
                 _file: file,
             });
         }
