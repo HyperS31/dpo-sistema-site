@@ -737,6 +737,7 @@
                     <button type="button" class="secondary" onclick="openDocumentsFor('kp')" style="flex:1;"><i class="fas fa-file-invoice"></i> Сформировать КП</button>
                     <button type="button" class="secondary" onclick="openDocumentsFor('sz')" style="flex:1;"><i class="fas fa-envelope-open-text"></i> Сформировать СЗ на счёт</button>
                 </div>
+                <div class="readonly-hint" id="documentsHint" style="margin-top:8px;"></div>
             </div>
 
             <div class="subsection" id="historySection" style="display:none;">
@@ -1434,12 +1435,20 @@
         const ids = [...document.querySelectorAll('#cohortPickList .pick-cb:checked')].map(cb => Number(cb.value));
         if (!ids.length) { alert('Выберите хотя бы одного человека'); return; }
 
+        // Организацию/ИНН для новой группы берём с одной из включаемых заявок (если там
+        // уже что-то указано) — иначе сотруднику пришлось бы вводить их ещё раз на карточке
+        // группы, хотя эти же данные обычно уже вбиты на самой сделке.
+        const pickedDeals = ids.map(id => allDeals.find(d => d.id === id)).filter(Boolean);
+        const sourceOrg = pickedDeals.find(d => d.org_name);
+
         showLoading(true);
         try {
             const res = await postJSON('createCohort', { data: {
                 program: cohortContext.program,
                 planned_start_date: document.getElementById('c_planned_start_date').value,
                 manager: document.getElementById('c_manager').value.trim(),
+                org_name: sourceOrg ? sourceOrg.org_name : '',
+                inn: sourceOrg ? (sourceOrg.inn || '') : '',
             } });
             if (res.status !== 'success') throw new Error(res.message || 'Ошибка создания группы');
 
@@ -2149,6 +2158,12 @@
         document.getElementById('tasksSection').style.display = 'block';
         document.getElementById('intakeSection').style.display = 'block';
         document.getElementById('documentsSection').style.display = 'block';
+        // Раньше документы, сформированные отсюда, только скачивались и никак не были
+        // видны потом — теперь они прикрепляются к карточке группы (если заявка в неё
+        // уже входит), но об этом нужно явно сказать, иначе сотрудник об этом не узнает.
+        document.getElementById('documentsHint').innerHTML = d.cohort_id
+            ? `Заявка в группе — сформированные здесь файлы сохранятся в её карточке. <a href="#" onclick="closeModal(); switchTab('cohorts'); selectCohortInTab(${d.cohort_id}); return false;">Открыть карточку группы →</a>`
+            : 'Заявка пока не входит в группу — файл будет только скачан, в карточку группы его сохранить пока некуда.';
         document.getElementById('historySection').style.display = 'block';
         document.getElementById('deleteBtn').style.display = 'inline-flex';
         renderTasksForLead(d.id);
@@ -2194,6 +2209,10 @@
             program: d.program || '',
             participants: Number(d.participants) || 1,
         });
+        // Если заявка уже входит в группу — передаём cohortId, чтобы сгенерированный
+        // файл не просто скачался, а ещё и попал в "Документы группы" на её карточке
+        // (иначе сформированный отсюда КП/СЗ нигде, кроме локального скачивания, не остаётся).
+        if (d.cohort_id) params.set('cohortId', d.cohort_id);
         const base = `${location.origin}${location.pathname.replace(/crm\.html$/, '')}documents.html`;
         window.open(`${base}?${params.toString()}`, '_blank');
     }
