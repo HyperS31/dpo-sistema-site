@@ -762,8 +762,6 @@
             allTasks = res.data.tasks;
             allCohorts = res.data.cohorts;
             allStudents = res.data.students;
-            allPrograms = res.data.programs || [];
-            populateProgramsDatalist();
         } catch (err) {
             console.error(err);
             showMessage('Ошибка загрузки: ' + err.message);
@@ -773,6 +771,21 @@
             allStudents = [];
         } finally {
             showLoading(false);
+        }
+    }
+
+    // Справочник программ — отдельный, некритичный запрос: доска не должна ждать
+    // ещё один лист таблицы (194 строки), пока сделки уже готовы показаться.
+    // Публичное действие (без ключа), но раз мы уже вошли — просто переиспользуем fetchJSON.
+    async function loadPrograms() {
+        try {
+            const res = await fetchJSON(`${API_URL}?action=getPrograms`);
+            if (res.status !== 'success') throw new Error(res.message || 'Ошибка загрузки справочника');
+            allPrograms = res.data;
+            populateProgramsDatalist();
+            if (currentTab === 'programs') applyFilterAndRender();
+        } catch (err) {
+            console.error('Не удалось загрузить справочник программ:', err);
         }
     }
 
@@ -997,9 +1010,8 @@
             if (res.status !== 'success') throw new Error(res.message || 'Ошибка удаления');
             // Удаление сдвигает id всех последующих программ — как и везде в проекте
             // с id-по-номеру-строки, после удаления перезагружаем список целиком.
-            await loadDeals();
+            await loadPrograms();
             closeProgramModal();
-            populateProgramsDatalist();
             applyFilterAndRender();
             showMessage('Программа удалена');
         } catch (err) {
@@ -2114,6 +2126,7 @@
         await loadDeals();
         populateManagerFilter();
         applyFilterAndRender();
+        loadPrograms(); // не блокирует показ доски — подгружается в фоне
     }
 
     if (getCrmKey()) {
