@@ -1206,6 +1206,7 @@
             const leadIds = members.map(d => String(d.id));
             const students = allStudents.filter(s => leadIds.indexOf(String(s.lead_id)) !== -1);
             const heads = sumParticipants(members);
+            const orgInfo = cohortOrgInfo(c, members);
             return {
                 cohort: c,
                 program: c.program || '',
@@ -1213,7 +1214,8 @@
                 okved: program.okved || '',
                 type: reportProgramType(hours),
                 bucket: reportHoursBucket(hours),
-                orgType: c.org_name ? 'ЮЛ' : 'ФЛ',
+                orgType: orgInfo.org_name ? 'ЮЛ' : 'ФЛ',
+                orgName: orgInfo.org_name,
                 heads,
                 managers: students.filter(s => isTrue(s.is_manager)).length,
                 employees: students.filter(s => isTrue(s.is_own_employee)).length,
@@ -1320,7 +1322,7 @@
                     <td>${escapeHtml(r.okved || '—')}</td>
                     <td>${r.hours || '—'}</td>
                     <td>${r.type || '—'}</td>
-                    <td>${r.orgType === 'ЮЛ' ? escapeHtml(r.cohort.org_name || 'ЮЛ') : 'Физ. лицо'}</td>
+                    <td>${r.orgType === 'ЮЛ' ? escapeHtml(r.orgName || 'ЮЛ') : 'Физ. лицо'}</td>
                     <td>${r.heads}</td>
                     <td>${r.managers}</td>
                     <td>${r.employees}</td>
@@ -1336,7 +1338,7 @@
         const aoa = [
             ['Программа', 'ОКВЭД', 'Часов', 'Тип', 'Заказчик', 'Обучено', 'Из них руководителей', 'Из них сотрудников организации', 'Дата завершения', 'Ответственный', 'Статус группы'],
             ...rows.map(r => [
-                r.program, r.okved, r.hours || '', r.type, r.orgType === 'ЮЛ' ? (r.cohort.org_name || 'ЮЛ') : 'Физ. лицо',
+                r.program, r.okved, r.hours || '', r.type, r.orgType === 'ЮЛ' ? (r.orgName || 'ЮЛ') : 'Физ. лицо',
                 r.heads, r.managers, r.employees, (r.cohort.end_date || '').toString().slice(0, 10), r.cohort.manager || '', r.cohort.status || '',
             ]),
         ];
@@ -1374,6 +1376,16 @@
     }
     function sumParticipants(deals) {
         return deals.reduce((s, d) => s + (Number(d.participants) || 1), 0);
+    }
+
+    // Организация/ИНН группы могут быть не заполнены на самой группе (заведена давно,
+    // либо создана до появления автоподстановки при формировании), хотя уже есть на
+    // входящей в неё заявке. Единая точка правды для карточки группы, генерации
+    // документов и отчётности — иначе три места будут расходиться в показаниях.
+    function cohortOrgInfo(cohort, members) {
+        if (cohort.org_name) return { org_name: cohort.org_name, inn: cohort.inn || '' };
+        const source = (members || membersOfCohort(cohort.id)).find(d => d.org_name);
+        return source ? { org_name: source.org_name, inn: source.inn || '' } : { org_name: '', inn: '' };
     }
 
     // Лёгкая часть — только баннер уведомлений, без перестройки всей сетки карточек.
@@ -1753,8 +1765,12 @@
         document.getElementById('ct_planned_start_date').value = (cohort.planned_start_date || '').toString().slice(0, 10);
         document.getElementById('ct_end_date').value = (cohort.end_date || '').toString().slice(0, 10);
         document.getElementById('ct_manager').value = cohort.manager || '';
-        document.getElementById('ct_org_name').value = cohort.org_name || '';
-        document.getElementById('ct_inn').value = cohort.inn || '';
+        // Если на самой группе организация не заполнена — подставляем (но не сохраняем
+        // автоматически) организацию с одной из входящих заявок, чтобы сотрудник сразу
+        // увидел её на карточке и мог просто нажать "Сохранить", а не искать вручную.
+        const orgInfo = cohortOrgInfo(cohort, members);
+        document.getElementById('ct_org_name').value = orgInfo.org_name;
+        document.getElementById('ct_inn').value = orgInfo.inn;
 
         document.getElementById('cohortTabStudents').innerHTML = members.map(d => renderStudentCard(d)).join('');
         document.getElementById('cohortTabStudents').querySelectorAll('.sc-scan-link').forEach(a => {
@@ -1804,11 +1820,12 @@
     function openDocumentsForCohort(docType) {
         const cohort = allCohorts.find(c => c.id === activeCohortTabId);
         if (!cohort) return;
+        const orgInfo = cohortOrgInfo(cohort);
         const params = new URLSearchParams({
             doc: docType,
             cohortId: cohort.id,
-            org: cohort.org_name || '',
-            inn: cohort.inn || '',
+            org: orgInfo.org_name,
+            inn: orgInfo.inn,
             program: cohort.program || '',
             participants: sumParticipants(membersOfCohort(cohort.id)),
             plannedStart: (cohort.planned_start_date || '').toString().slice(0, 10),
