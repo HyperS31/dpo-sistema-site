@@ -339,7 +339,12 @@
     // Если документ формируется из карточки группы — помимо скачивания на компьютер,
     // сохраняем его же в Drive через тот же шлюз, что и CRM (ключ общий, из localStorage),
     // чтобы потом можно было скачать его снова прямо из карточки, не пересобирая заново.
-    async function maybeSaveToCohort(docType, filename, blob, statusId) {
+    // mimetype передаётся явно, а не берётся из blob.type — у JSZip generateAsync({type:'blob'})
+    // тип по умолчанию "application/zip" (технически верно: .docx/.xlsx это и есть zip-архив),
+    // но в Drive файл тогда виден с неправильной иконкой/типом. Расширение в имени файла и
+    // так заставляет Word/Excel открыть его верно, но метаданные лучше хранить корректными.
+    async function maybeSaveToCohort(docType, filename, blob, statusId, mimetype) {
+        mimetype = mimetype || 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
         if (!cohortId) return;
         if (!CRM_KEY) {
             showStatus(statusId, 'Файл скачан, но не сохранён в карточке группы — откройте эту страницу через CRM (нужен вход по паролю)', 'error');
@@ -347,7 +352,6 @@
         }
         try {
             const base64 = await blobToBase64(blob);
-            const mimetype = blob.type || 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
             const resp = await fetch(API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -843,6 +847,7 @@
         if (!program) { showStatus('vedStatus', 'Укажите программу', 'error'); return; }
         if (!endDate) { showStatus('vedStatus', 'Укажите дату окончания обучения', 'error'); return; }
         if (!startNum) { showStatus('vedStatus', 'Укажите начальный номер бланка', 'error'); return; }
+        if (!/^\d+$/.test(startNum)) { showStatus('vedStatus', 'Начальный номер бланка должен состоять только из цифр (без серии/букв/пробелов)', 'error'); return; }
         if (!regCode) { showStatus('vedStatus', 'Укажите код группы/программы', 'error'); return; }
 
         try {
@@ -887,7 +892,7 @@
             lastVedomostAoa = aoa;
             document.getElementById('openGeneratorBtn').hidden = false;
 
-            await maybeSaveToCohort('vedomost', filename, out, 'vedStatus');
+            await maybeSaveToCohort('vedomost', filename, out, 'vedStatus', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         } catch (err) {
             showStatus('vedStatus', 'Ошибка: ' + err.message, 'error');
         }
