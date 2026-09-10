@@ -282,6 +282,18 @@
         .history-item { font-size: 12.5px; color: var(--text-secondary); padding: 5px 0; border-bottom: 1px dashed var(--border); }
         .history-item .ts { color: #adb5bd; margin-right: 6px; }
         .badge.overdue { background: #fee2e2; color: #991b1b; }
+        #tasksOverdueBadge {
+            display: inline-block; background: var(--danger); color: white; font-size: 10.5px;
+            font-weight: 700; padding: 1px 7px; border-radius: 20px; margin-left: 6px;
+        }
+        .tasks-summary { display: flex; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
+        .tasks-summary .stat-tile { min-width: 150px; }
+        .task-row { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--border); }
+        .task-row:hover { background: #f8f9fc; }
+        .task-row .task-text { flex: 1; font-size: 13.5px; }
+        .task-row .task-lead { font-size: 12px; color: var(--text-secondary); cursor: pointer; }
+        .task-row .task-lead:hover { text-decoration: underline; color: var(--primary); }
+        .task-row.done .task-text { text-decoration: line-through; color: var(--text-secondary); }
 
         /* Модальное окно */
         #overlay {
@@ -322,8 +334,9 @@
         #message {
             position: fixed; bottom: 20px; right: 20px; background: #2ecc71; color: white;
             padding: 12px 24px; border-radius: 30px; display: none; z-index: 1000;
-            box-shadow: 0 4px 12px rgba(46,204,113,0.3);
+            box-shadow: 0 4px 12px rgba(46,204,113,0.3); max-width: 420px; cursor: pointer;
         }
+        #message.error { background: var(--danger); box-shadow: 0 4px 12px rgba(247,37,133,0.35); }
         #loading-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(255,255,255,0.7); display: none; justify-content: center;
@@ -383,6 +396,7 @@
         <button class="tab-btn" data-tab="archive" onclick="switchTab('archive')"><i class="fas fa-box-archive"></i> Архив</button>
         <button class="tab-btn" data-tab="clients" onclick="switchTab('clients')"><i class="fas fa-address-book"></i> Клиенты</button>
         <button class="tab-btn" data-tab="analytics" onclick="switchTab('analytics')"><i class="fas fa-chart-simple"></i> Аналитика</button>
+        <button class="tab-btn" data-tab="tasks" onclick="switchTab('tasks')"><i class="fas fa-list-check"></i> Задачи<span id="tasksOverdueBadge" style="display:none;"></span></button>
         <button class="tab-btn" data-tab="programs" onclick="switchTab('programs')"><i class="fas fa-book"></i> Программы</button>
         <button class="tab-btn" data-tab="reports" onclick="switchTab('reports')"><i class="fas fa-file-lines"></i> Отчётность</button>
     </div>
@@ -436,9 +450,31 @@
         </div>
     </div>
 
+    <div id="screen-tasks" class="screen">
+        <div class="tasks-summary" id="tasksSummary"></div>
+        <div class="report-filters">
+            <div class="report-filter-field">
+                <label>Показать</label>
+                <select id="tasks_filter" onchange="renderMyTasksTab()">
+                    <option value="open">Открытые</option>
+                    <option value="overdue">Только просроченные</option>
+                    <option value="all">Все (включая выполненные)</option>
+                </select>
+            </div>
+            <div class="report-filter-field">
+                <label>Ответственный</label>
+                <select id="tasks_manager" onchange="renderMyTasksTab()"><option value="">Все</option></select>
+            </div>
+        </div>
+        <div class="archive-table-wrap">
+            <div id="tasksList"></div>
+        </div>
+    </div>
+
     <div id="screen-programs" class="screen">
-        <div class="modal-actions" style="justify-content:flex-start;margin-bottom:14px;">
+        <div class="modal-actions" style="justify-content:flex-start;margin-bottom:14px;gap:10px;">
             <button type="button" onclick="openProgramModal(null)"><i class="fas fa-plus"></i> Добавить программу</button>
+            <button type="button" class="chip-filter" id="programsOkvedFilterBtn" onclick="toggleProgramsOkvedFilter()"><i class="fas fa-triangle-exclamation"></i> Только без ОКВЭД</button>
         </div>
         <div class="archive-table-wrap">
             <table class="archive-table" id="programsTable"></table>
@@ -646,13 +682,14 @@
             <div class="field-row">
                 <div class="field">
                     <label>Email</label>
-                    <input type="text" id="f_email">
+                    <input type="text" id="f_email" onblur="checkDuplicateLead()">
                 </div>
                 <div class="field">
                     <label>Телефон</label>
-                    <input type="text" id="f_phone">
+                    <input type="text" id="f_phone" onblur="checkDuplicateLead()">
                 </div>
             </div>
+            <div class="readonly-hint" id="dupLeadWarning" style="display:none;color:var(--warning);"></div>
             <div class="field">
                 <label>Программа</label>
                 <input type="text" id="f_program" list="programsDatalist">
@@ -780,12 +817,24 @@
     let cohortContext = null; // {mode:'create', program} | {mode:'view', cohortId}
 
     function showLoading(show) { document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none'; }
-    function showMessage(text) {
+
+    // Единый механизм уведомлений — раньше успех всегда был мягким тостом, а ошибки
+    // почти везде шли через блокирующий alert(), который выглядит как сбой браузера,
+    // а не часть интерфейса. Теперь и то, и другое — один и тот же тост, ошибка просто
+    // держится дольше и кликом снимается раньше (alert() всё равно требовал клика).
+    let messageHideTimer = null;
+    function showMessage(text, type) {
         const msg = document.getElementById('message');
         msg.textContent = text;
+        msg.classList.toggle('error', type === 'error');
         msg.style.display = 'block';
-        setTimeout(() => msg.style.display = 'none', 2000);
+        clearTimeout(messageHideTimer);
+        messageHideTimer = setTimeout(() => msg.style.display = 'none', type === 'error' ? 6000 : 2000);
     }
+    document.getElementById('message').addEventListener('click', () => {
+        document.getElementById('message').style.display = 'none';
+        clearTimeout(messageHideTimer);
+    });
 
     // ========== Доступ к CRM ==========
     // Пароль хранится только в localStorage этого браузера, никогда — в самом файле.
@@ -849,7 +898,7 @@
             allStudents = res.data.students;
         } catch (err) {
             console.error(err);
-            showMessage('Ошибка загрузки: ' + err.message);
+            showMessage('Ошибка загрузки: ' + err.message, 'error');
             allDeals = [];
             allTasks = [];
             allCohorts = [];
@@ -900,16 +949,21 @@
 
         document.getElementById('recordCount').textContent = `Сделок: ${filtered.length} из ${allDeals.length}`;
         updateNotificationBanner(allDeals);
+        updateTasksOverdueBadge();
         renderActiveTab(filtered);
     }
 
     function renderActiveTab(filtered) {
+        // Раньше поиск/фильтр по менеджеру реально влияли только на "Доску" и "Архив" —
+        // на остальных вкладках строка поиска молча ничего не делала, что выглядело как
+        // баг, а не как "здесь поиск не работает". Теперь фильтр применяется везде одинаково.
         if (currentTab === 'board') renderBoard(filtered);
-        else if (currentTab === 'groups') renderGroups(allDeals);
+        else if (currentTab === 'groups') renderGroups(filtered);
         else if (currentTab === 'cohorts') renderCohortsTab();
         else if (currentTab === 'archive') renderArchive(filtered);
-        else if (currentTab === 'clients') renderClients(allDeals);
-        else if (currentTab === 'analytics') renderAnalytics(allDeals);
+        else if (currentTab === 'clients') renderClients(filtered);
+        else if (currentTab === 'analytics') renderAnalytics(filtered);
+        else if (currentTab === 'tasks') renderMyTasksTab();
         else if (currentTab === 'programs') renderPrograms();
         else if (currentTab === 'reports') renderReports();
     }
@@ -993,9 +1047,20 @@
         dl.innerHTML = allPrograms.filter(p => p.active !== false).map(p => `<option value="${escapeHtml(p.name)}">`).join('');
     }
 
+    // Пока сотрудники не проставят ОКВЭД по всем активным программам, отчётность
+    // (форма 2.2) будет группировать их в кучу "не указано" — фильтр нужен, чтобы
+    // быстро найти именно те, что ещё не размечены, а не листать все 194 вручную.
+    let programsOkvedFilterOn = false;
+    function toggleProgramsOkvedFilter() {
+        programsOkvedFilterOn = !programsOkvedFilterOn;
+        document.getElementById('programsOkvedFilterBtn').classList.toggle('active', programsOkvedFilterOn);
+        renderPrograms();
+    }
+
     function renderPrograms() {
         const table = document.getElementById('programsTable');
-        const sorted = [...allPrograms].sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ru'));
+        let sorted = [...allPrograms].sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ru'));
+        if (programsOkvedFilterOn) sorted = sorted.filter(p => !p.okved);
         table.innerHTML = `
             <tr><th>Название</th><th>Стоимость, ₽</th><th>Часов</th><th>Формат</th><th>Руководитель</th><th>ОКВЭД</th><th>Статус</th></tr>
             ${sorted.map(p => `
@@ -1008,7 +1073,7 @@
                     <td>${p.okved ? escapeHtml(p.okved) : '<span style="color:var(--warning);">не указан</span>'}</td>
                     <td>${p.active === false ? '<span class="badge" style="background:#eef0f4;color:#868e96;">архив</span>' : '<span class="badge check">активна</span>'}</td>
                 </tr>
-            `).join('') || '<tr><td colspan="7" style="text-align:center;padding:30px;">Программ пока нет</td></tr>'}
+            `).join('') || `<tr><td colspan="7" style="text-align:center;padding:30px;">${programsOkvedFilterOn ? 'У всех программ указан ОКВЭД' : 'Программ пока нет'}</td></tr>`}
         `;
         table.querySelectorAll('tr[data-id]').forEach(tr => {
             tr.addEventListener('click', () => openProgramModal(Number(tr.dataset.id)));
@@ -1052,7 +1117,7 @@
 
     async function saveProgram() {
         const name = document.getElementById('p_name').value.trim();
-        if (!name) { alert('Укажите название программы'); return; }
+        if (!name) { showMessage('Укажите название программы', 'error'); return; }
         const editingId = document.getElementById('programOverlay').dataset.editingId;
         const payload = {
             name,
@@ -1082,7 +1147,7 @@
             populateProgramsDatalist();
             applyFilterAndRender();
         } catch (err) {
-            alert('Ошибка: ' + err.message);
+            showMessage('Ошибка: ' + err.message, 'error');
         } finally {
             showLoading(false);
         }
@@ -1105,7 +1170,7 @@
             applyFilterAndRender();
             showMessage('Программа удалена');
         } catch (err) {
-            alert('Ошибка: ' + err.message);
+            showMessage('Ошибка: ' + err.message, 'error');
         } finally {
             showLoading(false);
         }
@@ -1433,7 +1498,7 @@
     async function submitCohort() {
         if (!cohortContext || cohortContext.mode !== 'create') return;
         const ids = [...document.querySelectorAll('#cohortPickList .pick-cb:checked')].map(cb => Number(cb.value));
-        if (!ids.length) { alert('Выберите хотя бы одного человека'); return; }
+        if (!ids.length) { showMessage('Выберите хотя бы одного человека', 'error'); return; }
 
         // Организацию/ИНН для новой группы берём с одной из включаемых заявок (если там
         // уже что-то указано) — иначе сотруднику пришлось бы вводить их ещё раз на карточке
@@ -1460,7 +1525,7 @@
             applyFilterAndRender();
             showMessage(`Группа сформирована: ${ids.length} чел.`);
         } catch (err) {
-            alert('Ошибка: ' + err.message);
+            showMessage('Ошибка: ' + err.message, 'error');
         } finally {
             showLoading(false);
         }
@@ -1512,7 +1577,7 @@
     async function sendAllIntakeEmails(members) {
         const targets = members.filter(d => d.email);
         const skipped = members.length - targets.length;
-        if (!targets.length) { alert('Ни у одной заявки в группе нет email'); return; }
+        if (!targets.length) { showMessage('Ни у одной заявки в группе нет email', 'error'); return; }
         if (!confirm(`Отправить анкету на email ${targets.length} заявкам?${skipped ? ` (${skipped} без email — пропущены)` : ''}`)) return;
 
         showLoading(true);
@@ -1529,7 +1594,7 @@
             }
             showMessage(`Анкеты отправлены: ${targets.length}`);
         } catch (err) {
-            alert('Часть писем могла не отправиться: ' + err.message);
+            showMessage('Часть писем могла не отправиться: ' + err.message, 'error');
         } finally {
             showLoading(false);
         }
@@ -1546,7 +1611,7 @@
             applyFilterAndRender();
             showMessage('Добавлено в группу');
         } catch (err) {
-            alert('Ошибка: ' + err.message);
+            showMessage('Ошибка: ' + err.message, 'error');
         } finally {
             showLoading(false);
         }
@@ -1567,7 +1632,7 @@
             applyFilterAndRender();
             showMessage('Группа обновлена');
         } catch (err) {
-            alert('Ошибка: ' + err.message);
+            showMessage('Ошибка: ' + err.message, 'error');
         } finally {
             showLoading(false);
         }
@@ -1700,13 +1765,24 @@
     }
 
     async function saveCohortMetaTab(cohortId) {
+        // Отчётность (форма 1-ПК) считает группу по дате завершения — если статус уже
+        // "Завершён", а дата пустая, группа молча выпадает из отчёта за период. Раньше
+        // это ничем не подсвечивалось, узнавали уже по расхождению в цифрах отчёта.
+        const status = document.getElementById('ct_status').value;
+        const endDateEl = document.getElementById('ct_end_date');
+        if (status === 'завершён' && !endDateEl.value) {
+            showMessage('Укажите дату завершения обучения — без неё группа не попадёт в отчётность за период', 'error');
+            endDateEl.focus();
+            return;
+        }
+
         showLoading(true);
         try {
             const res = await postJSON('updateCohort', { data: {
                 id: cohortId,
-                status: document.getElementById('ct_status').value,
+                status,
                 planned_start_date: document.getElementById('ct_planned_start_date').value,
-                end_date: document.getElementById('ct_end_date').value,
+                end_date: endDateEl.value,
                 manager: document.getElementById('ct_manager').value.trim(),
                 org_name: document.getElementById('ct_org_name').value.trim(),
                 inn: document.getElementById('ct_inn').value.trim(),
@@ -1716,7 +1792,7 @@
             applyFilterAndRender();
             showMessage('Группа обновлена');
         } catch (err) {
-            alert('Ошибка: ' + err.message);
+            showMessage('Ошибка: ' + err.message, 'error');
         } finally {
             showLoading(false);
         }
@@ -1792,7 +1868,7 @@
             a.remove();
             setTimeout(() => URL.revokeObjectURL(url), 5000);
         } catch (err) {
-            alert('Ошибка: ' + err.message);
+            showMessage('Ошибка: ' + err.message, 'error');
         }
     }
 
@@ -1805,7 +1881,7 @@
             showMessage('Документ удалён');
             loadCohortDocuments(cohortId);
         } catch (err) {
-            alert('Ошибка: ' + err.message);
+            showMessage('Ошибка: ' + err.message, 'error');
         } finally {
             showLoading(false);
         }
@@ -1814,8 +1890,8 @@
     async function uploadSignedContract(cohortId) {
         const input = document.getElementById('ct_signedContractFile');
         const file = input.files[0];
-        if (!file) { alert('Выберите файл'); return; }
-        if (file.size > 15 * 1024 * 1024) { alert('Файл больше 15 МБ — уменьшите размер'); return; }
+        if (!file) { showMessage('Выберите файл', 'error'); return; }
+        if (file.size > 15 * 1024 * 1024) { showMessage('Файл больше 15 МБ — уменьшите размер', 'error'); return; }
         showLoading(true);
         try {
             const base64 = await new Promise((resolve, reject) => {
@@ -1833,7 +1909,7 @@
             showMessage('Скан загружен');
             loadCohortDocuments(cohortId);
         } catch (err) {
-            alert('Ошибка: ' + err.message);
+            showMessage('Ошибка: ' + err.message, 'error');
         } finally {
             showLoading(false);
         }
@@ -1900,7 +1976,7 @@
             if (s) s[field] = value;
         } catch (err) {
             checkbox.checked = !value; // откатываем визуальное состояние — сохранить не удалось
-            alert('Не удалось сохранить: ' + err.message);
+            showMessage('Не удалось сохранить: ' + err.message, 'error');
         } finally {
             checkbox.disabled = false;
         }
@@ -2108,7 +2184,7 @@
         } catch (err) {
             deal.status = prevStatus;
             applyFilterAndRender();
-            showMessage('Не удалось сохранить статус');
+            showMessage('Не удалось сохранить статус', 'error');
         }
     }
 
@@ -2133,11 +2209,37 @@
         document.getElementById('documentsSection').style.display = 'none';
         document.getElementById('historySection').style.display = 'none';
         document.getElementById('deleteBtn').style.display = 'none';
+        document.getElementById('dupLeadWarning').style.display = 'none';
         document.getElementById('overlay').classList.add('open');
+    }
+
+    // При ручном добавлении сделки (звонок, встреча и т.п.) — в отличие от заявок с
+    // сайта, которые дедуплицируются по external_id — раньше ничего не мешало завести
+    // вторую карточку на того же человека. Мягкая подсказка вместо жёсткого запрета:
+    // сотрудник мог специально звонить по новому вопросу того же клиента.
+    function checkDuplicateLead() {
+        const warn = document.getElementById('dupLeadWarning');
+        if (editingId !== null) { warn.style.display = 'none'; return; } // это редактирование, не создание
+        const email = document.getElementById('f_email').value.trim().toLowerCase();
+        const phone = document.getElementById('f_phone').value.replace(/\D/g, '');
+        if (!email && !phone) { warn.style.display = 'none'; return; }
+
+        const match = allDeals.find(d => {
+            const dEmail = String(d.email || '').trim().toLowerCase();
+            const dPhone = String(d.phone || '').replace(/\D/g, '');
+            return (email && dEmail === email) || (phone && phone.length >= 10 && dPhone === phone);
+        });
+        if (match) {
+            warn.innerHTML = `<i class="fas fa-triangle-exclamation"></i> Похожая заявка уже есть: <b>${escapeHtml(match.fio || match.email || match.phone)}</b> (${escapeHtml(match.program || 'без программы')}). Проверьте, не дубль ли это.`;
+            warn.style.display = 'block';
+        } else {
+            warn.style.display = 'none';
+        }
     }
 
     function openEditModal(d) {
         editingId = d.id;
+        document.getElementById('dupLeadWarning').style.display = 'none';
         document.getElementById('modalTitle').textContent = 'Сделка';
         document.getElementById('f_fio').value = d.fio || '';
         document.getElementById('f_email').value = d.email || '';
@@ -2192,7 +2294,7 @@
             if (tab) tab.location.href = url; else window.open(url, '_blank');
         } catch (err) {
             if (tab) tab.document.body.textContent = 'Ошибка: ' + err.message;
-            else alert('Ошибка: ' + err.message);
+            else showMessage('Ошибка: ' + err.message, 'error');
         }
     }
 
@@ -2263,7 +2365,7 @@
             renderIntakeSection(deal);
             showMessage('Ссылка создана');
         } catch (err) {
-            alert('Ошибка: ' + err.message);
+            showMessage('Ошибка: ' + err.message, 'error');
         } finally {
             showLoading(false);
         }
@@ -2281,7 +2383,7 @@
     async function sendIntakeEmailNow() {
         if (editingId === null) return;
         const deal = allDeals.find(d => d.id === editingId);
-        if (!deal || !deal.email) { alert('У этой сделки не указан email'); return; }
+        if (!deal || !deal.email) { showMessage('У этой сделки не указан email', 'error'); return; }
         if (!confirm(`Отправить анкету на ${deal.email}?`)) return;
 
         showLoading(true);
@@ -2290,7 +2392,7 @@
             if (res.status !== 'success') throw new Error(res.message || 'Ошибка отправки');
             showMessage('Письмо отправлено на ' + deal.email);
         } catch (err) {
-            alert('Ошибка: ' + err.message);
+            showMessage('Ошибка: ' + err.message, 'error');
         } finally {
             showLoading(false);
         }
@@ -2314,7 +2416,7 @@
     async function addTask() {
         const text = document.getElementById('newTaskText').value.trim();
         if (!text) return;
-        if (editingId === null) { alert('Сначала сохраните сделку'); return; }
+        if (editingId === null) { showMessage('Сначала сохраните сделку', 'error'); return; }
         const due_date = document.getElementById('newTaskDue').value;
         const manager = document.getElementById('f_manager').value.trim();
         try {
@@ -2326,7 +2428,7 @@
             document.getElementById('newTaskDue').value = '';
             renderTasksForLead(editingId);
         } catch (err) {
-            alert('Не удалось добавить задачу: ' + err.message);
+            showMessage('Не удалось добавить задачу: ' + err.message, 'error');
         }
     }
 
@@ -2335,10 +2437,66 @@
             await postJSON('updateTask', { data: { id: taskId, done } });
             const t = allTasks.find(x => x.id === taskId);
             if (t) t.done = done;
-            renderTasksForLead(editingId);
+            if (editingId !== null) renderTasksForLead(editingId);
+            if (currentTab === 'tasks') renderMyTasksTab();
         } catch (err) {
-            showMessage('Не удалось сохранить задачу');
+            showMessage('Не удалось сохранить задачу', 'error');
         }
+    }
+
+    // ========== Задачи по всем сделкам ("Мои задачи") ==========
+    // Раньше просроченную задачу было видно только на карточке конкретной сделки —
+    // чтобы понять, что вообще горит, нужно было обойти все карточки на доске вручную.
+    function updateTasksOverdueBadge() {
+        const today = new Date().toISOString().slice(0, 10);
+        const overdueCount = allTasks.filter(t => !t.done && t.due_date && String(t.due_date).slice(0, 10) < today).length;
+        const badge = document.getElementById('tasksOverdueBadge');
+        if (overdueCount > 0) { badge.textContent = overdueCount; badge.style.display = 'inline-block'; }
+        else badge.style.display = 'none';
+    }
+
+    function renderMyTasksTab() {
+        const mgrSel = document.getElementById('tasks_manager');
+        const keepMgr = mgrSel.value;
+        const mgrs = [...new Set(allDeals.map(d => d.manager).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ru'));
+        mgrSel.innerHTML = '<option value="">Все</option>' + mgrs.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
+        mgrSel.value = keepMgr;
+
+        const filterMode = document.getElementById('tasks_filter').value;
+        const manager = mgrSel.value;
+        const today = new Date().toISOString().slice(0, 10);
+
+        let tasks = allTasks.map(t => {
+            const lead = allDeals.find(d => String(d.id) === String(t.lead_id));
+            return { ...t, lead, overdue: !t.done && t.due_date && String(t.due_date).slice(0, 10) < today };
+        }).filter(t => t.lead); // задачи удалённых заявок не показываем
+
+        if (filterMode === 'open') tasks = tasks.filter(t => !t.done);
+        else if (filterMode === 'overdue') tasks = tasks.filter(t => t.overdue);
+        if (manager) tasks = tasks.filter(t => (t.lead.manager || '') === manager);
+
+        tasks.sort((a, b) => {
+            if (!!a.done !== !!b.done) return a.done ? 1 : -1;
+            return (a.due_date || '9999') < (b.due_date || '9999') ? -1 : 1;
+        });
+
+        const overdueTotal = tasks.filter(t => t.overdue).length;
+        const openTotal = tasks.filter(t => !t.done).length;
+        document.getElementById('tasksSummary').innerHTML = `
+            <div class="stat-tile"><div class="label">Показано задач</div><div class="value">${tasks.length}</div></div>
+            <div class="stat-tile"><div class="label">Открытых</div><div class="value">${openTotal}</div></div>
+            <div class="stat-tile"><div class="label">Просроченных</div><div class="value" style="color:var(--danger);">${overdueTotal}</div></div>
+        `;
+
+        const list = document.getElementById('tasksList');
+        list.innerHTML = tasks.length ? tasks.map(t => `
+            <div class="task-row${t.done ? ' done' : ''}">
+                <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTask(${t.id}, this.checked)">
+                <span class="task-text">${escapeHtml(t.text)}</span>
+                ${t.due_date ? `<span class="due${t.overdue ? ' badge overdue' : ''}">${t.overdue ? 'просрочено ' : 'до '}${String(t.due_date).slice(0, 10)}</span>` : ''}
+                <span class="task-lead" onclick="openEditModal(allDeals.find(d => d.id === ${t.lead.id}))"><i class="fas fa-arrow-up-right-from-square"></i> ${escapeHtml(t.lead.fio || t.lead.program || 'заявка')}</span>
+            </div>
+        `).join('') : '<div class="history-item" style="padding:20px;">Задач по текущему фильтру нет</div>';
     }
 
     // ========== История изменений ==========
@@ -2381,7 +2539,7 @@
             applyFilterAndRender();
             showMessage('Заявка удалена');
         } catch (err) {
-            alert('Не удалось удалить: ' + err.message);
+            showMessage('Не удалось удалить: ' + err.message, 'error');
         } finally {
             showLoading(false);
         }
@@ -2389,7 +2547,7 @@
 
     async function saveModal() {
         const fio = document.getElementById('f_fio').value.trim();
-        if (!fio) { alert('Укажите ФИО'); return; }
+        if (!fio) { showMessage('Укажите ФИО', 'error'); return; }
 
         const payload = {
             fio,
@@ -2429,7 +2587,7 @@
             applyFilterAndRender();
         } catch (err) {
             console.error(err);
-            alert('Ошибка: ' + err.message);
+            showMessage('Ошибка: ' + err.message, 'error');
         } finally {
             showLoading(false);
         }
