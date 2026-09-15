@@ -45,7 +45,7 @@
         button.danger-outline { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
         button.danger-outline:hover { background: var(--danger); color: white; }
 
-        .archive-filters { display: flex; gap: 8px; margin-bottom: 14px; }
+        .archive-filters { display: flex; gap: 8px; margin-bottom: 14px; align-items: center; }
         .chip-filter {
             background: var(--card-bg); border: 1px solid var(--border); color: var(--text-secondary);
             padding: 7px 16px; border-radius: 20px; font-size: 13px; cursor: pointer;
@@ -60,6 +60,22 @@
         table.archive-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); }
         table.archive-table tr { cursor: pointer; }
         table.archive-table tr:hover td { background: #f1f4ff; }
+        table.archive-table td.col-check, table.archive-table th.col-check { width: 34px; cursor: default; }
+
+        .archive-bulk-bar {
+            display: none; align-items: center; gap: 10px; background: #eef1ff; border: 1px solid var(--primary-light);
+            border-radius: var(--radius); padding: 10px 16px; margin-bottom: 14px; font-size: 13px;
+        }
+        .archive-bulk-bar span { font-weight: 600; color: var(--primary-dark); margin-right: 4px; }
+        .archive-bulk-bar button { padding: 7px 14px; font-size: 12.5px; }
+
+        .board-toolbar { display: flex; justify-content: flex-end; margin-bottom: 10px; }
+        .board-show-archived {
+            display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: var(--text-secondary);
+            cursor: pointer; user-select: none;
+        }
+        .board-show-archived input { cursor: pointer; width: 16px; height: 16px; }
+        .card.card-archived { opacity: 0.55; border-left-style: dashed; }
 
         .board { display: flex; gap: 16px; align-items: flex-start; overflow-x: auto; padding-bottom: 12px; }
         .column {
@@ -286,6 +302,11 @@
             display: inline-block; background: var(--danger); color: white; font-size: 10.5px;
             font-weight: 700; padding: 1px 7px; border-radius: 20px; margin-left: 6px;
         }
+        #archiveCountBadge {
+            display: inline-block; background: var(--primary-light); color: white; font-size: 10.5px;
+            font-weight: 700; padding: 1px 7px; border-radius: 20px; margin-left: 6px;
+        }
+        .tab-btn.active #archiveCountBadge { background: rgba(255,255,255,0.35); }
         .tasks-summary { display: flex; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
         .tasks-summary .stat-tile { min-width: 150px; }
         .task-row { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--border); }
@@ -393,7 +414,7 @@
         <button class="tab-btn active" data-tab="board" onclick="switchTab('board')"><i class="fas fa-columns"></i> Доска</button>
         <button class="tab-btn" data-tab="groups" onclick="switchTab('groups')"><i class="fas fa-users"></i> Наборы групп</button>
         <button class="tab-btn" data-tab="cohorts" onclick="switchTab('cohorts')"><i class="fas fa-people-group"></i> Группы</button>
-        <button class="tab-btn" data-tab="archive" onclick="switchTab('archive')"><i class="fas fa-box-archive"></i> Архив</button>
+        <button class="tab-btn" data-tab="archive" onclick="switchTab('archive')"><i class="fas fa-box-archive"></i> Архив<span id="archiveCountBadge" style="display:none;"></span></button>
         <button class="tab-btn" data-tab="clients" onclick="switchTab('clients')"><i class="fas fa-address-book"></i> Клиенты</button>
         <button class="tab-btn" data-tab="analytics" onclick="switchTab('analytics')"><i class="fas fa-chart-simple"></i> Аналитика</button>
         <button class="tab-btn" data-tab="tasks" onclick="switchTab('tasks')"><i class="fas fa-list-check"></i> Задачи<span id="tasksOverdueBadge" style="display:none;"></span></button>
@@ -402,6 +423,12 @@
     </div>
 
     <div id="screen-board" class="screen active">
+        <div class="board-toolbar">
+            <label class="board-show-archived">
+                <input type="checkbox" id="showArchivedToggle" onchange="onShowArchivedToggle()">
+                Показать архивные на доске
+            </label>
+        </div>
         <div class="board" id="board"></div>
     </div>
 
@@ -424,6 +451,12 @@
             <button class="chip-filter" data-ct="физ" onclick="setArchiveFilter('физ')">Физ. лица</button>
             <button class="chip-filter" data-ct="юр" onclick="setArchiveFilter('юр')">Юр. лица</button>
             <button class="chip-filter" data-ct="none" onclick="setArchiveFilter('none')">Не указано</button>
+        </div>
+        <div class="archive-bulk-bar" id="archiveBulkBar">
+            <span id="archiveBulkCount"></span>
+            <button type="button" onclick="bulkSetArchived(true)"><i class="fas fa-box-archive"></i> Архивировать выбранное</button>
+            <button type="button" class="secondary" onclick="bulkSetArchived(false)"><i class="fas fa-arrow-up-from-bracket"></i> Вернуть выбранное</button>
+            <button type="button" class="secondary" onclick="clearArchiveSelection()">Снять выделение</button>
         </div>
         <div class="archive-table-wrap">
             <table class="archive-table" id="archiveTable"></table>
@@ -951,7 +984,15 @@
         document.getElementById('recordCount').textContent = `Сделок: ${filtered.length} из ${allDeals.length}`;
         updateNotificationBanner(allDeals);
         updateTasksOverdueBadge();
+        updateArchiveCountBadge();
         renderActiveTab(filtered);
+    }
+
+    function updateArchiveCountBadge() {
+        const badge = document.getElementById('archiveCountBadge');
+        const n = allDeals.filter(d => isTrue(d.archived)).length;
+        if (n > 0) { badge.textContent = n; badge.style.display = 'inline-block'; }
+        else badge.style.display = 'none';
     }
 
     function renderActiveTab(filtered) {
@@ -996,11 +1037,16 @@
 
         const table = document.getElementById('archiveTable');
         const ctLabel = { 'физ': '<span class="badge person">физ.лицо</span>', 'юр': '<span class="badge legal">юр.лицо</span>', 'none': '<span class="badge check" style="background:#eef0f4;color:#868e96;">не указано</span>' };
+        const allVisibleSelected = rows.length > 0 && rows.every(d => selectedArchiveIds.has(d.id));
 
         table.innerHTML = `
-            <tr><th>ФИО</th><th>Программа</th><th>Тип</th><th>Слуш.</th><th>Статус</th><th>Email / телефон</th><th>Менеджер</th><th>Источник</th><th>Дата</th><th>Доска</th></tr>
+            <tr>
+                <th class="col-check"><input type="checkbox" id="archiveSelectAll" ${allVisibleSelected ? 'checked' : ''}></th>
+                <th>ФИО</th><th>Программа</th><th>Тип</th><th>Слуш.</th><th>Статус</th><th>Email / телефон</th><th>Менеджер</th><th>Источник</th><th>Дата</th><th>Доска</th>
+            </tr>
             ${rows.map(d => `
                 <tr data-id="${d.id}">
+                    <td class="col-check"><input type="checkbox" class="archive-row-check" data-id="${d.id}" ${selectedArchiveIds.has(d.id) ? 'checked' : ''}></td>
                     <td>${escapeHtml(d.fio || '—')}</td>
                     <td>${escapeHtml(d.program || '—')}</td>
                     <td>${ctLabel[contractBucket(d.contract_type)]}</td>
@@ -1012,7 +1058,7 @@
                     <td>${String(d.timestamp || '').slice(0, 10)}</td>
                     <td><button type="button" class="secondary archive-toggle-btn" data-id="${d.id}" style="font-size:11.5px;padding:5px 10px;white-space:nowrap;">${isTrue(d.archived) ? '<i class="fas fa-arrow-up-from-bracket"></i> На доску' : '<i class="fas fa-box-archive"></i> В архив'}</button></td>
                 </tr>
-            `).join('') || '<tr><td colspan="10" style="text-align:center;padding:30px;">Ничего не найдено</td></tr>'}
+            `).join('') || '<tr><td colspan="11" style="text-align:center;padding:30px;">Ничего не найдено</td></tr>'}
         `;
         table.querySelectorAll('tr[data-id]').forEach(tr => {
             tr.addEventListener('click', () => {
@@ -1026,6 +1072,59 @@
                 toggleArchived(Number(btn.dataset.id));
             });
         });
+        table.querySelectorAll('.archive-row-check').forEach(cb => {
+            cb.addEventListener('click', (e) => e.stopPropagation());
+            cb.addEventListener('change', (e) => {
+                const id = Number(cb.dataset.id);
+                if (cb.checked) selectedArchiveIds.add(id); else selectedArchiveIds.delete(id);
+                renderArchiveBulkBar();
+                const selectAll = document.getElementById('archiveSelectAll');
+                if (selectAll) selectAll.checked = rows.length > 0 && rows.every(d => selectedArchiveIds.has(d.id));
+            });
+        });
+        const selectAllCb = document.getElementById('archiveSelectAll');
+        if (selectAllCb) {
+            selectAllCb.addEventListener('change', () => {
+                rows.forEach(d => { if (selectAllCb.checked) selectedArchiveIds.add(d.id); else selectedArchiveIds.delete(d.id); });
+                renderArchive(deals);
+                renderArchiveBulkBar();
+            });
+        }
+        renderArchiveBulkBar();
+    }
+
+    // ========== Групповое архивирование (чекбоксы в таблице архива) ==========
+    let selectedArchiveIds = new Set();
+
+    function renderArchiveBulkBar() {
+        const bar = document.getElementById('archiveBulkBar');
+        if (!bar) return;
+        const n = selectedArchiveIds.size;
+        bar.style.display = n > 0 ? 'flex' : 'none';
+        if (n > 0) document.getElementById('archiveBulkCount').textContent = `Выбрано: ${n}`;
+    }
+
+    function clearArchiveSelection() {
+        selectedArchiveIds.clear();
+        applyFilterAndRender();
+    }
+
+    async function bulkSetArchived(archived) {
+        const ids = [...selectedArchiveIds];
+        if (!ids.length) return;
+        const prevValues = new Map(ids.map(id => [id, allDeals.find(d => d.id === id)?.archived]));
+        ids.forEach(id => { const d = allDeals.find(x => x.id === id); if (d) d.archived = archived; });
+        selectedArchiveIds.clear();
+        applyFilterAndRender();
+        try {
+            const res = await postJSON('updateLead', { data: ids.map(id => ({ id, archived })) });
+            if (res.status !== 'success') throw new Error(res.message || 'Ошибка сохранения');
+            showMessage(archived ? `В архив перенесено: ${ids.length}` : `Возвращено на доску: ${ids.length}`);
+        } catch (err) {
+            ids.forEach(id => { const d = allDeals.find(x => x.id === id); if (d) d.archived = prevValues.get(id); });
+            applyFilterAndRender();
+            showMessage('Не удалось сохранить: ' + err.message, 'error');
+        }
     }
 
     // Переключает заявку между доской и архивом. Раньше "Архив" был просто ещё
@@ -2153,15 +2252,25 @@
         `;
     }
 
+    // По умолчанию архивные заявки не показываем на доске — иначе она захламляется
+    // по мере роста базы. Временный тумблер "Показать архивные" — чтобы можно было
+    // свериться, что ничего важного не потерялось в архиве, не уходя с доски.
+    let showArchivedOnBoard = false;
+    try { showArchivedOnBoard = localStorage.getItem('crm_showArchivedOnBoard') === '1'; } catch (e) {}
+
+    function onShowArchivedToggle() {
+        showArchivedOnBoard = document.getElementById('showArchivedToggle').checked;
+        try { localStorage.setItem('crm_showArchivedOnBoard', showArchivedOnBoard ? '1' : '0'); } catch (e) {}
+        applyFilterAndRender();
+    }
+
     function renderBoard(deals) {
         const board = document.getElementById('board');
         board.innerHTML = '';
 
         STAGES.forEach(stage => {
-            // Архивные заявки не показываем на доске — иначе она захламляется по мере
-            // роста базы (см. вкладку "Архив" + кнопка "Вернуть на доску"/"В архив").
             // Внутри колонки — от новых к старым, а не как попало.
-            const items = deals.filter(d => normalizeStage(d.status) === stage.key && !isTrue(d.archived))
+            const items = deals.filter(d => normalizeStage(d.status) === stage.key && (showArchivedOnBoard || !isTrue(d.archived)))
                 .sort((a, b) => String(b.timestamp || '').localeCompare(String(a.timestamp || '')));
             const sum = items.reduce((s, d) => s + (Number(d.amount) || 0), 0);
 
@@ -2207,6 +2316,10 @@
         const today = new Date().toISOString().slice(0, 10);
         const hasOverdue = allTasks.some(t => String(t.lead_id) === String(d.id) && !t.done && t.due_date && String(t.due_date).slice(0, 10) < today);
         if (hasOverdue) badges += '<span class="badge overdue"><i class="fas fa-clock"></i> просрочена задача</span>';
+        if (isTrue(d.archived)) {
+            card.classList.add('card-archived');
+            badges += '<span class="badge" style="background:#e9ecef;color:#495057;"><i class="fas fa-box-archive"></i> в архиве</span>';
+        }
 
         card.innerHTML = `
             <div class="fio">${escapeHtml(d.fio || '(без имени)')}</div>
@@ -2665,6 +2778,7 @@
     });
 
     async function initApp() {
+        document.getElementById('showArchivedToggle').checked = showArchivedOnBoard;
         await loadDeals();
         populateManagerFilter();
         applyFilterAndRender();
