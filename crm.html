@@ -77,6 +77,58 @@
         .board-show-archived input { cursor: pointer; width: 16px; height: 16px; }
         .card.card-archived { opacity: 0.55; border-left-style: dashed; }
 
+        /* ===== Помощь ===== */
+        .help-intro { background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px 22px; margin-bottom: 16px; }
+        .help-intro h2 { margin: 0 0 8px; font-size: 17px; color: var(--primary-dark); }
+        .help-intro p { margin: 6px 0; line-height: 1.55; font-size: 13.5px; }
+        .help-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+        .help-nav a {
+            background: var(--card-bg); border: 1px solid var(--border); color: var(--text-secondary);
+            padding: 6px 14px; border-radius: 20px; font-size: 12.5px; text-decoration: none; transition: var(--transition);
+        }
+        .help-nav a:hover { background: #eef1ff; color: var(--primary-dark); border-color: var(--primary-light); }
+        .help-toolbar { display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 12px; }
+        .help-toolbar button { font-size: 12px; padding: 7px 14px; }
+        details.help-section {
+            background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow);
+            margin-bottom: 12px; padding: 4px 22px; scroll-margin-top: 16px;
+        }
+        details.help-section summary {
+            cursor: pointer; padding: 15px 0; font-weight: 600; font-size: 15px; color: var(--primary-dark);
+            list-style: none; display: flex; align-items: center; gap: 10px; user-select: none;
+        }
+        details.help-section summary::-webkit-details-marker { display: none; }
+        details.help-section summary .chev { margin-left: auto; color: var(--text-secondary); transition: transform 0.2s ease; font-size: 13px; }
+        details.help-section[open] summary .chev { transform: rotate(180deg); }
+        .help-body { padding: 0 0 20px; }
+        .help-body p, .help-body li { line-height: 1.6; font-size: 13.5px; color: var(--text); }
+        .help-body ol, .help-body ul { padding-left: 22px; margin: 8px 0; }
+        .help-body h4 { margin: 18px 0 6px; font-size: 13.5px; color: var(--primary-dark); }
+        .help-body h4:first-child { margin-top: 0; }
+        .help-tip, .help-warn { border-radius: 8px; padding: 10px 14px; font-size: 13px; margin: 12px 0; display: flex; gap: 9px; align-items: flex-start; }
+        .help-tip { background: #e0e7ff; color: var(--primary-dark); }
+        .help-tip i { margin-top: 2px; }
+        .help-warn { background: #fff3cd; color: #7a5c00; }
+        .help-warn i { margin-top: 2px; }
+        .help-mock {
+            border: 1px dashed var(--primary-light); border-radius: var(--radius); padding: 16px;
+            margin: 12px 0; background: linear-gradient(135deg, #eef1ff 0%, #f8f9fa 100%); overflow-x: auto;
+        }
+        .help-mock-label {
+            font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--primary);
+            margin-bottom: 10px; font-weight: 700; display: flex; align-items: center; gap: 6px;
+        }
+        .help-mock .board { padding-bottom: 0; }
+        .help-mock .column { box-shadow: none; max-height: none; }
+        .help-mock .card { cursor: default; }
+        .help-mock .card:hover { transform: none; box-shadow: var(--shadow); }
+        .help-mock table.archive-table { box-shadow: none; }
+        .help-mock .archive-table-wrap { max-height: none; box-shadow: none; }
+        .help-kbd {
+            display: inline-block; background: #eef1ff; border: 1px solid var(--border); border-bottom-width: 2px;
+            border-radius: 5px; padding: 1px 7px; font-size: 12px; font-family: monospace; color: var(--primary-dark);
+        }
+
         .board { display: flex; gap: 16px; align-items: flex-start; overflow-x: auto; padding-bottom: 12px; }
         .column {
             background: rgba(255,255,255,0.55); border-radius: var(--radius);
@@ -120,7 +172,7 @@
             font-size: 14px; background: white; min-width: 170px;
         }
 
-        .tabs { display: flex; gap: 8px; margin-bottom: 18px; }
+        .tabs { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
         .tab-btn {
             background: transparent; color: var(--text-secondary); border: 1px solid var(--border);
             padding: 9px 18px; border-radius: 25px; font-weight: 500;
@@ -420,6 +472,7 @@
         <button class="tab-btn" data-tab="tasks" onclick="switchTab('tasks')"><i class="fas fa-list-check"></i> Задачи<span id="tasksOverdueBadge" style="display:none;"></span></button>
         <button class="tab-btn" data-tab="programs" onclick="switchTab('programs')"><i class="fas fa-book"></i> Программы</button>
         <button class="tab-btn" data-tab="reports" onclick="switchTab('reports')"><i class="fas fa-file-lines"></i> Отчётность</button>
+        <button class="tab-btn" data-tab="help" onclick="switchTab('help')"><i class="fas fa-circle-question"></i> Помощь</button>
     </div>
 
     <div id="screen-board" class="screen active">
@@ -571,6 +624,326 @@
         <div class="archive-table-wrap">
             <table class="archive-table" id="reportGroupsTable"></table>
         </div>
+    </div>
+
+    <div id="screen-help" class="screen">
+        <div class="help-intro">
+            <h2><i class="fas fa-circle-question"></i> Руководство пользователя</h2>
+            <p>Здесь собрано описание всех разделов CRM: что они делают, как ими пользоваться и на что обратить внимание. Разделы можно разворачивать по одному — кликните по заголовку.</p>
+            <p>Ниже, в каждом разделе, есть уменьшенный «макет» экрана — он показывает реальные элементы интерфейса (кнопки, карточки, таблицы) так же, как они выглядят в самой CRM, только с примерами вместо настоящих данных.</p>
+        </div>
+
+        <div class="help-nav">
+            <a href="#help-board">Доска</a>
+            <a href="#help-card">Карточка заявки</a>
+            <a href="#help-groups">Наборы групп</a>
+            <a href="#help-cohorts">Группы</a>
+            <a href="#help-archive">Архив</a>
+            <a href="#help-clients">Клиенты</a>
+            <a href="#help-analytics">Аналитика</a>
+            <a href="#help-tasks">Задачи</a>
+            <a href="#help-programs">Программы</a>
+            <a href="#help-reports">Отчётность</a>
+            <a href="#help-auth">Вход и доступ</a>
+            <a href="#help-faq">Частые вопросы</a>
+        </div>
+
+        <div class="help-toolbar">
+            <button type="button" class="secondary" onclick="toggleAllHelp(true)"><i class="fas fa-angles-down"></i> Развернуть всё</button>
+            <button type="button" class="secondary" onclick="toggleAllHelp(false)"><i class="fas fa-angles-up"></i> Свернуть всё</button>
+        </div>
+
+        <details class="help-section" id="help-board" open>
+            <summary><i class="fas fa-columns"></i> Доска сделок <i class="fas fa-chevron-down chev"></i></summary>
+            <div class="help-body">
+                <p>Доска — главный экран CRM. Каждая заявка проходит по стадиям слева направо: «Заявка» → «КП отправлено» → «СЗ отправлено» → «Договор» → «Оплачено» (точный набор стадий смотрите в самой доске), либо уходит в «Отказ».</p>
+                <div class="help-mock">
+                    <div class="help-mock-label"><i class="fas fa-eye"></i> Как это выглядит</div>
+                    <div class="board">
+                        <div class="column">
+                            <div class="column-head">
+                                <div class="title"><span>Заявка</span><span class="count">2</span></div>
+                            </div>
+                            <div class="column-body">
+                                <div class="card">
+                                    <div class="fio">Иванов Иван Иванович</div>
+                                    <div class="program">Технология сварки. Базовый курс</div>
+                                    <div class="meta-row"><span class="manager"><i class="fas fa-user"></i> Мария Петрова</span><span class="amount">45 000 ₽</span></div>
+                                </div>
+                                <div class="card">
+                                    <div class="fio">ООО «Верфь-Сервис»</div>
+                                    <div class="program">Проектный менеджмент</div>
+                                    <div class="meta-row"><span class="manager"><i class="fas fa-user"></i> Мария Петрова</span><span class="amount">120 000 ₽</span></div>
+                                    <div class="badges"><span class="badge legal">юр.лицо</span></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column">
+                            <div class="column-head">
+                                <div class="title"><span>КП отправлено</span><span class="count">1</span></div>
+                            </div>
+                            <div class="column-body">
+                                <div class="card">
+                                    <div class="fio">Сидорова Анна Петровна</div>
+                                    <div class="program">Проектирование судов</div>
+                                    <div class="meta-row"><span class="manager"><i class="fas fa-user"></i> Игорь Смирнов</span><span class="amount">60 000 ₽</span></div>
+                                    <div class="badges"><span class="badge overdue"><i class="fas fa-clock"></i> просрочена задача</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <h4>Что можно делать</h4>
+                <ul>
+                    <li><b>Перетаскивать карточку</b> мышью в другую колонку — это меняет стадию сделки. Отпустить можно в любом месте колонки.</li>
+                    <li><b>Кликнуть по карточке</b> — откроется полная карточка заявки со всеми полями, задачами, анкетой и документами.</li>
+                    <li><b>Искать и фильтровать</b> — строка поиска вверху ищет по ФИО, программе, организации, менеджеру и email; выпадающий список рядом фильтрует по ответственному менеджеру. Оба фильтра работают на всех вкладках, не только на доске.</li>
+                    <li><b>«Новая сделка»</b> — кнопка в верхней панели добавляет заявку вручную (например, если клиент позвонил, а не оставил заявку на сайте).</li>
+                </ul>
+                <h4>Бейджи на карточках</h4>
+                <ul>
+                    <li><span class="badge legal">юр.лицо</span> / <span class="badge person">физ.лицо</span> — тип договора.</li>
+                    <li><span class="badge legal" style="background:#fef3c7;color:#92400e;">× N слушателей</span> — заявка сразу на несколько человек (обычно от организации).</li>
+                    <li><span class="badge manual">вручную</span> — заявка добавлена сотрудником, а не пришла с сайта.</li>
+                    <li><span class="badge overdue"><i class="fas fa-clock"></i> просрочена задача</span> — по заявке есть невыполненная задача с истёкшим сроком.</li>
+                    <li><span class="badge" style="background:#e9ecef;color:#495057;"><i class="fas fa-box-archive"></i> в архиве</span> — заявка архивная, видна только потому, что включён показ архивных (см. ниже).</li>
+                </ul>
+                <div class="help-tip"><i class="fas fa-lightbulb"></i> <span>Доска по умолчанию скрывает архивные заявки, чтобы не мешали работать с текущими. Если нужно свериться, ничего ли важного не «потерялось» в архиве — включите тумблер «Показать архивные на доске» над доской: архивные карточки появятся приглушённого цвета с пунктирной рамкой и меткой «в архиве», их не спутать с активными.</span></div>
+            </div>
+        </details>
+
+        <details class="help-section" id="help-card">
+            <summary><i class="fas fa-id-card"></i> Карточка заявки <i class="fas fa-chevron-down chev"></i></summary>
+            <div class="help-body">
+                <p>Открывается кликом по карточке на доске, в архиве или в таблице клиентов. Здесь — все данные по заявке и три дополнительных блока.</p>
+                <h4>Основные поля</h4>
+                <ul>
+                    <li>ФИО / название организации, email, телефон, программа обучения, тип договора (физ./юр. лицо), сумма, ответственный менеджер, организация и ИНН (для юр. лиц), плановая дата старта потока, комментарий.</li>
+                    <li>Кнопка «Перенести в архив» / «Вернуть на доску» — тот же переключатель, что и в архиве (см. раздел «Архив»).</li>
+                </ul>
+                <h4>Блок «Задачи»</h4>
+                <p>Позволяет поставить себе или коллеге напоминание по этой заявке (например, «перезвонить 20.03») со сроком выполнения. Просроченные задачи подсвечиваются и дают бейдж на карточке доски, а также попадают в общую вкладку «Задачи».</p>
+                <h4>Блок «Анкета для зачисления»</h4>
+                <div class="help-mock">
+                    <div class="help-mock-label"><i class="fas fa-eye"></i> Как это выглядит</div>
+                    <div style="max-width:420px;">
+                        <div class="field-row" style="align-items:flex-end;">
+                            <div class="field" style="margin-bottom:0;"><input type="text" readonly value="https://.../intake.html?token=a1b2c3..." style="font-size:12.5px;"></div>
+                            <button type="button" class="secondary" style="flex-shrink:0;"><i class="fas fa-copy"></i></button>
+                        </div>
+                        <button type="button" style="margin-top:10px;font-size:12.5px;padding:8px 14px;"><i class="fas fa-paper-plane"></i> Отправить на email заявки</button>
+                    </div>
+                </div>
+                <p>Кнопка «Создать ссылку на анкету» генерирует персональную ссылку — слушатель переходит по ней и сам заполняет свои паспортные и контактные данные (форма <code>intake.html</code>), не заставляя менеджера вбивать их вручную. Ссылку можно скопировать и отправить самостоятельно, либо нажать «Отправить на email заявки» — письмо со ссылкой уйдёт автоматически на email, указанный в заявке.</p>
+                <h4>Блок «Документы»</h4>
+                <p>Кнопки «Сформировать КП» и «Сформировать СЗ на счёт» готовят коммерческое предложение и счёт на оплату по шаблону, подставляя данные заявки и программы (цену, часы, реквизиты). Договор, лист выдачи и другие документы группы формируются на вкладке «Группы», когда заявка уже включена в набор (см. ниже).</p>
+                <div class="help-warn"><i class="fas fa-triangle-exclamation"></i> <span>Документы формируются по данным программы из справочника «Программы» — если в КП неверная цена или часы, поправьте это один раз в справочнике, а не в самом документе.</span></div>
+            </div>
+        </details>
+
+        <details class="help-section" id="help-groups">
+            <summary><i class="fas fa-users"></i> Наборы групп <i class="fas fa-chevron-down chev"></i></summary>
+            <div class="help-body">
+                <p>Эта вкладка показывает, сколько заявок «в ожидании» набралось по каждой программе — то есть ещё не включённых ни в одну группу. Порог набора — 10 человек (юр. лицо может сразу занять несколько мест одной заявкой).</p>
+                <div class="help-mock">
+                    <div class="help-mock-label"><i class="fas fa-eye"></i> Как это выглядит</div>
+                    <div class="groups-grid" style="grid-template-columns: 1fr 1fr; display:grid; gap:14px;">
+                        <div class="group-card ready">
+                            <div class="gname"><i class="fas fa-circle-check" style="color:var(--success);"></i> Технология сварки. Базовый курс</div>
+                            <div class="group-progress"><div class="group-progress-fill" style="width:100%;"></div></div>
+                            <div class="group-count-row"><span><b>13</b> из 10</span><span>готово к набору</span></div>
+                            <div class="group-managers"><span class="manager-chip">Мария Петрова</span></div>
+                            <button type="button" class="form-btn"><i class="fas fa-users"></i> Сформировать группу</button>
+                        </div>
+                        <div class="group-card">
+                            <div class="gname">Проектный менеджмент</div>
+                            <div class="group-progress"><div class="group-progress-fill" style="width:60%;"></div></div>
+                            <div class="group-count-row"><span><b>6</b> из 10</span><span>4 до набора</span></div>
+                            <div class="group-managers"><span class="manager-chip">Игорь Смирнов</span></div>
+                            <button type="button" class="form-btn secondary"><i class="fas fa-users"></i> Посмотреть заявки</button>
+                        </div>
+                    </div>
+                </div>
+                <h4>Что означает карточка программы</h4>
+                <ul>
+                    <li>Зелёная рамка и галочка — набралось 10+ человек, группу можно формировать.</li>
+                    <li>Полоска прогресса — сколько набрано от порога.</li>
+                    <li>Чипы с уже сформированными потоками (если по программе уже есть группы) — клик по чипу открывает карточку этой группы.</li>
+                </ul>
+                <h4>Кнопка на карточке</h4>
+                <ul>
+                    <li><b>«Сформировать группу»</b> (программа набрала 10+) — открывает список ожидающих заявок с чекбоксами; можно снять галочку у тех, кто пока не идёт, указать дату старта и ответственного и нажать «Сформировать группу» внизу — появится новая запись на вкладке «Группы».</li>
+                    <li><b>«Посмотреть заявки»</b> (программа ещё не набрала порог) — открывает тот же список для ознакомления: кто уже подал заявку, с какими контактами. При необходимости группу можно сформировать и раньше набора 10 человек — порог не запрещает это, а лишь подсказывает, что обычно пора.</li>
+                </ul>
+                <div class="help-tip"><i class="fas fa-lightbulb"></i> <span>Как только заявка попадает в группу, она перестаёт считаться «ожидающей» и пропадает из списка набора — так вы не наберёте одного и того же человека в два потока случайно.</span></div>
+            </div>
+        </details>
+
+        <details class="help-section" id="help-cohorts">
+            <summary><i class="fas fa-people-group"></i> Группы <i class="fas fa-chevron-down chev"></i></summary>
+            <div class="help-body">
+                <p>Список уже сформированных потоков (групп) слева и подробная карточка выбранной группы справа: статус («Набор» / «Идёт» / «Завершён»), дата старта, ответственный, состав слушателей, документы.</p>
+                <div class="help-mock">
+                    <div class="help-mock-label"><i class="fas fa-eye"></i> Документы группы — как это выглядит</div>
+                    <div class="field-row" style="flex-wrap:wrap;gap:8px;">
+                        <button type="button" class="secondary"><i class="fas fa-file-invoice"></i> КП</button>
+                        <button type="button" class="secondary"><i class="fas fa-envelope-open-text"></i> СЗ на счёт</button>
+                        <button type="button" class="secondary"><i class="fas fa-file-contract"></i> Договор</button>
+                        <button type="button" class="secondary"><i class="fas fa-list-check"></i> Лист выдачи</button>
+                        <button type="button" class="secondary"><i class="fas fa-upload"></i> Загрузить подписанный договор</button>
+                        <button type="button" class="secondary"><i class="fas fa-upload"></i> Загрузить расписание</button>
+                    </div>
+                </div>
+                <h4>Что можно делать в карточке группы</h4>
+                <ul>
+                    <li><b>Менять статус</b> и дату старта — влияет на отчётность и на то, в каком виде группа показывается в разделах «Отчётность» и «Наборы групп».</li>
+                    <li><b>Формировать документы</b> — КП, СЗ на счёт, договор (авто-подставляются реквизиты организации/ИНН, взятые с одной из заявок) и лист выдачи.</li>
+                    <li><b>Загружать сканы</b> — подписанный договор и расписание занятий хранятся при группе и доступны всем, кто откроет карточку; файлы видят только сотрудники CRM (прямых публичных ссылок на файлы нет).</li>
+                    <li><b>Добавить ещё слушателей</b> — если после формирования группы по той же программе появились новые заявки, кнопка «Добавить ещё» подтянет их в уже существующий поток вместо создания нового.</li>
+                </ul>
+                <div class="help-tip"><i class="fas fa-lightbulb"></i> <span>Если организация или ИНН группы не заполнены, CRM сама подставит их с любой заявки-участника, где эти поля указаны — вводить дважды не нужно.</span></div>
+            </div>
+        </details>
+
+        <details class="help-section" id="help-archive">
+            <summary><i class="fas fa-box-archive"></i> Архив <i class="fas fa-chevron-down chev"></i></summary>
+            <div class="help-body">
+                <p>Полный список всех заявок — и активных, и архивных. Архивирование не удаляет заявку, а просто убирает её с доски, чтобы доска оставалась рабочей и не захламлялась старыми/неактуальными обращениями.</p>
+                <div class="help-mock">
+                    <div class="help-mock-label"><i class="fas fa-eye"></i> Как это выглядит</div>
+                    <div class="archive-bulk-bar" style="display:flex;">
+                        <span>Выбрано: 2</span>
+                        <button type="button"><i class="fas fa-box-archive"></i> Архивировать выбранное</button>
+                        <button type="button" class="secondary"><i class="fas fa-arrow-up-from-bracket"></i> Вернуть выбранное</button>
+                        <button type="button" class="secondary">Снять выделение</button>
+                    </div>
+                    <div class="archive-table-wrap">
+                        <table class="archive-table">
+                            <tr><th class="col-check"><input type="checkbox"></th><th>ФИО</th><th>Программа</th><th>Статус</th><th>Доска</th></tr>
+                            <tr><td class="col-check"><input type="checkbox" checked></td><td>Иванов Иван Иванович</td><td>Технология сварки</td><td>Отказ</td><td><button type="button" class="secondary" style="font-size:11.5px;padding:5px 10px;"><i class="fas fa-arrow-up-from-bracket"></i> На доску</button></td></tr>
+                            <tr><td class="col-check"><input type="checkbox" checked></td><td>Сидорова Анна</td><td>Проектирование судов</td><td>Оплачено</td><td><button type="button" class="secondary" style="font-size:11.5px;padding:5px 10px;"><i class="fas fa-box-archive"></i> В архив</button></td></tr>
+                        </table>
+                    </div>
+                </div>
+                <h4>Как архивировать</h4>
+                <ul>
+                    <li><b>По одной заявке</b> — кнопка «В архив» / «На доску» в строке таблицы или в самой карточке заявки.</li>
+                    <li><b>Пачкой</b> — отметьте нужные строки чекбоксами слева (или чекбокс в шапке таблицы — выделит все видимые строки), сверху появится панель с кнопками «Архивировать выбранное» и «Вернуть выбранное». Отменить выделение — кнопка «Снять выделение».</li>
+                </ul>
+                <h4>Счётчик и фильтры</h4>
+                <ul>
+                    <li>Число на вкладке «Архив» в верхнем меню — сколько заявок сейчас в архиве, обновляется сразу.</li>
+                    <li>Чипы «Физ. лица» / «Юр. лица» / «Не указано» над таблицей фильтруют список по типу договора.</li>
+                    <li>Поиск и фильтр по менеджеру в верхней панели тоже работают внутри архива.</li>
+                </ul>
+                <div class="help-tip"><i class="fas fa-lightbulb"></i> <span>Заявка, попавшая в архив, никуда не исчезает: её видно в архиве, её можно найти поиском, а если нужно — временно показать прямо на доске через тумблер «Показать архивные на доске» (описан в разделе «Доска»).</span></div>
+            </div>
+        </details>
+
+        <details class="help-section" id="help-clients">
+            <summary><i class="fas fa-address-book"></i> Клиенты <i class="fas fa-chevron-down chev"></i></summary>
+            <div class="help-body">
+                <p>Общий справочник по всем, кто когда-либо оставлял заявку — физическим лицам и организациям, независимо от текущей стадии и статуса архива. Удобно, чтобы быстро найти контакты человека или организации, если они снова обратились по новой программе.</p>
+                <p>Работают те же поиск и фильтр по менеджеру, что и на других вкладках. Клик по строке открывает карточку заявки.</p>
+            </div>
+        </details>
+
+        <details class="help-section" id="help-analytics">
+            <summary><i class="fas fa-chart-simple"></i> Аналитика <i class="fas fa-chevron-down chev"></i></summary>
+            <div class="help-body">
+                <div class="help-mock">
+                    <div class="help-mock-label"><i class="fas fa-eye"></i> Как это выглядит</div>
+                    <div class="funnel-row">
+                        <span class="funnel-label">Заявка</span>
+                        <div class="funnel-track"><div class="funnel-fill" style="width:100%;">42</div></div>
+                    </div>
+                    <div class="funnel-row">
+                        <span class="funnel-label">Договор</span>
+                        <div class="funnel-track"><div class="funnel-fill" style="width:55%;">23</div></div>
+                    </div>
+                    <div class="funnel-row otkaz">
+                        <span class="funnel-label">Отказ</span>
+                        <div class="funnel-track"><div class="funnel-fill" style="width:20%;">8</div></div>
+                    </div>
+                    <div class="stat-tiles" style="margin-top:16px;">
+                        <div class="stat-tile"><div class="label">Сумма в работе</div><div class="value">2,4 млн ₽</div></div>
+                        <div class="stat-tile"><div class="label">Конверсия в оплату</div><div class="value">34%</div></div>
+                    </div>
+                </div>
+                <ul>
+                    <li><b>Воронка по стадиям</b> — сколько заявок сейчас на каждой стадии, наглядно показывает, где «застревают» сделки.</li>
+                    <li><b>Показатели</b> и <b>таблица по менеджерам</b> — сумма в работе, конверсия, нагрузка на каждого сотрудника.</li>
+                    <li>Учитываются заявки с учётом текущего поиска/фильтра по менеджеру вверху страницы — можно посмотреть воронку только по одному человеку.</li>
+                </ul>
+            </div>
+        </details>
+
+        <details class="help-section" id="help-tasks">
+            <summary><i class="fas fa-list-check"></i> Задачи <i class="fas fa-chevron-down chev"></i></summary>
+            <div class="help-body">
+                <p>Сводный список всех задач, поставленных по заявкам (создаются внутри карточки заявки — см. раздел «Карточка заявки»). Здесь удобно видеть их все разом, не открывая каждую заявку по отдельности.</p>
+                <ul>
+                    <li>Фильтр «Показать»: открытые / все / просроченные.</li>
+                    <li>Клик по названию заявки в строке задачи сразу открывает её карточку.</li>
+                    <li>Просроченные задачи (срок прошёл, а задача не отмечена выполненной) считаются отдельно и показывают красный счётчик на самой вкладке «Задачи» в верхнем меню — чтобы такие не терялись.</li>
+                </ul>
+            </div>
+        </details>
+
+        <details class="help-section" id="help-programs">
+            <summary><i class="fas fa-book"></i> Программы <i class="fas fa-chevron-down chev"></i></summary>
+            <div class="help-body">
+                <p>Справочник программ обучения — единственное место, где хранится актуальное название, стоимость, часы и ОКВЭД/направление программы. Все документы (КП, СЗ, договор, лист выдачи) и поле «Программа» в заявке берут данные отсюда.</p>
+                <ul>
+                    <li>«Добавить программу» — заводит новую позицию в справочнике.</li>
+                    <li>Фильтр «Только без ОКВЭД» — быстро находит программы, у которых не заполнено направление (мешает корректной отчётности по ОКВЭД).</li>
+                </ul>
+                <div class="help-warn"><i class="fas fa-triangle-exclamation"></i> <span>Меняя цену или часы программы здесь, вы не меняете задним числом уже сформированные документы по старым заявкам — только новые, сформированные после правки.</span></div>
+            </div>
+        </details>
+
+        <details class="help-section" id="help-reports">
+            <summary><i class="fas fa-file-lines"></i> Отчётность <i class="fas fa-chevron-down chev"></i></summary>
+            <div class="help-body">
+                <div class="help-mock">
+                    <div class="help-mock-label"><i class="fas fa-eye"></i> Фильтры отчёта</div>
+                    <div class="report-filters" style="box-shadow:none;padding:0;">
+                        <div class="report-filter-field"><label>Дата завершения с</label><input type="date" disabled></div>
+                        <div class="report-filter-field"><label>по</label><input type="date" disabled></div>
+                        <div class="report-filter-field"><label>Программа</label><select disabled><option>Все программы</option></select></div>
+                        <div class="report-filter-field"><label>Заказчик</label><select disabled><option>Все</option></select></div>
+                    </div>
+                </div>
+                <p>Отчёт по завершённым и текущим группам с гибкими фильтрами: период завершения обучения, программа, ОКВЭД/направление, тип программы (ПК/ПП), тип заказчика (юр./физ. лицо), ответственный менеджер.</p>
+                <ul>
+                    <li>Сводка сверху — ключевые суммы и количества по выбранным фильтрам.</li>
+                    <li>Таблица «По направлениям (ОКВЭД)» — разбивка по направлениям деятельности.</li>
+                    <li>Таблица «Группы, попавшие в отбор» — какие именно группы вошли в текущий фильтр.</li>
+                    <li>«Экспорт в Excel» — выгружает отфильтрованный отчёт файлом .xlsx.</li>
+                    <li>«Сбросить» — возвращает все фильтры к значению «Все».</li>
+                </ul>
+            </div>
+        </details>
+
+        <details class="help-section" id="help-auth">
+            <summary><i class="fas fa-lock"></i> Вход и доступ <i class="fas fa-chevron-down chev"></i></summary>
+            <div class="help-body">
+                <p>CRM защищена общим паролем отдела ДПО — при первом открытии страница попросит его ввести. Пароль запоминается в браузере, поэтому повторно вводить его на этом же компьютере не придётся, пока вы не очистите данные браузера.</p>
+                <div class="help-warn"><i class="fas fa-triangle-exclamation"></i> <span>Система хранит персональные данные слушателей (ФИО, контакты, иногда сканы документов). Не передавайте пароль людям вне отдела и не открывайте CRM на чужих/публичных компьютерах без крайней необходимости.</span></div>
+            </div>
+        </details>
+
+        <details class="help-section" id="help-faq">
+            <summary><i class="fas fa-circle-info"></i> Частые вопросы <i class="fas fa-chevron-down chev"></i></summary>
+            <div class="help-body">
+                <p><b>Заявка попала не в ту стадию — как исправить?</b><br>Перетащите карточку на доске в нужную колонку, либо откройте карточку заявки и смените поле «Статус».</p>
+                <p><b>Случайно заархивировал(а) нужную заявку — что делать?</b><br>Откройте вкладку «Архив», найдите заявку (поиск сверху работает и здесь) и нажмите «На доску» — либо откройте саму заявку и нажмите ту же кнопку в карточке.</p>
+                <p><b>Заявка не появляется в «Наборах групп» по своей программе.</b><br>Проверьте: программа в заявке указана точно так же, как в справочнике «Программы» (лишний пробел или опечатка создаёт «свою» отдельную группу); заявка не в стадии «Отказ»; заявка ещё не включена в другую группу (поле cohort уже занято).</p>
+                <p><b>Нужно вернуть человека из уже сформированной группы обратно в ожидание.</b><br>Откройте карточку группы на вкладке «Группы», найдите участника в списке и уберите его из состава — заявка снова станет «ожидающей» и появится в «Наборах групп».</p>
+                <p><b>Письмо со ссылкой на анкету не приходит слушателю.</b><br>Проверьте, что email в заявке указан верно и без опечаток; попросите слушателя заглянуть в папку «Спам». Если писем нет систематически — сообщите администратору CRM.</p>
+                <p><b>Нужно выгрузить список заявок или групп для отчёта в Excel.</b><br>Вкладка «Отчётность» → настройте фильтры → «Экспорт в Excel».</p>
+            </div>
+        </details>
     </div>
 </div>
 
@@ -1164,6 +1537,11 @@
         applyFilterAndRender(); // вкладка могла давно не перерисовываться, пока была скрыта
     }
 
+    // ========== Помощь ==========
+    function toggleAllHelp(open) {
+        document.querySelectorAll('#screen-help details.help-section').forEach(d => { d.open = open; });
+    }
+
     // ========== Справочник программ ==========
     // Единственный источник правды о названии/цене/часах программы — раньше это был
     // статический programs.json (только для документов), теперь общий для всей системы:
@@ -1552,7 +1930,7 @@
                 ${cohorts.length ? `<div class="group-cohorts">${cohorts.map(c => `
                     <div class="cohort-chip" data-cohort="${c.id}"><span>${escapeHtml(c.planned_start_date ? String(c.planned_start_date).slice(0,10) : 'без даты')} · ${sumParticipants(membersOfCohort(c.id))} чел. (${membersOfCohort(c.id).length} заявок)</span><span class="cstatus ${escapeHtml(c.status || 'набор')}">${escapeHtml(c.status || 'набор')}</span></div>
                 `).join('')}</div>` : ''}
-                ${ready ? `<button type="button" class="form-btn" data-program="${escapeHtml(g.program)}"><i class="fas fa-users"></i> Сформировать группу</button>` : ''}
+                ${g.count > 0 ? `<button type="button" class="form-btn${ready ? '' : ' secondary'}" data-program="${escapeHtml(g.program)}"><i class="fas fa-users"></i> ${ready ? 'Сформировать группу' : 'Посмотреть заявки'}</button>` : ''}
             `;
             const btn = card.querySelector('.form-btn');
             if (btn) btn.addEventListener('click', () => openCohortPicker(g.program));
@@ -1607,7 +1985,7 @@
         cohortContext = { mode: 'create', program };
         const waiting = allDeals.filter(d => (d.program || '').trim() === program && normalizeStage(d.status) !== 'отказ' && !d.cohort_id);
 
-        document.getElementById('cohortModalTitle').textContent = 'Сформировать группу: ' + program;
+        document.getElementById('cohortModalTitle').textContent = 'Заявки по программе: ' + program;
         document.getElementById('cohortExisting').style.display = 'none';
         document.getElementById('cohortPicker').style.display = 'block';
         document.getElementById('cohortCreateBtn').style.display = 'inline-flex';
