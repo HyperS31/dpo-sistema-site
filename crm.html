@@ -189,7 +189,7 @@
         .column-body { padding: 10px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 10px; min-height: 60px; }
 
         .card {
-            background: var(--card-bg); border-radius: 10px; padding: 12px 14px;
+            background: var(--card-bg); border-radius: 10px; padding: 13px 14px;
             box-shadow: var(--shadow); cursor: grab; border-left: 4px solid var(--primary-light);
             transition: var(--transition); position: relative;
         }
@@ -197,31 +197,47 @@
         .card.dragging { opacity: 0.4; }
         .card.stage-otkaz-card { border-left-color: var(--danger); opacity: 0.75; }
         .card.card-stale { border-left-color: var(--warning); background: #fffdf6; }
-        .card .fio { font-weight: 600; font-size: 14px; margin-bottom: 3px; padding-right: 4px; }
-        .card .program { font-size: 12.5px; color: var(--text-secondary); margin-bottom: 8px; line-height: 1.35; }
-        .card .contact-row { display: flex; gap: 6px; margin-bottom: 8px; }
+        .card .fio { font-weight: 600; font-size: 14px; margin-bottom: 3px; line-height: 1.3; }
+        .card .program {
+            font-size: 12.5px; color: var(--text-secondary); line-height: 1.4;
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+        }
+        .board.select-mode .card .fio, .board.select-mode .card .program { padding-right: 24px; }
+
+        /* Нижний блок карточки — менеджер/сумма/контакты — визуально отделён
+           от ФИО и программы тонкой линией, чтобы карточка читалась в два
+           понятных шага: "кто и что" сверху, "кто ведёт и сколько" снизу. */
+        .card .meta-row {
+            display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary);
+            margin-top: 10px; padding-top: 9px; border-top: 1px solid #f1f3f5;
+        }
+        .card .amount { font-weight: 600; color: var(--primary-dark); white-space: nowrap; flex-shrink: 0; }
+        .card .contact-icons { display: flex; gap: 4px; flex-shrink: 0; }
         .card-copy-btn {
-            background: #f1f3f9; color: var(--text-secondary); border: none; border-radius: 20px;
-            padding: 3px 9px; font-size: 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;
+            width: 24px; height: 24px; padding: 0; flex-shrink: 0; background: #f1f3f9; color: var(--text-secondary);
+            border: none; border-radius: 50%; cursor: pointer; display: inline-flex; align-items: center;
+            justify-content: center; font-size: 11px; transition: var(--transition);
         }
-        .card-copy-btn:hover { background: #e0e7ff; color: var(--primary-dark); }
-        .card .meta-row { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-secondary); gap: 8px; }
-        .card .amount { font-weight: 600; color: var(--primary-dark); white-space: nowrap; }
-        .card .manager { display: inline-flex; align-items: center; gap: 4px; min-width: 0; }
+        .card-copy-btn:hover { background: #e0e7ff; color: var(--primary-dark); transform: scale(1.08); }
         .card-manager-select {
-            border: none; background: transparent; color: var(--text-secondary); font-size: 12px;
-            font-family: inherit; cursor: pointer; max-width: 130px; padding: 2px 0;
+            flex: 1; min-width: 0; border: none; background: #f1f3f9; color: var(--text-secondary); font-size: 11.5px;
+            font-family: inherit; cursor: pointer; padding: 4px 20px 4px 10px; border-radius: 20px;
+            appearance: none; -webkit-appearance: none; -moz-appearance: none; text-overflow: ellipsis;
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'><path d='M2 3.5L5 6.5L8 3.5' stroke='%23868e96' stroke-width='1.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+            background-repeat: no-repeat; background-position: right 7px center;
         }
-        .card-manager-select:hover, .card-manager-select:focus { color: var(--primary-dark); }
+        .card-manager-select:hover, .card-manager-select:focus { background-color: #e0e7ff; color: var(--primary-dark); outline: none; }
+        .card-manager-select.unassigned { color: #adb5bd; font-style: italic; }
         .card-select-cb { position: absolute; top: 10px; right: 10px; width: 17px; height: 17px; cursor: pointer; z-index: 2; }
-        .card .badges { display: flex; gap: 5px; margin-top: 8px; flex-wrap: wrap; }
+        .card .badges { display: flex; gap: 5px; margin-top: 9px; flex-wrap: wrap; }
         .badge { font-size: 10.5px; padding: 2px 8px; border-radius: 20px; font-weight: 600; }
         .badge.legal { background: #e0e7ff; color: var(--primary-dark); }
         .badge.person { background: #d1fae5; color: #065f46; }
-        .badge.manual { background: #fef3c7; color: #92400e; }
+        .badge.manual { background: #eef0f4; color: #868e96; }
         .badge.stale { background: #fef3c7; color: #92400e; }
         .badge.overdue { cursor: pointer; }
         .badge.overdue:hover { background: #fecdd3; }
+        .badge.archived-flag { background: #eef0f4; color: #868e96; }
 
         #recordCount { font-size: 13px; color: var(--text-secondary); }
 
@@ -717,6 +733,7 @@
         </div>
 
         <div class="help-nav">
+            <a href="#help-filters">Поиск, фильтры, виды</a>
             <a href="#help-board">Доска</a>
             <a href="#help-card">Карточка заявки</a>
             <a href="#help-groups">Наборы групп</a>
@@ -736,6 +753,34 @@
             <button type="button" class="secondary" onclick="toggleAllHelp(false)"><i class="fas fa-angles-up"></i> Свернуть всё</button>
         </div>
 
+        <details class="help-section" id="help-filters">
+            <summary><i class="fas fa-filter"></i> Поиск, фильтры и сохранённые виды <i class="fas fa-chevron-down chev"></i></summary>
+            <div class="help-body">
+                <p>Панель поиска и фильтров вверху действует одинаково на всех вкладках — не только на доске: то, что вы введёте или выберете здесь, тут же сужает список на доске, в архиве, в клиентах, в аналитике и т.д.</p>
+                <div class="help-mock">
+                    <div class="help-mock-label"><i class="fas fa-eye"></i> Как это выглядит</div>
+                    <div class="toolbar" style="box-shadow:none;padding:0;">
+                        <input type="text" disabled placeholder="Поиск по ФИО, программе, организации...">
+                        <select disabled><option>Все менеджеры</option></select>
+                        <select disabled><option>Все типы договора</option></select>
+                        <label class="only-overdue-toggle"><input type="checkbox" disabled> Только с просроченными задачами</label>
+                        <button type="button" class="secondary"><i class="fas fa-file-excel"></i> Экспорт</button>
+                    </div>
+                </div>
+                <h4>Фильтры</h4>
+                <ul>
+                    <li><b>Поиск</b> — ищет по ФИО, программе, организации, менеджеру и email одновременно.</li>
+                    <li><b>Менеджер</b> и <b>Тип договора</b> — сужают список до конкретного ответственного или до физ./юр. лиц.</li>
+                    <li><b>Только с просроченными задачами</b> — оставляет только заявки, по которым висит хотя бы одна просроченная задача.</li>
+                </ul>
+                <h4>Сохранённые виды</h4>
+                <p>Если часто пересобираете одну и ту же комбинацию фильтров (например «мои сделки» или «юр.лица»), настройте её один раз и нажмите <b>«+ Сохранить вид»</b> под панелью — появится именованная кнопка-чип. Клик по чипу мгновенно применяет сохранённую комбинацию, крестик на чипе — удаляет вид. Виды хранятся в этом браузере, у каждого сотрудника свои.</p>
+                <h4>Экспорт</h4>
+                <p>Кнопка <b>«Экспорт»</b> выгружает в Excel ровно то, что сейчас показано с учётом всех фильтров — не обязательно быть на вкладке «Отчётность» ради выгрузки списка заявок.</p>
+                <div class="help-tip"><i class="fas fa-lightbulb"></i> <span>Пример: чтобы получить кнопку «Просроченные», включите тумблер «Только с просроченными задачами» и сохраните вид под этим именем — дальше это один клик.</span></div>
+            </div>
+        </details>
+
         <details class="help-section" id="help-board" open>
             <summary><i class="fas fa-columns"></i> Доска сделок <i class="fas fa-chevron-down chev"></i></summary>
             <div class="help-body">
@@ -751,13 +796,23 @@
                                 <div class="card">
                                     <div class="fio">Иванов Иван Иванович</div>
                                     <div class="program">Технология сварки. Базовый курс</div>
-                                    <div class="meta-row"><span class="manager"><i class="fas fa-user"></i> Мария Петрова</span><span class="amount">45 000 ₽</span></div>
+                                    <div class="meta-row">
+                                        <span class="contact-icons">
+                                            <button type="button" class="card-copy-btn" title="Скопировать телефон"><i class="fas fa-phone"></i></button>
+                                            <button type="button" class="card-copy-btn" title="Скопировать email"><i class="fas fa-envelope"></i></button>
+                                        </span>
+                                        <select class="card-manager-select" disabled><option>Мария Петрова</option></select>
+                                        <span class="amount">45 000 ₽</span>
+                                    </div>
                                 </div>
-                                <div class="card">
+                                <div class="card card-stale">
                                     <div class="fio">ООО «Верфь-Сервис»</div>
                                     <div class="program">Проектный менеджмент</div>
-                                    <div class="meta-row"><span class="manager"><i class="fas fa-user"></i> Мария Петрова</span><span class="amount">120 000 ₽</span></div>
-                                    <div class="badges"><span class="badge legal">юр.лицо</span></div>
+                                    <div class="meta-row">
+                                        <select class="card-manager-select unassigned" disabled><option>Без менеджера</option></select>
+                                        <span class="amount">120 000 ₽</span>
+                                    </div>
+                                    <div class="badges"><span class="badge legal">юр.лицо</span><span class="badge stale"><i class="fas fa-hourglass-half"></i> без движения 16 дн.</span></div>
                                 </div>
                             </div>
                         </div>
@@ -769,27 +824,34 @@
                                 <div class="card">
                                     <div class="fio">Сидорова Анна Петровна</div>
                                     <div class="program">Проектирование судов</div>
-                                    <div class="meta-row"><span class="manager"><i class="fas fa-user"></i> Игорь Смирнов</span><span class="amount">60 000 ₽</span></div>
+                                    <div class="meta-row">
+                                        <select class="card-manager-select" disabled><option>Игорь Смирнов</option></select>
+                                        <span class="amount">60 000 ₽</span>
+                                    </div>
                                     <div class="badges"><span class="badge overdue"><i class="fas fa-clock"></i> просрочена задача</span></div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <h4>Что можно делать</h4>
+                <h4>Что можно делать с карточкой</h4>
                 <ul>
-                    <li><b>Перетаскивать карточку</b> мышью в другую колонку — это меняет стадию сделки. Отпустить можно в любом месте колонки.</li>
-                    <li><b>Кликнуть по карточке</b> — откроется полная карточка заявки со всеми полями, задачами, анкетой и документами.</li>
-                    <li><b>Искать и фильтровать</b> — строка поиска вверху ищет по ФИО, программе, организации, менеджеру и email; выпадающий список рядом фильтрует по ответственному менеджеру. Оба фильтра работают на всех вкладках, не только на доске.</li>
-                    <li><b>«Новая сделка»</b> — кнопка в верхней панели добавляет заявку вручную (например, если клиент позвонил, а не оставил заявку на сайте).</li>
+                    <li><b>Перетаскивать</b> мышью в другую колонку — меняет стадию сделки. Отпустить можно в любом месте колонки.</li>
+                    <li><b>Кликнуть по карточке</b> (в любом месте, кроме элементов ниже) — откроется полная карточка заявки.</li>
+                    <li><b>Сменить менеджера прямо на карточке</b> — серая «таблетка» с именем менеджера внизу карточки является выпадающим списком: кликните и выберите другого из уже встречавшихся в базе — сохранится сразу, без открытия модалки. Для совсем нового имени менеджера всё ещё нужна полная карточка.</li>
+                    <li><b>Скопировать телефон/email</b> — маленькие круглые кнопки с иконкой телефона/конверта рядом с менеджером (показаны, только если контакт заполнен и не похож на брак вида «#ERROR!»). Клик — значение сразу в буфере обмена.</li>
+                    <li><b>Кликнуть по бейджу «просрочена задача»</b> — не открывает саму заявку, а сразу переводит на вкладку «Задачи» с фильтром по этой заявке.</li>
                 </ul>
+                <h4>Выбор нескольких карточек</h4>
+                <p>Кнопка <b>«Выбрать несколько»</b> над доской включает режим массовых действий: на каждой карточке появляется чекбокс (перетаскивание карточек в этом режиме временно отключается). Отметьте нужные — снизу появится панель с выбором менеджера и кнопкой «Назначить менеджера», которая проставит его сразу всем отмеченным. «Отменить выбор» выключает режим и снимает все отметки.</p>
                 <h4>Бейджи на карточках</h4>
                 <ul>
                     <li><span class="badge legal">юр.лицо</span> / <span class="badge person">физ.лицо</span> — тип договора.</li>
                     <li><span class="badge legal" style="background:#fef3c7;color:#92400e;">× N слушателей</span> — заявка сразу на несколько человек (обычно от организации).</li>
                     <li><span class="badge manual">вручную</span> — заявка добавлена сотрудником, а не пришла с сайта.</li>
-                    <li><span class="badge overdue"><i class="fas fa-clock"></i> просрочена задача</span> — по заявке есть невыполненная задача с истёкшим сроком.</li>
-                    <li><span class="badge" style="background:#e9ecef;color:#495057;"><i class="fas fa-box-archive"></i> в архиве</span> — заявка архивная, видна только потому, что включён показ архивных (см. ниже).</li>
+                    <li><span class="badge overdue"><i class="fas fa-clock"></i> просрочена задача</span> — по заявке есть невыполненная задача с истёкшим сроком; кликабельна (см. выше).</li>
+                    <li><span class="badge stale"><i class="fas fa-hourglass-half"></i> без движения N дн.</span> — стадия этой заявки не менялась 14 и более дней (правка других полей таймер не сбрасывает — важна именно смена стадии). Не показывается для «Отказ» и архивных — там простой ожидаем. Карточка при этом дополнительно подсвечивается тёплым фоном и жёлтой полосой слева.</li>
+                    <li><span class="badge archived-flag"><i class="fas fa-box-archive"></i> в архиве</span> — заявка архивная, видна только потому, что включён показ архивных (см. ниже).</li>
                 </ul>
                 <div class="help-tip"><i class="fas fa-lightbulb"></i> <span>Доска по умолчанию скрывает архивные заявки, чтобы не мешали работать с текущими. Если нужно свериться, ничего ли важного не «потерялось» в архиве — включите тумблер «Показать архивные на доске» над доской: архивные карточки появятся приглушённого цвета с пунктирной рамкой и меткой «в архиве», их не спутать с активными.</span></div>
             </div>
@@ -802,6 +864,7 @@
                 <h4>Основные поля</h4>
                 <ul>
                     <li>ФИО / название организации, email, телефон, программа обучения, тип договора (физ./юр. лицо), сумма, ответственный менеджер, организация и ИНН (для юр. лиц), плановая дата старта потока, комментарий.</li>
+                    <li>Серые кнопки-иконки <i class="fas fa-copy"></i> рядом с полями Email и Телефон копируют их значение в буфер обмена одним кликом — не нужно выделять текст вручную.</li>
                     <li>Кнопка «Перенести в архив» / «Вернуть на доску» — тот же переключатель, что и в архиве (см. раздел «Архив»).</li>
                 </ul>
                 <h4>Блок «Задачи»</h4>
@@ -969,6 +1032,7 @@
                     <li>Фильтр «Показать»: открытые / все / просроченные.</li>
                     <li>Клик по названию заявки в строке задачи сразу открывает её карточку.</li>
                     <li>Просроченные задачи (срок прошёл, а задача не отмечена выполненной) считаются отдельно и показывают красный счётчик на самой вкладке «Задачи» в верхнем меню — чтобы такие не терялись.</li>
+                    <li>Если сюда попали с доски — кликнув по бейджу «просрочена задача» на карточке — список сразу отфильтрован по этой заявке, сверху показана синяя плашка с её названием и кнопкой «Убрать фильтр».</li>
                 </ul>
             </div>
         </details>
@@ -1024,7 +1088,9 @@
                 <p><b>Заявка не появляется в «Наборах групп» по своей программе.</b><br>Проверьте: программа в заявке указана точно так же, как в справочнике «Программы» (лишний пробел или опечатка создаёт «свою» отдельную группу); заявка не в стадии «Отказ»; заявка ещё не включена в другую группу (поле cohort уже занято).</p>
                 <p><b>Нужно вернуть человека из уже сформированной группы обратно в ожидание.</b><br>Откройте карточку группы на вкладке «Группы», найдите участника в списке и уберите его из состава — заявка снова станет «ожидающей» и появится в «Наборах групп».</p>
                 <p><b>Письмо со ссылкой на анкету не приходит слушателю.</b><br>Проверьте, что email в заявке указан верно и без опечаток; попросите слушателя заглянуть в папку «Спам». Если писем нет систематически — сообщите администратору CRM.</p>
-                <p><b>Нужно выгрузить список заявок или групп для отчёта в Excel.</b><br>Вкладка «Отчётность» → настройте фильтры → «Экспорт в Excel».</p>
+                <p><b>Нужно выгрузить список заявок или групп для отчёта в Excel.</b><br>Вкладка «Отчётность» → настройте фильтры → «Экспорт в Excel» — либо кнопка «Экспорт» в общей панели фильтров, если нужен именно список заявок с текущей доски/архива/клиентов.</p>
+                <p><b>Нужно передать пачку заявок другому менеджеру.</b><br>На доске нажмите «Выбрать несколько», отметьте нужные карточки чекбоксами, выберите менеджера в появившейся панели снизу и нажмите «Назначить менеджера». Для одной заявки быстрее — просто кликнуть по «таблетке» с именем менеджера прямо на карточке.</p>
+                <p><b>Карточка подсвечена жёлтым с пометкой «без движения N дн.» — что это значит?</b><br>Стадия этой заявки не менялась 14 и более дней — возможно, про неё забыли. Переместите карточку в актуальную стадию (перетаскиванием или через карточку), и подсветка сразу уйдёт.</p>
             </div>
         </details>
     </div>
@@ -2923,6 +2989,7 @@
     function renderBoard(deals) {
         const board = document.getElementById('board');
         board.innerHTML = '';
+        board.classList.toggle('select-mode', boardSelectMode);
 
         const managersList = [...new Set(allDeals.map(d => d.manager).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ru'));
 
@@ -2990,11 +3057,9 @@
 
         // "Давно без движения" — стадия не менялась дольше порога, и сделка ещё не
         // отказная/архивная (для них застой ожидаем и не требует внимания).
-        let isStale = false;
         if (stageKey !== 'отказ' && !isTrue(d.archived) && d.stage_changed_at) {
             const days = Math.floor((Date.now() - new Date(d.stage_changed_at).getTime()) / 86400000);
             if (days >= STALE_DAYS_THRESHOLD) {
-                isStale = true;
                 card.classList.add('card-stale');
                 badges += `<span class="badge stale" title="Стадия не менялась ${days} дн."><i class="fas fa-hourglass-half"></i> без движения ${days} дн.</span>`;
             }
@@ -3002,20 +3067,23 @@
 
         if (isTrue(d.archived)) {
             card.classList.add('card-archived');
-            badges += '<span class="badge" style="background:#e9ecef;color:#495057;"><i class="fas fa-box-archive"></i> в архиве</span>';
+            badges += '<span class="badge archived-flag"><i class="fas fa-box-archive"></i> в архиве</span>';
         }
 
-        let contactRow = '';
-        if (d.phone) contactRow += `<button type="button" class="card-copy-btn" data-copy="phone" title="Скопировать телефон"><i class="fas fa-phone"></i> ${escapeHtml(d.phone)}</button>`;
-        if (d.email) contactRow += `<button type="button" class="card-copy-btn" data-copy="email" title="Скопировать email"><i class="fas fa-envelope"></i> ${escapeHtml(d.email)}</button>`;
+        // Импорт из старых таблиц иногда оставляет мусор вида "#ERROR!"/"#N/A" вместо
+        // пустого поля — не показываем это как будто это настоящий телефон/email.
+        const isUsableContact = (v) => v && !/^#\S+[!?]?$/.test(String(v).trim());
+        let contactIcons = '';
+        if (isUsableContact(d.phone)) contactIcons += `<button type="button" class="card-copy-btn" data-copy="phone" title="Скопировать телефон: ${escapeHtml(d.phone)}"><i class="fas fa-phone"></i></button>`;
+        if (isUsableContact(d.email)) contactIcons += `<button type="button" class="card-copy-btn" data-copy="email" title="Скопировать email: ${escapeHtml(d.email)}"><i class="fas fa-envelope"></i></button>`;
 
         card.innerHTML = `
             ${boardSelectMode ? `<input type="checkbox" class="card-select-cb" ${selectedBoardIds.has(d.id) ? 'checked' : ''}>` : ''}
             <div class="fio">${escapeHtml(d.fio || '(без имени)')}</div>
-            <div class="program">${escapeHtml(d.program || '')}</div>
-            ${contactRow ? `<div class="contact-row">${contactRow}</div>` : ''}
+            <div class="program" title="${escapeHtml(d.program || '')}">${escapeHtml(d.program || '')}</div>
             <div class="meta-row">
-                <span class="manager">${d.manager ? '<i class="fas fa-user"></i>' : ''}<select class="card-manager-select"></select></span>
+                ${contactIcons ? `<span class="contact-icons">${contactIcons}</span>` : ''}
+                <select class="card-manager-select" title="Ответственный менеджер"></select>
                 <span class="amount">${formatMoney(d.amount)}</span>
             </div>
             ${badges ? `<div class="badges">${badges}</div>` : ''}
@@ -3044,14 +3112,16 @@
         }
 
         const mgrSelect = card.querySelector('.card-manager-select');
-        mgrSelect.innerHTML = `<option value="" ${!d.manager ? 'selected' : ''}>— менеджер —</option>` + managersList.map(m =>
+        mgrSelect.innerHTML = `<option value="" ${!d.manager ? 'selected' : ''}>Без менеджера</option>` + managersList.map(m =>
             `<option value="${escapeHtml(m)}" ${m === (d.manager || '') ? 'selected' : ''}>${escapeHtml(m)}</option>`
         ).join('');
+        mgrSelect.classList.toggle('unassigned', !d.manager);
         mgrSelect.draggable = false;
         mgrSelect.addEventListener('click', (e) => e.stopPropagation());
         mgrSelect.addEventListener('mousedown', (e) => e.stopPropagation());
         mgrSelect.addEventListener('change', (e) => {
             e.stopPropagation();
+            mgrSelect.classList.toggle('unassigned', !mgrSelect.value);
             quickSetManager(d.id, mgrSelect.value);
         });
 
