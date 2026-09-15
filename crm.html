@@ -46,6 +46,7 @@
         button.danger-outline:hover { background: var(--danger); color: white; }
         button.icon-copy-btn { padding: 8px 11px; background: #6c757d; flex-shrink: 0; }
         button.icon-copy-btn:hover { background: #5a6268; }
+        #notifToggleBtn.active { background: var(--success); color: white; }
 
         select#contractTypeFilter {
             padding: 10px 16px; border: 1px solid var(--border); border-radius: 25px;
@@ -427,6 +428,15 @@
         @media (max-width: 1100px) { .analytics-grid { grid-template-columns: 1fr; } }
         .panel { background: var(--card-bg); border-radius: var(--radius); padding: 20px 22px; box-shadow: var(--shadow); }
         .panel h3 { margin: 0 0 16px; font-size: 15px; color: var(--primary-dark); }
+        .period-compare { display: flex; gap: 24px; flex-wrap: wrap; align-items: center; }
+        .period-compare-col { min-width: 160px; }
+        .period-compare-col .pc-label { font-size: 11.5px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 6px; }
+        .period-compare-col .pc-value { font-size: 22px; font-weight: 700; color: var(--text); }
+        .period-compare-col .pc-sum { font-size: 12.5px; color: var(--text-secondary); margin-top: 2px; }
+        .period-compare-delta { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; }
+        .period-compare-delta .pc-up { color: var(--success); }
+        .period-compare-delta .pc-down { color: var(--danger); }
+        .period-compare-delta .pc-flat { color: var(--text-secondary); }
         .funnel-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
         .funnel-label { width: 130px; font-size: 13px; color: var(--text-secondary); flex-shrink: 0; }
         .funnel-track { flex: 1; height: 22px; background: #eef0f4; border-radius: 4px; overflow: hidden; }
@@ -452,10 +462,23 @@
         .task-item.done { opacity: 0.5; text-decoration: line-through; }
         .task-item input[type="checkbox"] { margin-top: 3px; }
         .task-item .due { font-size: 11.5px; color: var(--warning); margin-left: 6px; }
-        .task-add-row { display: flex; gap: 6px; margin-top: 8px; }
-        .task-add-row input[type="text"] { flex: 1; padding: 7px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; }
+        .task-item .task-body { flex: 1; min-width: 0; }
+        .task-add-row { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+        .task-add-row input[type="text"] { flex: 1; min-width: 140px; padding: 7px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; }
         .task-add-row input[type="date"] { padding: 7px 8px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; }
+        .task-add-row select, .assignee-select {
+            padding: 6px 24px 6px 8px; border: 1px solid var(--border); border-radius: 8px; font-size: 12.5px;
+            font-family: inherit; color: var(--text-secondary); background: white; cursor: pointer; max-width: 150px;
+        }
         .task-add-row button { padding: 7px 12px; font-size: 12.5px; }
+        .assignee-select { border: none; background: #f1f3f9; border-radius: 20px; padding: 2px 20px 2px 9px; font-size: 11px; margin-top: 3px; }
+        .assignee-select:hover, .assignee-select:focus { background: #e0e7ff; color: var(--primary-dark); outline: none; }
+        .amount-edit-input {
+            width: 92px; padding: 2px 6px; border: 1px solid var(--primary-light); border-radius: 6px;
+            font-size: 12px; font-weight: 600; color: var(--primary-dark); font-family: inherit;
+        }
+        .card .amount { cursor: pointer; border-radius: 4px; }
+        .card .amount:hover { text-decoration: underline dotted; text-underline-offset: 2px; }
         .history-item { font-size: 12.5px; color: var(--text-secondary); padding: 5px 0; border-bottom: 1px dashed var(--border); }
         .history-item .ts { color: #adb5bd; margin-right: 6px; }
         .badge.overdue { background: #fee2e2; color: #991b1b; }
@@ -470,6 +493,28 @@
         .tab-btn.active #archiveCountBadge { background: rgba(255,255,255,0.35); }
         .tasks-summary { display: flex; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
         .tasks-summary .stat-tile { min-width: 150px; }
+
+        .tasks-view-toggle { display: flex; gap: 8px; }
+        .view-toggle-btn { background: var(--card-bg); border: 1px solid var(--border); color: var(--text-secondary); padding: 9px 16px; border-radius: 25px; font-size: 13px; }
+        .view-toggle-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .calendar-nav { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+        .calendar-nav button { padding: 7px 12px; }
+        #tasksCalendarLabel { font-weight: 600; font-size: 15px; color: var(--text); text-transform: capitalize; min-width: 170px; text-align: center; }
+        .calendar-grid-wrap { overflow-x: auto; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(90px, 1fr)); gap: 6px; background: var(--card-bg); border-radius: var(--radius); padding: 14px; box-shadow: var(--shadow); min-width: 700px; }
+        .cal-dow { text-align: center; font-size: 11.5px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; padding-bottom: 6px; }
+        .cal-cell { min-height: 84px; border: 1px solid var(--border); border-radius: 8px; padding: 5px; background: #fbfbfd; }
+        .cal-cell.cal-outside { opacity: 0.4; }
+        .cal-cell.cal-today { border-color: var(--primary); background: #eef1ff; }
+        .cal-daynum { font-size: 11.5px; color: var(--text-secondary); font-weight: 600; margin-bottom: 3px; }
+        .cal-task {
+            font-size: 10.5px; background: #e0e7ff; color: var(--primary-dark); border-radius: 4px; padding: 2px 5px;
+            margin-bottom: 2px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .cal-task:hover { background: #c7d2fe; }
+        .cal-task.overdue { background: #fee2e2; color: #991b1b; }
+        .cal-task.done { opacity: 0.5; text-decoration: line-through; }
+        .cal-more { font-size: 10px; color: var(--text-secondary); padding-left: 2px; }
         .task-row { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--border); }
         .task-row:hover { background: #f8f9fc; }
         .task-row .task-text { flex: 1; font-size: 13.5px; }
@@ -577,6 +622,7 @@
             Только с просроченными задачами
         </label>
         <span id="recordCount"></span>
+        <button type="button" class="secondary" id="notifToggleBtn" onclick="toggleBrowserNotifications()"><i class="fas fa-bell-slash"></i> Уведомления</button>
         <button type="button" class="secondary" onclick="exportFilteredToExcel()"><i class="fas fa-file-excel"></i> Экспорт</button>
         <button onclick="openCreateModal()"><i class="fas fa-plus"></i> Новая сделка</button>
     </div>
@@ -654,6 +700,10 @@
     </div>
 
     <div id="screen-analytics" class="screen">
+        <div class="panel" style="margin-bottom:18px;">
+            <h3>Сравнение периодов</h3>
+            <div id="periodCompare"></div>
+        </div>
         <div class="analytics-grid">
             <div class="panel">
                 <h3>Воронка по стадиям</h3>
@@ -686,9 +736,26 @@
                 <label>Ответственный</label>
                 <select id="tasks_manager" onchange="renderMyTasksTab()"><option value="">Все</option></select>
             </div>
+            <div class="report-filter-field" style="align-self:flex-end;">
+                <div class="tasks-view-toggle">
+                    <button type="button" class="view-toggle-btn active" data-view="list" onclick="setTasksView('list')"><i class="fas fa-list"></i> Список</button>
+                    <button type="button" class="view-toggle-btn" data-view="calendar" onclick="setTasksView('calendar')"><i class="fas fa-calendar-days"></i> Календарь</button>
+                </div>
+            </div>
         </div>
-        <div class="archive-table-wrap">
+        <div class="archive-table-wrap" id="tasksListWrap">
             <div id="tasksList"></div>
+        </div>
+        <div id="tasksCalendarWrap" style="display:none;">
+            <div class="calendar-nav">
+                <button type="button" class="secondary" onclick="shiftTasksCalendarMonth(-1)"><i class="fas fa-chevron-left"></i></button>
+                <span id="tasksCalendarLabel"></span>
+                <button type="button" class="secondary" onclick="shiftTasksCalendarMonth(1)"><i class="fas fa-chevron-right"></i></button>
+                <button type="button" class="secondary" onclick="goToTasksCalendarToday()">Сегодня</button>
+            </div>
+            <div class="calendar-grid-wrap">
+                <div class="calendar-grid" id="tasksCalendarGrid"></div>
+            </div>
         </div>
     </div>
 
@@ -813,6 +880,8 @@
                 <p>Если часто пересобираете одну и ту же комбинацию фильтров (например «мои сделки» или «юр.лица»), настройте её один раз и нажмите <b>«+ Сохранить вид»</b> под панелью — появится именованная кнопка-чип. Клик по чипу мгновенно применяет сохранённую комбинацию, крестик на чипе — удаляет вид. Виды хранятся в этом браузере, у каждого сотрудника свои.</p>
                 <h4>Экспорт</h4>
                 <p>Кнопка <b>«Экспорт»</b> выгружает в Excel ровно то, что сейчас показано с учётом всех фильтров — не обязательно быть на вкладке «Отчётность» ради выгрузки списка заявок.</p>
+                <h4>Браузерные уведомления</h4>
+                <p>Кнопка <b>«Уведомления»</b> включает всплывающие уведомления браузера о новых заявках и о задачах, которые только что стали просроченными — в дополнение к Telegram-боту. Браузер один раз спросит разрешение; дальше, пока вкладка CRM открыта (можно свёрнутую или в фоновой вкладке), она проверяет сервер каждые полторы минуты и присылает уведомление. Это не «настоящий» push — если вкладка или браузер закрыты, уведомлений не будет, только пока CRM открыта где-то на экране.</p>
                 <div class="help-tip"><i class="fas fa-lightbulb"></i> <span>Пример: чтобы получить кнопку «Просроченные», включите тумблер «Только с просроченными задачами» и сохраните вид под этим именем — дальше это один клик.</span></div>
             </div>
         </details>
@@ -876,6 +945,7 @@
                     <li><b>Кликнуть по карточке</b> (в любом месте, кроме элементов ниже) — откроется полная карточка заявки.</li>
                     <li><b>Сменить менеджера прямо на карточке</b> — серая «таблетка» с именем менеджера внизу карточки является выпадающим списком: кликните и выберите другого из уже встречавшихся в базе — сохранится сразу, без открытия модалки. Для совсем нового имени менеджера всё ещё нужна полная карточка.</li>
                     <li><b>Скопировать телефон/email</b> — маленькие круглые кнопки с иконкой телефона/конверта рядом с менеджером (показаны, только если контакт заполнен и не похож на брак вида «#ERROR!»). Клик — значение сразу в буфере обмена.</li>
+                    <li><b>Изменить сумму прямо на карточке</b> — клик по сумме превращает её в поле ввода: введите новое значение и нажмите <span class="help-kbd">Enter</span> или кликните мимо — сохранится сразу. <span class="help-kbd">Esc</span> отменяет правку без сохранения.</li>
                     <li><b>Кликнуть по бейджу «просрочена задача»</b> — не открывает саму заявку, а сразу переводит на вкладку «Задачи» с фильтром по этой заявке.</li>
                 </ul>
                 <h4>Плотность карточек и свёрнутые колонки</h4>
@@ -883,6 +953,7 @@
                 <p>Стрелка <i class="fas fa-chevron-left"></i> в правом верхнем углу заголовка колонки сворачивает её в узкую полоску с названием и счётчиком — удобно для редко используемых стадий (по умолчанию так свёрнута «Отказ»), чтобы не занимали место у рабочих колонок. Заявку по-прежнему можно перетащить прямо в свёрнутую колонку — не обязательно её сначала разворачивать. Клик по полоске (стрелка <i class="fas fa-chevron-right"></i>) разворачивает обратно; выбор тоже запоминается в браузере.</p>
                 <h4>Выбор нескольких карточек</h4>
                 <p>Кнопка <b>«Выбрать несколько»</b> над доской включает режим массовых действий: на каждой карточке появляется чекбокс (перетаскивание карточек в этом режиме временно отключается). Отметьте нужные — снизу появится панель с выбором менеджера и кнопкой «Назначить менеджера», которая проставит его сразу всем отмеченным. «Отменить выбор» выключает режим и снимает все отметки.</p>
+                <p>Чтобы отметить сразу много карточек подряд в одной колонке — отметьте первую, затем зажмите <span class="help-kbd">Shift</span> и кликните по последней в нужном диапазоне: выделится вся цепочка между ними, как в проводнике или почте, не нужно щёлкать по каждой отдельно.</p>
                 <h4>Бейджи на карточках</h4>
                 <ul>
                     <li><span class="badge legal">юр.лицо</span> / <span class="badge person">физ.лицо</span> — тип договора.</li>
@@ -908,6 +979,7 @@
                 </ul>
                 <h4>Блок «Задачи»</h4>
                 <p>Позволяет поставить себе или коллеге напоминание по этой заявке (например, «перезвонить 20.03») со сроком выполнения. Просроченные задачи подсвечиваются и дают бейдж на карточке доски, а также попадают в общую вкладку «Задачи».</p>
+                <p>Рядом с датой — поле «кому поручить»: по умолчанию задача ставится на менеджера заявки, но можно выбрать любого другого сотрудника (например, попросить коллегу подстраховать во время отпуска). Исполнителя уже созданной задачи тоже можно сменить в любой момент — маленький выпадающий список под текстом задачи.</p>
                 <h4>Блок «Анкета для зачисления»</h4>
                 <div class="help-mock">
                     <div class="help-mock-label"><i class="fas fa-eye"></i> Как это выглядит</div>
@@ -1036,6 +1108,17 @@
         <details class="help-section" id="help-analytics">
             <summary><i class="fas fa-chart-simple"></i> Аналитика <i class="fas fa-chevron-down chev"></i></summary>
             <div class="help-body">
+                <h4>Сравнение периодов</h4>
+                <div class="help-mock">
+                    <div class="help-mock-label"><i class="fas fa-eye"></i> Как это выглядит</div>
+                    <div class="period-compare">
+                        <div class="period-compare-col"><div class="pc-label">Последние 7 дней</div><div class="pc-value">14 <span style="font-size:13px;font-weight:500;color:var(--text-secondary);">заявок</span></div><div class="pc-sum">860 000 ₽</div></div>
+                        <div class="period-compare-col"><div class="pc-label">Предыдущие 7 дней</div><div class="pc-value">9 <span style="font-size:13px;font-weight:500;color:var(--text-secondary);">заявок</span></div><div class="pc-sum">510 000 ₽</div></div>
+                        <div class="period-compare-delta"><span class="pc-up"><i class="fas fa-arrow-up"></i> +56% по количеству</span><span class="pc-up"><i class="fas fa-arrow-up"></i> +69% по сумме</span></div>
+                    </div>
+                </div>
+                <p>Самый верхний блок вкладки — сколько заявок появилось за последние 7 дней и на какую сумму, в сравнении с предыдущими 7 днями (тоже скользящее окно, а не «с понедельника», чтобы сравнение было честным независимо от того, какой сегодня день недели). Зелёная стрелка вверх — рост, красная вниз — падение, прочерк — без изменений. Считается по тому же набору заявок, что сейчас отфильтрован вверху страницы.</p>
+                <h4>Воронка и показатели</h4>
                 <div class="help-mock">
                     <div class="help-mock-label"><i class="fas fa-eye"></i> Как это выглядит</div>
                     <div class="funnel-row">
@@ -1069,10 +1152,13 @@
                 <p>Сводный список всех задач, поставленных по заявкам (создаются внутри карточки заявки — см. раздел «Карточка заявки»). Здесь удобно видеть их все разом, не открывая каждую заявку по отдельности.</p>
                 <ul>
                     <li>Фильтр «Показать»: открытые / все / просроченные.</li>
-                    <li>Клик по названию заявки в строке задачи сразу открывает её карточку.</li>
+                    <li>Фильтр «Ответственный» — по тому, кому реально поручена задача (исполнителю), а не по менеджеру самой сделки: если задачу делегировали коллеге, она покажется у него.</li>
+                    <li>Клик по названию заявки в строке задачи сразу открывает её карточку. Серая «таблетка» справа — исполнитель задачи.</li>
                     <li>Просроченные задачи (срок прошёл, а задача не отмечена выполненной) считаются отдельно и показывают красный счётчик на самой вкладке «Задачи» в верхнем меню — чтобы такие не терялись.</li>
                     <li>Если сюда попали с доски — кликнув по бейджу «просрочена задача» на карточке — список сразу отфильтрован по этой заявке, сверху показана синяя плашка с её названием и кнопкой «Убрать фильтр».</li>
                 </ul>
+                <h4>Список / Календарь</h4>
+                <p>Переключатель вверху вкладки меняет вид: обычный <b>список</b> или <b>календарь</b> — месячная сетка, где задачи разложены по дате срока. Действуют те же фильтры «Показать»/«Ответственный», что и в списке. Клик по задаче в календаре открывает карточку заявки; если в один день попало больше трёх задач, лишние скрыты под «+N ещё» — тогда проще посмотреть этот день через список с сортировкой по дате.</p>
             </div>
         </details>
 
@@ -1346,6 +1432,7 @@
                 <div class="task-add-row">
                     <input type="text" id="newTaskText" placeholder="Например: перезвонить">
                     <input type="date" id="newTaskDue">
+                    <select id="newTaskManager" title="Кому поручить задачу"></select>
                     <button type="button" onclick="addTask()"><i class="fas fa-plus"></i></button>
                 </div>
             </div>
@@ -1472,6 +1559,94 @@
     function copyFieldValue(inputId, label) {
         const el = document.getElementById(inputId);
         if (el) copyToClipboard(el.value, label);
+    }
+
+    // ========== Браузерные уведомления ==========
+    // Не настоящий Push (нужен был бы service worker + сервер подписок) — просто
+    // опрос сервера, пока вкладка CRM открыта, и стандартный Notification API.
+    // Дополняет Telegram-бота, а не заменяет его: работает только пока вкладка жива.
+    let notifPollTimer = null;
+    let knownLeadIds = null;
+    let notifiedOverdueTaskIds = new Set();
+    const NOTIF_POLL_MS = 90000;
+
+    function notificationsEnabled() {
+        try { return localStorage.getItem('crm_browser_notifs') === '1'; } catch (e) { return false; }
+    }
+
+    function updateNotifToggleBtn() {
+        const btn = document.getElementById('notifToggleBtn');
+        if (!btn) return;
+        const on = notificationsEnabled() && 'Notification' in window && Notification.permission === 'granted';
+        btn.classList.toggle('active', on);
+        btn.innerHTML = on ? '<i class="fas fa-bell"></i> Уведомления вкл' : '<i class="fas fa-bell-slash"></i> Уведомления';
+    }
+
+    async function toggleBrowserNotifications() {
+        if (notificationsEnabled()) {
+            try { localStorage.setItem('crm_browser_notifs', '0'); } catch (e) {}
+            stopNotifPolling();
+            updateNotifToggleBtn();
+            showMessage('Уведомления выключены');
+            return;
+        }
+        if (!('Notification' in window)) { showMessage('Этот браузер не поддерживает уведомления', 'error'); return; }
+        const perm = await Notification.requestPermission();
+        if (perm !== 'granted') { showMessage('Разрешение на уведомления не получено', 'error'); return; }
+        try { localStorage.setItem('crm_browser_notifs', '1'); } catch (e) {}
+        // Не уведомляем о том, что уже видно на экране в момент включения.
+        knownLeadIds = new Set(allDeals.map(d => d.id));
+        startNotifPolling();
+        updateNotifToggleBtn();
+        showMessage('Уведомления включены — работают, пока эта вкладка открыта');
+    }
+
+    function startNotifPolling() {
+        stopNotifPolling();
+        notifPollTimer = setInterval(checkForNotifications, NOTIF_POLL_MS);
+    }
+    function stopNotifPolling() {
+        if (notifPollTimer) { clearInterval(notifPollTimer); notifPollTimer = null; }
+    }
+
+    async function checkForNotifications() {
+        if (!notificationsEnabled() || !('Notification' in window) || Notification.permission !== 'granted') return;
+        try {
+            const res = await fetchJSON(`${API_URL}?action=getBootstrap`);
+            if (res.status !== 'success') return;
+            const freshDeals = res.data.leads;
+            const freshTasks = res.data.tasks;
+
+            if (knownLeadIds) {
+                freshDeals.filter(d => !knownLeadIds.has(d.id)).forEach(d => {
+                    const n = new Notification('Новая заявка в CRM', { body: `${d.fio || 'Без имени'}${d.program ? ' — ' + d.program : ''}`, tag: 'crm-lead-' + d.id });
+                    n.onclick = () => { window.focus(); n.close(); };
+                });
+            }
+            knownLeadIds = new Set(freshDeals.map(d => d.id));
+
+            const today = new Date().toISOString().slice(0, 10);
+            freshTasks.forEach(t => {
+                const overdue = !t.done && t.due_date && String(t.due_date).slice(0, 10) < today;
+                if (overdue && !notifiedOverdueTaskIds.has(t.id)) {
+                    notifiedOverdueTaskIds.add(t.id);
+                    const lead = freshDeals.find(d => d.id === t.lead_id);
+                    const n = new Notification('Просроченная задача', { body: `${t.text}${lead ? ' — ' + (lead.fio || lead.program || '') : ''}`, tag: 'crm-task-' + t.id });
+                    n.onclick = () => { window.focus(); n.close(); };
+                }
+            });
+
+            // Не подменяем данные, если открыта модалка сделки или идёт массовое
+            // выделение на доске — иначе можно смахнуть несохранённый ввод пользователя.
+            const modalOpen = document.getElementById('overlay').classList.contains('open');
+            if (!modalOpen && !boardSelectMode) {
+                allDeals = freshDeals;
+                allTasks = freshTasks;
+                allCohorts = res.data.cohorts;
+                allStudents = res.data.students;
+                applyFilterAndRender();
+            }
+        } catch (err) { /* тихо пропускаем сбой одного опроса — попробуем на следующем цикле */ }
     }
 
     // ========== Доступ к CRM ==========
@@ -2912,7 +3087,53 @@
     });
 
     // ========== Аналитика ==========
+    // Сравнение "последние 7 дней" vs "предыдущие 7 дней" — скользящее окно, а не
+    // календарная неделя (пн-вс), чтобы не зависеть от того, какой сегодня день и
+    // честно сравнивать одинаковые по длине отрезки.
+    function renderPeriodCompare(deals) {
+        const now = Date.now();
+        const day = 86400000;
+        const inRange = (d, fromMs, toMs) => {
+            const t = new Date(d.timestamp || 0).getTime();
+            return t >= fromMs && t < toMs;
+        };
+        const current = deals.filter(d => inRange(d, now - 7 * day, now));
+        const previous = deals.filter(d => inRange(d, now - 14 * day, now - 7 * day));
+
+        const sum = (list) => list.reduce((s, d) => s + (Number(d.amount) || 0), 0);
+        const delta = (curr, prev) => {
+            if (prev === 0) return curr === 0 ? { text: 'без изменений', cls: 'pc-flat' } : { text: '+100%', cls: 'pc-up' };
+            const pct = Math.round(((curr - prev) / prev) * 100);
+            if (pct === 0) return { text: 'без изменений', cls: 'pc-flat' };
+            return { text: `${pct > 0 ? '+' : ''}${pct}%`, cls: pct > 0 ? 'pc-up' : 'pc-down' };
+        };
+
+        const countDelta = delta(current.length, previous.length);
+        const sumDelta = delta(sum(current), sum(previous));
+        const deltaIcon = (cls) => cls === 'pc-down' ? 'arrow-down' : cls === 'pc-flat' ? 'minus' : 'arrow-up';
+
+        document.getElementById('periodCompare').innerHTML = `
+            <div class="period-compare">
+                <div class="period-compare-col">
+                    <div class="pc-label">Последние 7 дней</div>
+                    <div class="pc-value">${current.length} <span style="font-size:13px;font-weight:500;color:var(--text-secondary);">заявок</span></div>
+                    <div class="pc-sum">${formatMoney(sum(current))}</div>
+                </div>
+                <div class="period-compare-col">
+                    <div class="pc-label">Предыдущие 7 дней</div>
+                    <div class="pc-value">${previous.length} <span style="font-size:13px;font-weight:500;color:var(--text-secondary);">заявок</span></div>
+                    <div class="pc-sum">${formatMoney(sum(previous))}</div>
+                </div>
+                <div class="period-compare-delta">
+                    <span class="${countDelta.cls}"><i class="fas fa-${deltaIcon(countDelta.cls)}"></i> ${countDelta.text} по количеству</span>
+                    <span class="${sumDelta.cls}"><i class="fas fa-${deltaIcon(sumDelta.cls)}"></i> ${sumDelta.text} по сумме</span>
+                </div>
+            </div>
+        `;
+    }
+
     function renderAnalytics(deals) {
+        renderPeriodCompare(deals);
         const counts = {};
         STAGE_KEYS.forEach(k => counts[k] = 0);
         deals.forEach(d => counts[normalizeStage(d.status)]++);
@@ -2968,10 +3189,11 @@
     // ========== Выбор нескольких карточек на доске (массовое назначение менеджера) ==========
     let boardSelectMode = false;
     let selectedBoardIds = new Set();
+    let boardSelectAnchorId = null; // последняя отмеченная карточка — точка отсчёта для Shift+клика
 
     function toggleBoardSelectMode() {
         boardSelectMode = !boardSelectMode;
-        if (!boardSelectMode) selectedBoardIds.clear();
+        if (!boardSelectMode) { selectedBoardIds.clear(); boardSelectAnchorId = null; }
         applyFilterAndRender();
     }
 
@@ -2981,8 +3203,22 @@
         applyFilterAndRender();
     }
 
+    // Shift+клик по чекбоксу — выделяет весь диапазон между предыдущей отмеченной
+    // карточкой и текущей (в пределах одной колонки, как в Finder/Gmail), а не только
+    // саму карточку — не нужно тыкать в каждую по одной на большой колонке.
+    function selectBoardRange(anchorId, targetId, columnItems) {
+        const ids = (columnItems || []).map(x => x.id);
+        const i1 = ids.indexOf(anchorId);
+        const i2 = ids.indexOf(targetId);
+        if (i1 === -1 || i2 === -1) { toggleBoardCardSelect(targetId); return; }
+        const [lo, hi] = i1 < i2 ? [i1, i2] : [i2, i1];
+        for (let i = lo; i <= hi; i++) selectedBoardIds.add(ids[i]);
+        applyFilterAndRender();
+    }
+
     function clearBoardSelection() {
         selectedBoardIds.clear();
+        boardSelectAnchorId = null;
         applyFilterAndRender();
     }
 
@@ -3023,6 +3259,47 @@
             applyFilterAndRender();
             showMessage('Не удалось сохранить: ' + err.message, 'error');
         }
+    }
+
+    // Клик по сумме на карточке — правка на месте, без открытия модалки. Полный
+    // перерендер доски откладываем до сохранения/отмены, иначе поле ввода теряло бы
+    // фокус на каждый чих (applyFilterAndRender перестраивает весь DOM карточек).
+    function startEditAmount(id, amountEl) {
+        if (amountEl.querySelector('input')) return;
+        const deal = allDeals.find(d => d.id === id);
+        if (!deal) return;
+        const current = Number(deal.amount) || 0;
+        let cancelled = false;
+
+        amountEl.innerHTML = `<input type="number" class="amount-edit-input" min="0" step="1" value="${current}">`;
+        const input = amountEl.querySelector('input');
+        input.draggable = false;
+        input.addEventListener('click', (e) => e.stopPropagation());
+        input.addEventListener('mousedown', (e) => e.stopPropagation());
+
+        async function commit() {
+            if (cancelled) return;
+            const newVal = Math.max(0, Math.round(Number(input.value)) || 0);
+            amountEl.textContent = formatMoney(newVal);
+            if (newVal === current) return;
+            deal.amount = newVal;
+            try {
+                const res = await postJSON('updateLead', { data: { id, amount: newVal } });
+                if (res.status !== 'success') throw new Error(res.message || 'Ошибка сохранения');
+                showMessage('Сумма обновлена');
+            } catch (err) {
+                deal.amount = current;
+                applyFilterAndRender();
+                showMessage('Не удалось сохранить: ' + err.message, 'error');
+            }
+        }
+        input.addEventListener('blur', commit);
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+            else if (e.key === 'Escape') { cancelled = true; amountEl.textContent = formatMoney(current); }
+        });
+        input.focus();
+        input.select();
     }
 
     // Свёрнутые колонки — по умолчанию только "Отказ" (редко нужна, но не должна
@@ -3106,7 +3383,7 @@
             `;
 
             const body = col.querySelector('.column-body');
-            items.forEach(d => body.appendChild(renderCard(d, stage.key, managersList)));
+            items.forEach(d => body.appendChild(renderCard(d, stage.key, managersList, items)));
 
             // Слушатели drag&drop — на всей колонке, а не только на теле списка:
             // иначе в свёрнутом виде (тело скрыто) в колонку было бы нечем "поймать" карточку.
@@ -3123,7 +3400,7 @@
         });
     }
 
-    function renderCard(d, stageKey, managersList) {
+    function renderCard(d, stageKey, managersList, columnItems) {
         const card = document.createElement('div');
         card.className = 'card' + (stageKey === 'отказ' ? ' stage-otkaz-card' : '');
         card.draggable = !boardSelectMode;
@@ -3189,9 +3466,21 @@
         if (cb) {
             cb.addEventListener('click', (e) => {
                 e.stopPropagation();
-                toggleBoardCardSelect(d.id, cb.checked);
+                if (e.shiftKey && boardSelectAnchorId !== null) {
+                    selectBoardRange(boardSelectAnchorId, d.id, columnItems);
+                } else {
+                    toggleBoardCardSelect(d.id, cb.checked);
+                }
+                boardSelectAnchorId = d.id;
             });
         }
+
+        const amountEl = card.querySelector('.amount');
+        amountEl.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (boardSelectMode) return;
+            startEditAmount(d.id, amountEl);
+        });
 
         const mgrSelect = card.querySelector('.card-manager-select');
         mgrSelect.innerHTML = `<option value="" ${!d.manager ? 'selected' : ''}>Без менеджера</option>` + managersList.map(m =>
@@ -3468,14 +3757,27 @@
         const tasks = allTasks.filter(t => String(t.lead_id) === String(leadId));
         const today = new Date().toISOString().slice(0, 10);
         const list = document.getElementById('taskList');
+        const managersList = [...new Set(allDeals.map(d => d.manager).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ru'));
+        const assigneeOptions = (current) => '<option value="">без исполнителя</option>' + managersList.map(m =>
+            `<option value="${escapeHtml(m)}" ${m === current ? 'selected' : ''}>${escapeHtml(m)}</option>`
+        ).join('');
+
         list.innerHTML = tasks.length ? tasks.map(t => {
             const overdue = !t.done && t.due_date && String(t.due_date).slice(0, 10) < today;
             return `
                 <div class="task-item${t.done ? ' done' : ''}">
                     <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTask(${t.id}, this.checked)">
-                    <span>${escapeHtml(t.text)}${t.due_date ? `<span class="due${overdue ? ' badge overdue' : ''}">${overdue ? 'просрочено ' : 'до '}${String(t.due_date).slice(0, 10)}</span>` : ''}</span>
+                    <div class="task-body">
+                        <span>${escapeHtml(t.text)}${t.due_date ? `<span class="due${overdue ? ' badge overdue' : ''}">${overdue ? 'просрочено ' : 'до '}${String(t.due_date).slice(0, 10)}</span>` : ''}</span><br>
+                        <select class="assignee-select" title="Кому поручена задача" onchange="reassignTask(${t.id}, this.value)">${assigneeOptions(t.manager || '')}</select>
+                    </div>
                 </div>`;
         }).join('') : '<div class="history-item">Задач пока нет</div>';
+
+        // Подсказываем менеджера заявки по умолчанию для новой задачи, но позволяем
+        // поручить и другому сотруднику ("подстраховать во время отпуска" и т.п.).
+        const dealManager = (allDeals.find(d => d.id === leadId) || {}).manager || '';
+        document.getElementById('newTaskManager').innerHTML = assigneeOptions(dealManager);
     }
 
     async function addTask() {
@@ -3483,7 +3785,7 @@
         if (!text) return;
         if (editingId === null) { showMessage('Сначала сохраните сделку', 'error'); return; }
         const due_date = document.getElementById('newTaskDue').value;
-        const manager = document.getElementById('f_manager').value.trim();
+        const manager = document.getElementById('newTaskManager').value;
         try {
             const res = await postJSON('addTask', { data: { lead_id: editingId, text, due_date, manager } });
             if (res.status !== 'success') throw new Error(res.message || 'Ошибка');
@@ -3509,6 +3811,26 @@
         }
     }
 
+    // Делегирование — исполнитель задачи (tasks.manager) независим от менеджера
+    // заявки; по умолчанию совпадает с ним при создании, но его можно сменить.
+    async function reassignTask(taskId, newManager) {
+        const t = allTasks.find(x => x.id === taskId);
+        if (!t) return;
+        const prev = t.manager;
+        if ((prev || '') === newManager) return;
+        t.manager = newManager;
+        try {
+            const res = await postJSON('updateTask', { data: { id: taskId, manager: newManager } });
+            if (res.status !== 'success') throw new Error(res.message || 'Ошибка сохранения');
+            showMessage('Исполнитель задачи обновлён');
+        } catch (err) {
+            t.manager = prev;
+            if (editingId !== null) renderTasksForLead(editingId);
+            if (currentTab === 'tasks') renderMyTasksTab();
+            showMessage('Не удалось сохранить: ' + err.message, 'error');
+        }
+    }
+
     // ========== Задачи по всем сделкам ("Мои задачи") ==========
     // Раньше просроченную задачу было видно только на карточке конкретной сделки —
     // чтобы понять, что вообще горит, нужно было обойти все карточки на доске вручную.
@@ -3531,6 +3853,64 @@
     function clearTasksLeadFilter() {
         tasksLeadFilter = null;
         renderMyTasksTab();
+    }
+
+    // ========== Календарный вид задач ==========
+    let tasksView = 'list'; // 'list' | 'calendar'
+    let tasksCalendarMonth = new Date();
+
+    function setTasksView(view) {
+        tasksView = view;
+        document.querySelectorAll('.view-toggle-btn').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+        document.getElementById('tasksListWrap').style.display = view === 'list' ? 'block' : 'none';
+        document.getElementById('tasksCalendarWrap').style.display = view === 'calendar' ? 'block' : 'none';
+        renderMyTasksTab();
+    }
+
+    function shiftTasksCalendarMonth(delta) {
+        tasksCalendarMonth = new Date(tasksCalendarMonth.getFullYear(), tasksCalendarMonth.getMonth() + delta, 1);
+        renderMyTasksTab();
+    }
+
+    function goToTasksCalendarToday() {
+        tasksCalendarMonth = new Date();
+        renderMyTasksTab();
+    }
+
+    // Рисуем месячную сетку (пн-вс, всегда 6 недель) по уже отфильтрованному списку
+    // задач — те же фильтры "Показать"/"Ответственный", что и в списке.
+    function renderTasksCalendar(tasks) {
+        const year = tasksCalendarMonth.getFullYear();
+        const month = tasksCalendarMonth.getMonth();
+        document.getElementById('tasksCalendarLabel').textContent = tasksCalendarMonth.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
+
+        const byDate = {};
+        tasks.forEach(t => {
+            if (!t.due_date) return;
+            const key = String(t.due_date).slice(0, 10);
+            (byDate[key] = byDate[key] || []).push(t);
+        });
+
+        const firstOfMonth = new Date(year, month, 1);
+        const startOffset = (firstOfMonth.getDay() + 6) % 7; // 0 = понедельник
+        const startDate = new Date(year, month, 1 - startOffset);
+        const todayKey = new Date().toISOString().slice(0, 10);
+        const dayNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+
+        let html = dayNames.map(d => `<div class="cal-dow">${d}</div>`).join('');
+        for (let i = 0; i < 42; i++) {
+            const d = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + i);
+            const key = d.toISOString().slice(0, 10);
+            const inMonth = d.getMonth() === month;
+            const dayTasks = byDate[key] || [];
+            html += `
+                <div class="cal-cell${inMonth ? '' : ' cal-outside'}${key === todayKey ? ' cal-today' : ''}">
+                    <div class="cal-daynum">${d.getDate()}</div>
+                    ${dayTasks.slice(0, 3).map(t => `<div class="cal-task${t.overdue ? ' overdue' : ''}${t.done ? ' done' : ''}" title="${escapeHtml(t.text)}${t.manager ? ' — ' + escapeHtml(t.manager) : ''}" onclick="openEditModal(allDeals.find(x => x.id === ${t.lead.id}))">${escapeHtml(t.text)}</div>`).join('')}
+                    ${dayTasks.length > 3 ? `<div class="cal-more">+${dayTasks.length - 3} ещё</div>` : ''}
+                </div>`;
+        }
+        document.getElementById('tasksCalendarGrid').innerHTML = html;
     }
 
     function renderMyTasksTab() {
@@ -3561,7 +3941,10 @@
         if (tasksLeadFilter !== null) tasks = tasks.filter(t => t.lead.id === tasksLeadFilter);
         if (filterMode === 'open') tasks = tasks.filter(t => !t.done);
         else if (filterMode === 'overdue') tasks = tasks.filter(t => t.overdue);
-        if (manager) tasks = tasks.filter(t => (t.lead.manager || '') === manager);
+        // Фильтр — по исполнителю ЗАДАЧИ (кому поручена), а не по менеджеру сделки:
+        // задачу можно делегировать другому, и список должен показывать её у того,
+        // кому она реально поручена.
+        if (manager) tasks = tasks.filter(t => (t.manager || '') === manager);
 
         tasks.sort((a, b) => {
             if (!!a.done !== !!b.done) return a.done ? 1 : -1;
@@ -3583,8 +3966,11 @@
                 <span class="task-text">${escapeHtml(t.text)}</span>
                 ${t.due_date ? `<span class="due${t.overdue ? ' badge overdue' : ''}">${t.overdue ? 'просрочено ' : 'до '}${String(t.due_date).slice(0, 10)}</span>` : ''}
                 <span class="task-lead" onclick="openEditModal(allDeals.find(d => d.id === ${t.lead.id}))"><i class="fas fa-arrow-up-right-from-square"></i> ${escapeHtml(t.lead.fio || t.lead.program || 'заявка')}</span>
+                ${t.manager ? `<span class="manager-chip" title="Исполнитель">${escapeHtml(t.manager)}</span>` : ''}
             </div>
         `).join('') : '<div class="history-item" style="padding:20px;">Задач по текущему фильтру нет</div>';
+
+        renderTasksCalendar(tasks);
     }
 
     // ========== История изменений ==========
@@ -3692,6 +4078,14 @@
         populateManagerFilter();
         applyFilterAndRender();
         loadPrograms(); // не блокирует показ доски — подгружается в фоне
+
+        // Разрешение на уведомления, если оно уже было выдано раньше, переживает
+        // перезагрузку страницы — не нужно спрашивать повторно, просто возобновляем опрос.
+        if (notificationsEnabled() && 'Notification' in window && Notification.permission === 'granted') {
+            knownLeadIds = new Set(allDeals.map(d => d.id));
+            startNotifPolling();
+        }
+        updateNotifToggleBtn();
     }
 
     if (getCrmKey()) {
