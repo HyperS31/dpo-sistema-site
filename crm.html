@@ -44,6 +44,39 @@
         button.secondary { background: #6c757d; } button.secondary:hover { background: #5a6268; }
         button.danger-outline { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
         button.danger-outline:hover { background: var(--danger); color: white; }
+        button.icon-copy-btn { padding: 8px 11px; background: #6c757d; flex-shrink: 0; }
+        button.icon-copy-btn:hover { background: #5a6268; }
+
+        select#contractTypeFilter {
+            padding: 10px 16px; border: 1px solid var(--border); border-radius: 25px;
+            font-size: 14px; background: white;
+        }
+        .only-overdue-toggle {
+            display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-secondary);
+            cursor: pointer; user-select: none;
+        }
+        .only-overdue-toggle input { cursor: pointer; width: 16px; height: 16px; }
+
+        .saved-views-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: -8px 0 20px; }
+        .saved-views-label { font-size: 12px; color: var(--text-secondary); }
+        .saved-view-chip {
+            display: inline-flex; align-items: center; gap: 7px; background: var(--card-bg); border: 1px solid var(--border);
+            color: var(--text-secondary); padding: 5px 8px 5px 14px; border-radius: 20px; font-size: 12.5px; cursor: pointer;
+        }
+        .saved-view-chip:hover { background: #eef1ff; color: var(--primary-dark); border-color: var(--primary-light); }
+        .saved-view-chip .sv-remove {
+            display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px;
+            border-radius: 50%; color: var(--text-secondary); font-size: 11px;
+        }
+        .saved-view-chip .sv-remove:hover { background: var(--danger); color: white; }
+        .save-view-btn { background: transparent; color: var(--primary); border: 1px dashed var(--primary-light); padding: 5px 14px; font-size: 12.5px; }
+        .save-view-btn:hover { background: #eef1ff; color: var(--primary-dark); }
+
+        .tasks-lead-filter-chip {
+            display: none; align-items: center; gap: 8px; background: #eef1ff; border: 1px solid var(--primary-light);
+            color: var(--primary-dark); padding: 8px 14px; border-radius: var(--radius); font-size: 13px; margin-bottom: 14px;
+        }
+        .tasks-lead-filter-chip button { padding: 4px 10px; font-size: 12px; }
 
         .archive-filters { display: flex; gap: 8px; margin-bottom: 14px; align-items: center; }
         .chip-filter {
@@ -69,13 +102,22 @@
         .archive-bulk-bar span { font-weight: 600; color: var(--primary-dark); margin-right: 4px; }
         .archive-bulk-bar button { padding: 7px 14px; font-size: 12.5px; }
 
-        .board-toolbar { display: flex; justify-content: flex-end; margin-bottom: 10px; }
+        .board-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 10px; flex-wrap: wrap; }
+        .board-toolbar-left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
         .board-show-archived {
             display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: var(--text-secondary);
             cursor: pointer; user-select: none;
         }
         .board-show-archived input { cursor: pointer; width: 16px; height: 16px; }
         .card.card-archived { opacity: 0.55; border-left-style: dashed; }
+        #boardSelectModeBtn.active { background: var(--primary); color: white; }
+        .board-bulk-bar {
+            display: none; align-items: center; gap: 10px; background: #eef1ff; border: 1px solid var(--primary-light);
+            border-radius: var(--radius); padding: 8px 14px; font-size: 13px; flex-wrap: wrap;
+        }
+        .board-bulk-bar span { font-weight: 600; color: var(--primary-dark); }
+        .board-bulk-bar select { padding: 7px 12px; border: 1px solid var(--border); border-radius: 20px; font-size: 12.5px; }
+        .board-bulk-bar button { padding: 7px 14px; font-size: 12.5px; }
 
         /* ===== Помощь ===== */
         .help-intro { background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px 22px; margin-bottom: 16px; }
@@ -149,21 +191,37 @@
         .card {
             background: var(--card-bg); border-radius: 10px; padding: 12px 14px;
             box-shadow: var(--shadow); cursor: grab; border-left: 4px solid var(--primary-light);
-            transition: var(--transition);
+            transition: var(--transition); position: relative;
         }
         .card:hover { box-shadow: 0 6px 16px rgba(0,0,0,0.1); transform: translateY(-1px); }
         .card.dragging { opacity: 0.4; }
         .card.stage-otkaz-card { border-left-color: var(--danger); opacity: 0.75; }
-        .card .fio { font-weight: 600; font-size: 14px; margin-bottom: 3px; }
+        .card.card-stale { border-left-color: var(--warning); background: #fffdf6; }
+        .card .fio { font-weight: 600; font-size: 14px; margin-bottom: 3px; padding-right: 4px; }
         .card .program { font-size: 12.5px; color: var(--text-secondary); margin-bottom: 8px; line-height: 1.35; }
-        .card .meta-row { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-secondary); }
-        .card .amount { font-weight: 600; color: var(--primary-dark); }
-        .card .manager { display: inline-flex; align-items: center; gap: 4px; }
+        .card .contact-row { display: flex; gap: 6px; margin-bottom: 8px; }
+        .card-copy-btn {
+            background: #f1f3f9; color: var(--text-secondary); border: none; border-radius: 20px;
+            padding: 3px 9px; font-size: 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;
+        }
+        .card-copy-btn:hover { background: #e0e7ff; color: var(--primary-dark); }
+        .card .meta-row { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-secondary); gap: 8px; }
+        .card .amount { font-weight: 600; color: var(--primary-dark); white-space: nowrap; }
+        .card .manager { display: inline-flex; align-items: center; gap: 4px; min-width: 0; }
+        .card-manager-select {
+            border: none; background: transparent; color: var(--text-secondary); font-size: 12px;
+            font-family: inherit; cursor: pointer; max-width: 130px; padding: 2px 0;
+        }
+        .card-manager-select:hover, .card-manager-select:focus { color: var(--primary-dark); }
+        .card-select-cb { position: absolute; top: 10px; right: 10px; width: 17px; height: 17px; cursor: pointer; z-index: 2; }
         .card .badges { display: flex; gap: 5px; margin-top: 8px; flex-wrap: wrap; }
         .badge { font-size: 10.5px; padding: 2px 8px; border-radius: 20px; font-weight: 600; }
         .badge.legal { background: #e0e7ff; color: var(--primary-dark); }
         .badge.person { background: #d1fae5; color: #065f46; }
         .badge.manual { background: #fef3c7; color: #92400e; }
+        .badge.stale { background: #fef3c7; color: #92400e; }
+        .badge.overdue { cursor: pointer; }
+        .badge.overdue:hover { background: #fecdd3; }
 
         #recordCount { font-size: 13px; color: var(--text-secondary); }
 
@@ -458,9 +516,21 @@
         <select id="managerFilter" onchange="applyFilterAndRender()">
             <option value="">Все менеджеры</option>
         </select>
+        <select id="contractTypeFilter" onchange="applyFilterAndRender()">
+            <option value="">Все типы договора</option>
+            <option value="физ">Физ. лица</option>
+            <option value="юр">Юр. лица</option>
+        </select>
+        <label class="only-overdue-toggle">
+            <input type="checkbox" id="onlyOverdueFilter" onchange="applyFilterAndRender()">
+            Только с просроченными задачами
+        </label>
         <span id="recordCount"></span>
+        <button type="button" class="secondary" onclick="exportFilteredToExcel()"><i class="fas fa-file-excel"></i> Экспорт</button>
         <button onclick="openCreateModal()"><i class="fas fa-plus"></i> Новая сделка</button>
     </div>
+
+    <div class="saved-views-row" id="savedViewsRow"></div>
 
     <div class="tabs">
         <button class="tab-btn active" data-tab="board" onclick="switchTab('board')"><i class="fas fa-columns"></i> Доска</button>
@@ -477,6 +547,15 @@
 
     <div id="screen-board" class="screen active">
         <div class="board-toolbar">
+            <div class="board-toolbar-left">
+                <button type="button" class="secondary" id="boardSelectModeBtn" onclick="toggleBoardSelectMode()"><i class="fas fa-square-check"></i> Выбрать несколько</button>
+                <div class="board-bulk-bar" id="boardBulkBar">
+                    <span id="boardBulkCount"></span>
+                    <select id="boardBulkManagerSelect"><option value="">Выберите менеджера…</option></select>
+                    <button type="button" onclick="bulkAssignManagerOnBoard()"><i class="fas fa-user-check"></i> Назначить менеджера</button>
+                    <button type="button" class="secondary" onclick="clearBoardSelection()">Снять выделение</button>
+                </div>
+            </div>
             <label class="board-show-archived">
                 <input type="checkbox" id="showArchivedToggle" onchange="onShowArchivedToggle()">
                 Показать архивные на доске
@@ -538,6 +617,10 @@
 
     <div id="screen-tasks" class="screen">
         <div class="tasks-summary" id="tasksSummary"></div>
+        <div class="tasks-lead-filter-chip" id="tasksLeadFilterChip">
+            <span id="tasksLeadFilterText"></span>
+            <button type="button" class="secondary" onclick="clearTasksLeadFilter()"><i class="fas fa-xmark"></i> Убрать фильтр</button>
+        </div>
         <div class="report-filters">
             <div class="report-filter-field">
                 <label>Показать</label>
@@ -1088,11 +1171,17 @@
             <div class="field-row">
                 <div class="field">
                     <label>Email</label>
-                    <input type="text" id="f_email" onblur="checkDuplicateLead()">
+                    <div class="field-row" style="gap:6px;">
+                        <input type="text" id="f_email" onblur="checkDuplicateLead()" style="flex:1;">
+                        <button type="button" class="icon-copy-btn" onclick="copyFieldValue('f_email','Email')" title="Скопировать email"><i class="fas fa-copy"></i></button>
+                    </div>
                 </div>
                 <div class="field">
                     <label>Телефон</label>
-                    <input type="text" id="f_phone" onblur="checkDuplicateLead()">
+                    <div class="field-row" style="gap:6px;">
+                        <input type="text" id="f_phone" onblur="checkDuplicateLead()" style="flex:1;">
+                        <button type="button" class="icon-copy-btn" onclick="copyFieldValue('f_phone','Телефон')" title="Скопировать телефон"><i class="fas fa-copy"></i></button>
+                    </div>
                 </div>
             </div>
             <div class="readonly-hint" id="dupLeadWarning" style="display:none;color:var(--warning);"></div>
@@ -1222,6 +1311,8 @@
     let editingId = null; // null => создание новой сделки
     let currentTab = 'board';
     let cohortContext = null; // {mode:'create', program} | {mode:'view', cohortId}
+    let lastFilteredDeals = []; // то, что реально сейчас показано с учётом всех фильтров — источник для экспорта
+    const STALE_DAYS_THRESHOLD = 14; // сколько дней без смены стадии считается "зависшей" сделкой
 
     function showLoading(show) { document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none'; }
 
@@ -1242,6 +1333,41 @@
         document.getElementById('message').style.display = 'none';
         clearTimeout(messageHideTimer);
     });
+
+    // ========== Копирование в буфер ==========
+    // navigator.clipboard требует secure context и иногда явного разрешения (в некоторых
+    // встроенных/автоматизированных браузерах — вообще недоступен); execCommand('copy')
+    // через скрытый textarea — более старый, но надёжный запасной вариант.
+    function legacyCopy(text) {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        let ok = false;
+        try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+        document.body.removeChild(ta);
+        return ok;
+    }
+    async function copyToClipboard(text, label) {
+        if (!text) return;
+        try {
+            await navigator.clipboard.writeText(text);
+            showMessage(`${label || 'Значение'} скопирован в буфер: ${text}`);
+        } catch (err) {
+            if (legacyCopy(text)) {
+                showMessage(`${label || 'Значение'} скопирован в буфер: ${text}`);
+            } else {
+                showMessage('Не удалось скопировать: ' + err.message, 'error');
+            }
+        }
+    }
+    function copyFieldValue(inputId, label) {
+        const el = document.getElementById(inputId);
+        if (el) copyToClipboard(el.value, label);
+    }
 
     // ========== Доступ к CRM ==========
     // Пароль хранится только в localStorage этого браузера, никогда — в самом файле.
@@ -1346,14 +1472,24 @@
     // аналитика, группы-детали) на каждое нажатие клавиши в поиске — и есть основной
     // источник "тормозов". Рендерим только ту вкладку, что реально видна; баннер
     // уведомлений — лёгкий, его обновляем всегда.
+    function leadHasOverdueTask(id) {
+        const today = new Date().toISOString().slice(0, 10);
+        return allTasks.some(t => String(t.lead_id) === String(id) && !t.done && t.due_date && String(t.due_date).slice(0, 10) < today);
+    }
+
     function applyFilterAndRender() {
         const q = document.getElementById('search').value.trim().toLowerCase();
         const mgr = document.getElementById('managerFilter').value;
+        const contractTypeFilter = document.getElementById('contractTypeFilter').value;
+        const onlyOverdue = document.getElementById('onlyOverdueFilter').checked;
         let filtered = !q ? allDeals : allDeals.filter(d => {
             return [d.fio, d.program, d.org_name, d.manager, d.email].some(v => String(v || '').toLowerCase().includes(q));
         });
         if (mgr) filtered = filtered.filter(d => (d.manager || '') === mgr);
+        if (contractTypeFilter) filtered = filtered.filter(d => contractBucket(d.contract_type) === contractTypeFilter);
+        if (onlyOverdue) filtered = filtered.filter(d => leadHasOverdueTask(d.id));
 
+        lastFilteredDeals = filtered;
         document.getElementById('recordCount').textContent = `Сделок: ${filtered.length} из ${allDeals.length}`;
         updateNotificationBanner(allDeals);
         updateTasksOverdueBadge();
@@ -1528,6 +1664,68 @@
         const managers = [...new Set(allDeals.map(d => d.manager).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ru'));
         select.innerHTML = '<option value="">Все менеджеры</option>' + managers.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
         if (managers.includes(prev)) select.value = prev;
+    }
+
+    // ========== Сохранённые виды (поиск + фильтры одной кнопкой) ==========
+    // Хранятся в localStorage этого браузера — вид личный для сотрудника за этим
+    // компьютером, как и пароль CRM.
+    function getSavedViews() {
+        try { return JSON.parse(localStorage.getItem('crm_saved_views') || '[]'); } catch (e) { return []; }
+    }
+    function setSavedViews(list) {
+        try { localStorage.setItem('crm_saved_views', JSON.stringify(list)); } catch (e) {}
+        renderSavedViews();
+    }
+
+    function saveCurrentView() {
+        const name = (prompt('Название вида (например, «Мои сделки» или «Юр.лица»):') || '').trim();
+        if (!name) return;
+        const view = {
+            id: 'v' + Date.now(),
+            name,
+            search: document.getElementById('search').value,
+            manager: document.getElementById('managerFilter').value,
+            contractType: document.getElementById('contractTypeFilter').value,
+            onlyOverdue: document.getElementById('onlyOverdueFilter').checked,
+        };
+        const views = getSavedViews();
+        views.push(view);
+        setSavedViews(views);
+        showMessage(`Вид «${name}» сохранён`);
+    }
+
+    function applySavedView(id) {
+        const view = getSavedViews().find(v => v.id === id);
+        if (!view) return;
+        document.getElementById('search').value = view.search || '';
+        document.getElementById('managerFilter').value = view.manager || '';
+        document.getElementById('contractTypeFilter').value = view.contractType || '';
+        document.getElementById('onlyOverdueFilter').checked = !!view.onlyOverdue;
+        applyFilterAndRender();
+    }
+
+    function deleteSavedView(id, event) {
+        if (event) event.stopPropagation();
+        setSavedViews(getSavedViews().filter(v => v.id !== id));
+    }
+
+    function renderSavedViews() {
+        const row = document.getElementById('savedViewsRow');
+        const views = getSavedViews();
+        row.innerHTML = (views.length ? '<span class="saved-views-label"><i class="fas fa-bookmark"></i> Мои виды:</span>' : '')
+            + views.map(v => `
+                <span class="saved-view-chip" data-id="${v.id}">
+                    ${escapeHtml(v.name)}
+                    <span class="sv-remove" data-remove="${v.id}"><i class="fas fa-xmark"></i></span>
+                </span>
+            `).join('')
+            + '<button type="button" class="save-view-btn" onclick="saveCurrentView()"><i class="fas fa-plus"></i> Сохранить вид</button>';
+        row.querySelectorAll('.saved-view-chip').forEach(chip => {
+            chip.addEventListener('click', () => applySavedView(chip.dataset.id));
+        });
+        row.querySelectorAll('.sv-remove').forEach(btn => {
+            btn.addEventListener('click', (e) => deleteSavedView(btn.dataset.remove, e));
+        });
     }
 
     function switchTab(tab) {
@@ -1853,6 +2051,26 @@
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, 'Отчёт');
         XLSX.writeFile(wb, `Отчёт_ДПО_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    }
+
+    // Экспортирует ровно то, что сейчас показано с учётом поиска/фильтров тулбара —
+    // не зависит от текущей вкладки, чтобы работало и с доски, и с архива, и с клиентов.
+    function exportFilteredToExcel() {
+        const rows = lastFilteredDeals;
+        if (!rows.length) { showMessage('Нет данных для экспорта — измените фильтр', 'error'); return; }
+        const aoa = [
+            ['ФИО / организация', 'Программа', 'Статус', 'Тип договора', 'Слушателей', 'Сумма', 'Менеджер', 'Email', 'Телефон', 'Организация', 'ИНН', 'Источник', 'Дата заявки', 'В архиве'],
+            ...rows.map(d => [
+                d.fio || '', d.program || '', STAGES.find(s => s.key === normalizeStage(d.status))?.label || d.status || '',
+                d.contract_type || '', Number(d.participants) || 1, Number(d.amount) || 0, d.manager || '',
+                d.email || '', d.phone || '', d.org_name || '', d.inn || '', d.source_form || '',
+                String(d.timestamp || '').slice(0, 10), isTrue(d.archived) ? 'да' : 'нет',
+            ]),
+        ];
+        const ws = XLSX.utils.aoa_to_sheet(aoa);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Заявки');
+        XLSX.writeFile(wb, `Заявки_ДПО_${new Date().toISOString().slice(0, 10)}.xlsx`);
     }
 
     // ========== Дашборд наборов групп + уведомления ==========
@@ -2642,9 +2860,85 @@
         applyFilterAndRender();
     }
 
+    // ========== Выбор нескольких карточек на доске (массовое назначение менеджера) ==========
+    let boardSelectMode = false;
+    let selectedBoardIds = new Set();
+
+    function toggleBoardSelectMode() {
+        boardSelectMode = !boardSelectMode;
+        if (!boardSelectMode) selectedBoardIds.clear();
+        applyFilterAndRender();
+    }
+
+    function toggleBoardCardSelect(id, forceVal) {
+        const next = forceVal !== undefined ? forceVal : !selectedBoardIds.has(id);
+        if (next) selectedBoardIds.add(id); else selectedBoardIds.delete(id);
+        applyFilterAndRender();
+    }
+
+    function clearBoardSelection() {
+        selectedBoardIds.clear();
+        applyFilterAndRender();
+    }
+
+    async function bulkAssignManagerOnBoard() {
+        const ids = [...selectedBoardIds];
+        if (!ids.length) return;
+        const manager = document.getElementById('boardBulkManagerSelect').value;
+        if (!manager) { showMessage('Выберите менеджера', 'error'); return; }
+        const prev = new Map(ids.map(id => [id, allDeals.find(d => d.id === id)?.manager]));
+        ids.forEach(id => { const d = allDeals.find(x => x.id === id); if (d) d.manager = manager; });
+        selectedBoardIds.clear();
+        applyFilterAndRender();
+        try {
+            const res = await postJSON('updateLead', { data: ids.map(id => ({ id, manager })) });
+            if (res.status !== 'success') throw new Error(res.message || 'Ошибка сохранения');
+            showMessage(`Менеджер назначен: ${ids.length} заявок`);
+        } catch (err) {
+            ids.forEach(id => { const d = allDeals.find(x => x.id === id); if (d) d.manager = prev.get(id); });
+            applyFilterAndRender();
+            showMessage('Не удалось сохранить: ' + err.message, 'error');
+        }
+    }
+
+    // Быстрая смена менеджера прямо на карточке (без открытия модалки). Список — из уже
+    // встречавшихся в базе менеджеров; для совсем нового имени по-прежнему нужна модалка.
+    async function quickSetManager(id, newManager) {
+        const deal = allDeals.find(d => d.id === id);
+        if (!deal) return;
+        const prev = deal.manager;
+        if (prev === newManager) return;
+        deal.manager = newManager;
+        try {
+            const res = await postJSON('updateLead', { data: { id, manager: newManager } });
+            if (res.status !== 'success') throw new Error(res.message || 'Ошибка сохранения');
+            showMessage('Менеджер обновлён');
+        } catch (err) {
+            deal.manager = prev;
+            applyFilterAndRender();
+            showMessage('Не удалось сохранить: ' + err.message, 'error');
+        }
+    }
+
     function renderBoard(deals) {
         const board = document.getElementById('board');
         board.innerHTML = '';
+
+        const managersList = [...new Set(allDeals.map(d => d.manager).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ru'));
+
+        const selectBtn = document.getElementById('boardSelectModeBtn');
+        selectBtn.classList.toggle('active', boardSelectMode);
+        selectBtn.innerHTML = boardSelectMode
+            ? '<i class="fas fa-xmark"></i> Отменить выбор'
+            : '<i class="fas fa-square-check"></i> Выбрать несколько';
+
+        const bulkBar = document.getElementById('boardBulkBar');
+        bulkBar.style.display = (boardSelectMode && selectedBoardIds.size > 0) ? 'flex' : 'none';
+        document.getElementById('boardBulkCount').textContent = `Выбрано: ${selectedBoardIds.size}`;
+        const bulkMgrSelect = document.getElementById('boardBulkManagerSelect');
+        const keepMgr = bulkMgrSelect.value;
+        bulkMgrSelect.innerHTML = '<option value="">Выберите менеджера…</option>' + managersList.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
+        if (managersList.includes(keepMgr)) bulkMgrSelect.value = keepMgr;
 
         STAGES.forEach(stage => {
             // Внутри колонки — от новых к старым, а не как попало.
@@ -2665,7 +2959,7 @@
             `;
 
             const body = col.querySelector('.column-body');
-            items.forEach(d => body.appendChild(renderCard(d, stage.key)));
+            items.forEach(d => body.appendChild(renderCard(d, stage.key, managersList)));
 
             body.addEventListener('dragover', (e) => { e.preventDefault(); col.classList.add('drag-over'); });
             body.addEventListener('dragleave', () => col.classList.remove('drag-over'));
@@ -2680,10 +2974,10 @@
         });
     }
 
-    function renderCard(d, stageKey) {
+    function renderCard(d, stageKey, managersList) {
         const card = document.createElement('div');
         card.className = 'card' + (stageKey === 'отказ' ? ' stage-otkaz-card' : '');
-        card.draggable = true;
+        card.draggable = !boardSelectMode;
         card.dataset.id = d.id;
 
         let badges = '';
@@ -2691,30 +2985,91 @@
         if (d.contract_type === 'С юридическим лицом') badges += '<span class="badge legal">юр.лицо</span>';
         else if (d.contract_type === 'С физическим лицом') badges += '<span class="badge person">физ.лицо</span>';
         if (d.source_form === 'manual') badges += '<span class="badge manual">вручную</span>';
-        const today = new Date().toISOString().slice(0, 10);
-        const hasOverdue = allTasks.some(t => String(t.lead_id) === String(d.id) && !t.done && t.due_date && String(t.due_date).slice(0, 10) < today);
-        if (hasOverdue) badges += '<span class="badge overdue"><i class="fas fa-clock"></i> просрочена задача</span>';
+        const hasOverdue = leadHasOverdueTask(d.id);
+        if (hasOverdue) badges += '<span class="badge overdue" title="Открыть задачи по этой заявке"><i class="fas fa-clock"></i> просрочена задача</span>';
+
+        // "Давно без движения" — стадия не менялась дольше порога, и сделка ещё не
+        // отказная/архивная (для них застой ожидаем и не требует внимания).
+        let isStale = false;
+        if (stageKey !== 'отказ' && !isTrue(d.archived) && d.stage_changed_at) {
+            const days = Math.floor((Date.now() - new Date(d.stage_changed_at).getTime()) / 86400000);
+            if (days >= STALE_DAYS_THRESHOLD) {
+                isStale = true;
+                card.classList.add('card-stale');
+                badges += `<span class="badge stale" title="Стадия не менялась ${days} дн."><i class="fas fa-hourglass-half"></i> без движения ${days} дн.</span>`;
+            }
+        }
+
         if (isTrue(d.archived)) {
             card.classList.add('card-archived');
             badges += '<span class="badge" style="background:#e9ecef;color:#495057;"><i class="fas fa-box-archive"></i> в архиве</span>';
         }
 
+        let contactRow = '';
+        if (d.phone) contactRow += `<button type="button" class="card-copy-btn" data-copy="phone" title="Скопировать телефон"><i class="fas fa-phone"></i> ${escapeHtml(d.phone)}</button>`;
+        if (d.email) contactRow += `<button type="button" class="card-copy-btn" data-copy="email" title="Скопировать email"><i class="fas fa-envelope"></i> ${escapeHtml(d.email)}</button>`;
+
         card.innerHTML = `
+            ${boardSelectMode ? `<input type="checkbox" class="card-select-cb" ${selectedBoardIds.has(d.id) ? 'checked' : ''}>` : ''}
             <div class="fio">${escapeHtml(d.fio || '(без имени)')}</div>
             <div class="program">${escapeHtml(d.program || '')}</div>
+            ${contactRow ? `<div class="contact-row">${contactRow}</div>` : ''}
             <div class="meta-row">
-                <span class="manager">${d.manager ? '<i class="fas fa-user"></i> ' + escapeHtml(d.manager) : ''}</span>
+                <span class="manager">${d.manager ? '<i class="fas fa-user"></i>' : ''}<select class="card-manager-select"></select></span>
                 <span class="amount">${formatMoney(d.amount)}</span>
             </div>
             ${badges ? `<div class="badges">${badges}</div>` : ''}
         `;
 
-        card.addEventListener('click', () => openEditModal(d));
+        card.addEventListener('click', (e) => {
+            if (boardSelectMode) {
+                if (e.target.closest('.card-select-cb') || e.target.closest('.card-manager-select') || e.target.closest('.card-copy-btn')) return;
+                toggleBoardCardSelect(d.id);
+                return;
+            }
+            openEditModal(d);
+        });
         card.addEventListener('dragstart', (e) => {
             e.dataTransfer.setData('text/plain', String(d.id));
             setTimeout(() => card.classList.add('dragging'), 0);
         });
         card.addEventListener('dragend', () => card.classList.remove('dragging'));
+
+        const cb = card.querySelector('.card-select-cb');
+        if (cb) {
+            cb.addEventListener('click', (e) => {
+                e.stopPropagation();
+                toggleBoardCardSelect(d.id, cb.checked);
+            });
+        }
+
+        const mgrSelect = card.querySelector('.card-manager-select');
+        mgrSelect.innerHTML = `<option value="" ${!d.manager ? 'selected' : ''}>— менеджер —</option>` + managersList.map(m =>
+            `<option value="${escapeHtml(m)}" ${m === (d.manager || '') ? 'selected' : ''}>${escapeHtml(m)}</option>`
+        ).join('');
+        mgrSelect.draggable = false;
+        mgrSelect.addEventListener('click', (e) => e.stopPropagation());
+        mgrSelect.addEventListener('mousedown', (e) => e.stopPropagation());
+        mgrSelect.addEventListener('change', (e) => {
+            e.stopPropagation();
+            quickSetManager(d.id, mgrSelect.value);
+        });
+
+        const overdueBadge = card.querySelector('.badge.overdue');
+        if (overdueBadge) {
+            overdueBadge.addEventListener('click', (e) => {
+                e.stopPropagation();
+                openTasksForLead(d.id);
+            });
+        }
+
+        card.querySelectorAll('.card-copy-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const field = btn.dataset.copy;
+                copyToClipboard(d[field], field === 'phone' ? 'Телефон' : 'Email');
+            });
+        });
 
         return card;
     }
@@ -3013,12 +3368,34 @@
         else badge.style.display = 'none';
     }
 
+    // ========== Переход "просрочена задача" (карточка) → вкладка "Задачи" ==========
+    let tasksLeadFilter = null; // id заявки | null
+
+    function openTasksForLead(leadId) {
+        tasksLeadFilter = leadId;
+        switchTab('tasks');
+    }
+
+    function clearTasksLeadFilter() {
+        tasksLeadFilter = null;
+        renderMyTasksTab();
+    }
+
     function renderMyTasksTab() {
         const mgrSel = document.getElementById('tasks_manager');
         const keepMgr = mgrSel.value;
         const mgrs = [...new Set(allDeals.map(d => d.manager).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ru'));
         mgrSel.innerHTML = '<option value="">Все</option>' + mgrs.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
         mgrSel.value = keepMgr;
+
+        const chip = document.getElementById('tasksLeadFilterChip');
+        if (tasksLeadFilter !== null) {
+            const lead = allDeals.find(d => d.id === tasksLeadFilter);
+            document.getElementById('tasksLeadFilterText').innerHTML = `<i class="fas fa-filter"></i> Показаны только задачи по заявке: <b>${escapeHtml(lead ? (lead.fio || lead.program || 'заявка') : '—')}</b>`;
+            chip.style.display = 'flex';
+        } else {
+            chip.style.display = 'none';
+        }
 
         const filterMode = document.getElementById('tasks_filter').value;
         const manager = mgrSel.value;
@@ -3029,6 +3406,7 @@
             return { ...t, lead, overdue: !t.done && t.due_date && String(t.due_date).slice(0, 10) < today };
         }).filter(t => t.lead); // задачи удалённых заявок не показываем
 
+        if (tasksLeadFilter !== null) tasks = tasks.filter(t => t.lead.id === tasksLeadFilter);
         if (filterMode === 'open') tasks = tasks.filter(t => !t.done);
         else if (filterMode === 'overdue') tasks = tasks.filter(t => t.overdue);
         if (manager) tasks = tasks.filter(t => (t.lead.manager || '') === manager);
@@ -3157,6 +3535,7 @@
 
     async function initApp() {
         document.getElementById('showArchivedToggle').checked = showArchivedOnBoard;
+        renderSavedViews();
         await loadDeals();
         populateManagerFilter();
         applyFilterAndRender();
