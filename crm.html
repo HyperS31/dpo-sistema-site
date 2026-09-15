@@ -111,6 +111,7 @@
         .board-show-archived input { cursor: pointer; width: 16px; height: 16px; }
         .card.card-archived { opacity: 0.55; border-left-style: dashed; }
         #boardSelectModeBtn.active { background: var(--primary); color: white; }
+        #boardDensityBtn.active { background: var(--primary); color: white; }
         .board-bulk-bar {
             display: none; align-items: center; gap: 10px; background: #eef1ff; border: 1px solid var(--primary-light);
             border-radius: var(--radius); padding: 8px 14px; font-size: 13px; flex-wrap: wrap;
@@ -176,10 +177,11 @@
             background: rgba(255,255,255,0.55); border-radius: var(--radius);
             width: 300px; min-width: 300px; flex-shrink: 0;
             display: flex; flex-direction: column; max-height: calc(100vh - 180px);
+            transition: width 0.2s ease, min-width 0.2s ease;
         }
         .column.drag-over { background: rgba(67,97,238,0.12); outline: 2px dashed var(--primary-light); }
         .column-head {
-            padding: 14px 16px 10px; border-bottom: 2px solid var(--border);
+            padding: 14px 34px 10px 16px; border-bottom: 2px solid var(--border); position: relative;
         }
         .column-head .title { font-weight: 600; font-size: 14.5px; color: var(--text); display: flex; justify-content: space-between; align-items: center; }
         .column-head .count { background: var(--primary-light); color: white; border-radius: 20px; padding: 2px 9px; font-size: 12px; font-weight: 600; }
@@ -187,6 +189,39 @@
         .column.stage-otkaz .column-head { border-bottom-color: var(--danger); }
         .column.stage-otkaz .column-head .count { background: var(--danger); }
         .column-body { padding: 10px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 10px; min-height: 60px; }
+
+        /* Свёрнутая колонка — узкая полоска с вертикальной подписью и счётчиком,
+           чтобы редко используемые стадии (по умолчанию "Отказ") не отнимали место
+           у рабочих колонок, но заявки в неё по-прежнему можно перетащить. */
+        .column-collapse-btn {
+            position: absolute; top: 11px; right: 8px; width: 22px; height: 22px; padding: 0;
+            background: transparent; color: var(--text-secondary); border-radius: 50%; font-size: 11px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .column-collapse-btn:hover { background: #eef1ff; color: var(--primary-dark); }
+        .column.collapsed { width: 46px; min-width: 46px; }
+        .column.collapsed .column-head {
+            position: static; padding: 12px 4px; border-bottom: none;
+            display: flex; flex-direction: column; align-items: center; gap: 10px;
+        }
+        .column.collapsed .column-collapse-btn { position: static; }
+        .column.collapsed .title {
+            writing-mode: vertical-rl; transform: rotate(180deg); font-size: 12.5px; gap: 6px;
+        }
+        .column.collapsed .sum { display: none; }
+        .column.collapsed .column-body { display: none; }
+
+        /* Компактный режим доски — только ФИО и сумма, для быстрого скана большой
+           колонки; предупреждающая подсветка (застой/отказ) остаётся видна через
+           цвет рамки карточки, даже когда текстовые бейджи скрыты. */
+        .board.compact .card { padding: 9px 12px; }
+        .board.compact .card .program { display: none; }
+        .board.compact .card .fio { font-size: 13px; margin-bottom: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .board.compact .card .meta-row {
+            border-top: none; margin-top: 4px; padding-top: 0; justify-content: flex-end;
+        }
+        .board.compact .card .contact-icons, .board.compact .card .card-manager-select { display: none; }
+        .board.compact .card .badges { display: none; }
 
         .card {
             background: var(--card-bg); border-radius: 10px; padding: 13px 14px;
@@ -564,6 +599,7 @@
     <div id="screen-board" class="screen active">
         <div class="board-toolbar">
             <div class="board-toolbar-left">
+                <button type="button" class="secondary" id="boardDensityBtn" onclick="toggleBoardDensity()"><i class="fas fa-compress"></i> Компактный вид</button>
                 <button type="button" class="secondary" id="boardSelectModeBtn" onclick="toggleBoardSelectMode()"><i class="fas fa-square-check"></i> Выбрать несколько</button>
                 <div class="board-bulk-bar" id="boardBulkBar">
                     <span id="boardBulkCount"></span>
@@ -842,6 +878,9 @@
                     <li><b>Скопировать телефон/email</b> — маленькие круглые кнопки с иконкой телефона/конверта рядом с менеджером (показаны, только если контакт заполнен и не похож на брак вида «#ERROR!»). Клик — значение сразу в буфере обмена.</li>
                     <li><b>Кликнуть по бейджу «просрочена задача»</b> — не открывает саму заявку, а сразу переводит на вкладку «Задачи» с фильтром по этой заявке.</li>
                 </ul>
+                <h4>Плотность карточек и свёрнутые колонки</h4>
+                <p>Кнопка <b>«Компактный вид»</b> над доской переключает карточки на минимальный вид — только ФИО и сумма, без программы, менеджера и бейджей — чтобы быстро окинуть взглядом большую колонку. Подсветка «застоя» (жёлтая) и отказа (красная) при этом никуда не девается — это цвет рамки карточки, а не бейдж, поэтому виден и в компактном виде. «Подробный вид» возвращает всё как было. Выбор запоминается в этом браузере.</p>
+                <p>Стрелка <i class="fas fa-chevron-left"></i> в правом верхнем углу заголовка колонки сворачивает её в узкую полоску с названием и счётчиком — удобно для редко используемых стадий (по умолчанию так свёрнута «Отказ»), чтобы не занимали место у рабочих колонок. Заявку по-прежнему можно перетащить прямо в свёрнутую колонку — не обязательно её сначала разворачивать. Клик по полоске (стрелка <i class="fas fa-chevron-right"></i>) разворачивает обратно; выбор тоже запоминается в браузере.</p>
                 <h4>Выбор нескольких карточек</h4>
                 <p>Кнопка <b>«Выбрать несколько»</b> над доской включает режим массовых действий: на каждой карточке появляется чекбокс (перетаскивание карточек в этом режиме временно отключается). Отметьте нужные — снизу появится панель с выбором менеджера и кнопкой «Назначить менеджера», которая проставит его сразу всем отмеченным. «Отменить выбор» выключает режим и снимает все отметки.</p>
                 <h4>Бейджи на карточках</h4>
@@ -2986,10 +3025,41 @@
         }
     }
 
+    // Свёрнутые колонки — по умолчанию только "Отказ" (редко нужна, но не должна
+    // пропадать из виду совсем — заявку в неё по-прежнему можно перетащить в узком
+    // виде). Выбор сотрудника после первого клика по стрелке запоминается в браузере.
+    let collapsedColumnsCache = null;
+    function getCollapsedColumns() {
+        if (collapsedColumnsCache) return collapsedColumnsCache;
+        try {
+            const raw = localStorage.getItem('crm_collapsed_columns');
+            collapsedColumnsCache = raw ? new Set(JSON.parse(raw)) : new Set(['отказ']);
+        } catch (e) { collapsedColumnsCache = new Set(['отказ']); }
+        return collapsedColumnsCache;
+    }
+    function toggleColumnCollapse(stageKey) {
+        const set = getCollapsedColumns();
+        if (set.has(stageKey)) set.delete(stageKey); else set.add(stageKey);
+        try { localStorage.setItem('crm_collapsed_columns', JSON.stringify([...set])); } catch (e) {}
+        applyFilterAndRender();
+    }
+
+    // Плотность карточек — "подробно" (по умолчанию) или "компактно" (только ФИО
+    // и сумма), для быстрого скана колонки с большим числом заявок.
+    let boardDensity = 'detailed';
+    try { boardDensity = localStorage.getItem('crm_board_density') === 'compact' ? 'compact' : 'detailed'; } catch (e) {}
+
+    function toggleBoardDensity() {
+        boardDensity = boardDensity === 'compact' ? 'detailed' : 'compact';
+        try { localStorage.setItem('crm_board_density', boardDensity); } catch (e) {}
+        applyFilterAndRender();
+    }
+
     function renderBoard(deals) {
         const board = document.getElementById('board');
         board.innerHTML = '';
         board.classList.toggle('select-mode', boardSelectMode);
+        board.classList.toggle('compact', boardDensity === 'compact');
 
         const managersList = [...new Set(allDeals.map(d => d.manager).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ru'));
 
@@ -2999,6 +3069,12 @@
             ? '<i class="fas fa-xmark"></i> Отменить выбор'
             : '<i class="fas fa-square-check"></i> Выбрать несколько';
 
+        const densityBtn = document.getElementById('boardDensityBtn');
+        densityBtn.classList.toggle('active', boardDensity === 'compact');
+        densityBtn.innerHTML = boardDensity === 'compact'
+            ? '<i class="fas fa-expand"></i> Подробный вид'
+            : '<i class="fas fa-compress"></i> Компактный вид';
+
         const bulkBar = document.getElementById('boardBulkBar');
         bulkBar.style.display = (boardSelectMode && selectedBoardIds.size > 0) ? 'flex' : 'none';
         document.getElementById('boardBulkCount').textContent = `Выбрано: ${selectedBoardIds.size}`;
@@ -3007,18 +3083,22 @@
         bulkMgrSelect.innerHTML = '<option value="">Выберите менеджера…</option>' + managersList.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
         if (managersList.includes(keepMgr)) bulkMgrSelect.value = keepMgr;
 
+        const collapsed = getCollapsedColumns();
+
         STAGES.forEach(stage => {
             // Внутри колонки — от новых к старым, а не как попало.
             const items = deals.filter(d => normalizeStage(d.status) === stage.key && (showArchivedOnBoard || !isTrue(d.archived)))
                 .sort((a, b) => String(b.timestamp || '').localeCompare(String(a.timestamp || '')));
             const sum = items.reduce((s, d) => s + (Number(d.amount) || 0), 0);
+            const isCollapsed = collapsed.has(stage.key);
 
             const col = document.createElement('div');
-            col.className = 'column' + (stage.key === 'отказ' ? ' stage-otkaz' : '');
+            col.className = 'column' + (stage.key === 'отказ' ? ' stage-otkaz' : '') + (isCollapsed ? ' collapsed' : '');
             col.dataset.stage = stage.key;
 
             col.innerHTML = `
-                <div class="column-head">
+                <div class="column-head" title="${escapeHtml(stage.label)}: ${items.length} заявок${sum > 0 ? ', ' + formatMoney(sum) : ''}">
+                    <button type="button" class="column-collapse-btn" onclick="toggleColumnCollapse('${stage.key}')" title="${isCollapsed ? 'Развернуть' : 'Свернуть'} колонку «${escapeHtml(stage.label)}»"><i class="fas fa-chevron-${isCollapsed ? 'right' : 'left'}"></i></button>
                     <div class="title"><span>${stage.label}</span><span class="count">${items.length}</span></div>
                     ${sum > 0 ? `<div class="sum">${formatMoney(sum)}</div>` : ''}
                 </div>
@@ -3028,9 +3108,11 @@
             const body = col.querySelector('.column-body');
             items.forEach(d => body.appendChild(renderCard(d, stage.key, managersList)));
 
-            body.addEventListener('dragover', (e) => { e.preventDefault(); col.classList.add('drag-over'); });
-            body.addEventListener('dragleave', () => col.classList.remove('drag-over'));
-            body.addEventListener('drop', (e) => {
+            // Слушатели drag&drop — на всей колонке, а не только на теле списка:
+            // иначе в свёрнутом виде (тело скрыто) в колонку было бы нечем "поймать" карточку.
+            col.addEventListener('dragover', (e) => { e.preventDefault(); col.classList.add('drag-over'); });
+            col.addEventListener('dragleave', () => col.classList.remove('drag-over'));
+            col.addEventListener('drop', (e) => {
                 e.preventDefault();
                 col.classList.remove('drag-over');
                 const id = Number(e.dataTransfer.getData('text/plain'));
