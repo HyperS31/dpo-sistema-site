@@ -784,6 +784,7 @@
 
             <div class="modal-actions">
                 <button type="button" class="danger-outline" id="deleteBtn" style="display:none; margin-right:auto;" onclick="deleteCurrentLead()"><i class="fas fa-trash"></i> Удалить</button>
+                <button type="button" class="secondary" id="archiveToggleBtn" style="display:none;" onclick="toggleArchived(editingId)"></button>
                 <button type="button" class="secondary" onclick="closeModal()">Отмена</button>
                 <button type="button" onclick="saveModal()"><i class="fas fa-check"></i> Сохранить</button>
             </div>
@@ -997,7 +998,7 @@
         const ctLabel = { 'физ': '<span class="badge person">физ.лицо</span>', 'юр': '<span class="badge legal">юр.лицо</span>', 'none': '<span class="badge check" style="background:#eef0f4;color:#868e96;">не указано</span>' };
 
         table.innerHTML = `
-            <tr><th>ФИО</th><th>Программа</th><th>Тип</th><th>Слуш.</th><th>Статус</th><th>Email / телефон</th><th>Менеджер</th><th>Источник</th><th>Дата</th></tr>
+            <tr><th>ФИО</th><th>Программа</th><th>Тип</th><th>Слуш.</th><th>Статус</th><th>Email / телефон</th><th>Менеджер</th><th>Источник</th><th>Дата</th><th>Доска</th></tr>
             ${rows.map(d => `
                 <tr data-id="${d.id}">
                     <td>${escapeHtml(d.fio || '—')}</td>
@@ -1009,8 +1010,9 @@
                     <td>${escapeHtml(d.manager || '—')}</td>
                     <td>${escapeHtml(d.source_form || '—')}</td>
                     <td>${String(d.timestamp || '').slice(0, 10)}</td>
+                    <td><button type="button" class="secondary archive-toggle-btn" data-id="${d.id}" style="font-size:11.5px;padding:5px 10px;white-space:nowrap;">${isTrue(d.archived) ? '<i class="fas fa-arrow-up-from-bracket"></i> На доску' : '<i class="fas fa-box-archive"></i> В архив'}</button></td>
                 </tr>
-            `).join('') || '<tr><td colspan="9" style="text-align:center;padding:30px;">Ничего не найдено</td></tr>'}
+            `).join('') || '<tr><td colspan="10" style="text-align:center;padding:30px;">Ничего не найдено</td></tr>'}
         `;
         table.querySelectorAll('tr[data-id]').forEach(tr => {
             tr.addEventListener('click', () => {
@@ -1018,6 +1020,34 @@
                 if (deal) openEditModal(deal);
             });
         });
+        table.querySelectorAll('.archive-toggle-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                toggleArchived(Number(btn.dataset.id));
+            });
+        });
+    }
+
+    // Переключает заявку между доской и архивом. Раньше "Архив" был просто ещё
+    // одним видом того же списка (что и доска) — теперь это реальное состояние,
+    // чтобы доску можно было держать в чистоте, не теряя старые заявки из виду.
+    async function toggleArchived(id) {
+        const deal = allDeals.find(d => d.id === id);
+        if (!deal) return;
+        const newVal = !isTrue(deal.archived);
+        deal.archived = newVal;
+        applyFilterAndRender();
+        if (editingId === id) renderArchiveToggleBtn(deal); // модалка этой же заявки сейчас открыта
+        try {
+            const res = await postJSON('updateLead', { data: { id, archived: newVal } });
+            if (res.status !== 'success') throw new Error(res.message || 'Ошибка сохранения');
+            showMessage(newVal ? 'Заявка перенесена в архив' : 'Заявка возвращена на доску');
+        } catch (err) {
+            deal.archived = !newVal;
+            applyFilterAndRender();
+            if (editingId === id) renderArchiveToggleBtn(deal);
+            showMessage('Не удалось сохранить: ' + err.message, 'error');
+        }
     }
 
     function populateManagerFilter() {
@@ -1756,7 +1786,11 @@
                 </div>
                 <div class="cohort-doc-upload">
                     <input type="file" id="ct_signedContractFile" accept="image/*,.pdf">
-                    <button type="button" class="secondary" onclick="uploadSignedContract(${cohort.id})"><i class="fas fa-upload"></i> Загрузить скан подписанного договора</button>
+                    <button type="button" class="secondary" onclick="uploadCohortFile(${cohort.id}, 'signed_contract', 'ct_signedContractFile')"><i class="fas fa-upload"></i> Загрузить скан подписанного договора</button>
+                </div>
+                <div class="cohort-doc-upload">
+                    <input type="file" id="ct_scheduleFile" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx">
+                    <button type="button" class="secondary" onclick="uploadCohortFile(${cohort.id}, 'schedule', 'ct_scheduleFile')"><i class="fas fa-upload"></i> Загрузить расписание</button>
                 </div>
                 <div id="cohortDocsList"></div>
             </div>
@@ -1815,7 +1849,7 @@
     }
 
     // ========== Документы группы ==========
-    const DOC_TYPE_LABELS = { kp: 'КП', sz: 'СЗ на счёт', dogovor_yul: 'Договор (ЮЛ)', dogovor_fl: 'Договор (ФЛ)', signed_contract: 'Подписанный договор', vedomost: 'Лист выдачи' };
+    const DOC_TYPE_LABELS = { kp: 'КП', sz: 'СЗ на счёт', dogovor_yul: 'Договор (ЮЛ)', dogovor_fl: 'Договор (ФЛ)', signed_contract: 'Подписанный договор', vedomost: 'Лист выдачи', schedule: 'Расписание' };
 
     function openDocumentsForCohort(docType) {
         const cohort = allCohorts.find(c => c.id === activeCohortTabId);
@@ -1904,8 +1938,10 @@
         }
     }
 
-    async function uploadSignedContract(cohortId) {
-        const input = document.getElementById('ct_signedContractFile');
+    // Общая загрузка вручную приложенного файла группы (подписанный договор,
+    // расписание и т.п. — всё, что не генерируется системой, а приносится готовым).
+    async function uploadCohortFile(cohortId, docType, inputId) {
+        const input = document.getElementById(inputId);
         const file = input.files[0];
         if (!file) { showMessage('Выберите файл', 'error'); return; }
         if (file.size > 15 * 1024 * 1024) { showMessage('Файл больше 15 МБ — уменьшите размер', 'error'); return; }
@@ -1918,12 +1954,12 @@
                 reader.readAsDataURL(file);
             });
             const res = await postJSON('uploadCohortDocument', {
-                cohort_id: cohortId, doc_type: 'signed_contract',
+                cohort_id: cohortId, doc_type: docType,
                 filename: file.name, base64, mimetype: file.type,
             });
             if (res.status !== 'success') throw new Error(res.message || 'Ошибка загрузки');
             input.value = '';
-            showMessage('Скан загружен');
+            showMessage('Файл загружен');
             loadCohortDocuments(cohortId);
         } catch (err) {
             showMessage('Ошибка: ' + err.message, 'error');
@@ -2122,7 +2158,11 @@
         board.innerHTML = '';
 
         STAGES.forEach(stage => {
-            const items = deals.filter(d => normalizeStage(d.status) === stage.key);
+            // Архивные заявки не показываем на доске — иначе она захламляется по мере
+            // роста базы (см. вкладку "Архив" + кнопка "Вернуть на доску"/"В архив").
+            // Внутри колонки — от новых к старым, а не как попало.
+            const items = deals.filter(d => normalizeStage(d.status) === stage.key && !isTrue(d.archived))
+                .sort((a, b) => String(b.timestamp || '').localeCompare(String(a.timestamp || '')));
             const sum = items.reduce((s, d) => s + (Number(d.amount) || 0), 0);
 
             const col = document.createElement('div');
@@ -2226,8 +2266,17 @@
         document.getElementById('documentsSection').style.display = 'none';
         document.getElementById('historySection').style.display = 'none';
         document.getElementById('deleteBtn').style.display = 'none';
+        document.getElementById('archiveToggleBtn').style.display = 'none';
         document.getElementById('dupLeadWarning').style.display = 'none';
         document.getElementById('overlay').classList.add('open');
+    }
+
+    function renderArchiveToggleBtn(deal) {
+        const btn = document.getElementById('archiveToggleBtn');
+        btn.style.display = 'inline-flex';
+        btn.innerHTML = isTrue(deal.archived)
+            ? '<i class="fas fa-arrow-up-from-bracket"></i> Вернуть на доску'
+            : '<i class="fas fa-box-archive"></i> В архив';
     }
 
     // При ручном добавлении сделки (звонок, встреча и т.п.) — в отличие от заявок с
@@ -2285,6 +2334,7 @@
             : 'Заявка пока не входит в группу — файл будет только скачан, в карточку группы его сохранить пока некуда.';
         document.getElementById('historySection').style.display = 'block';
         document.getElementById('deleteBtn').style.display = 'inline-flex';
+        renderArchiveToggleBtn(d);
         renderTasksForLead(d.id);
         renderIntakeSection(d);
         document.getElementById('historyList').innerHTML = '<div class="history-item">Загрузка…</div>';
