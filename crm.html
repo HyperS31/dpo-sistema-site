@@ -524,20 +524,17 @@
         .cal-task.overdue { background: #fee2e2; color: #991b1b; }
         .cal-task.done { opacity: 0.5; text-decoration: line-through; }
         .cal-more { font-size: 10px; color: var(--text-secondary); padding-left: 2px; }
-        .task-row { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--border); }
-        .task-row:hover { background: #f8f9fc; }
-        .task-row .task-text { flex: 1; font-size: 13.5px; }
-        .task-row .task-lead { font-size: 12px; color: var(--text-secondary); cursor: pointer; }
-        .task-row .task-lead:hover { text-decoration: underline; color: var(--primary); }
-        .task-row .task-lead.standalone { cursor: default; opacity: 0.65; font-style: italic; }
-        .task-row .task-lead.standalone:hover { text-decoration: none; color: var(--text-secondary); }
-        .task-row.done .task-text { text-decoration: line-through; color: var(--text-secondary); }
+        .task-lead { font-size: 12px; color: var(--text-secondary); cursor: pointer; white-space: nowrap; }
+        .task-lead:hover { text-decoration: underline; color: var(--primary); }
+        .task-lead.standalone { cursor: default; opacity: 0.65; font-style: italic; }
+        .task-lead.standalone:hover { text-decoration: none; color: var(--text-secondary); }
 
-        /* ===== Задачи 2.0: исполнители/наблюдатели, подзадачи, нагрузка, массовые действия ===== */
-        .task-row-adv { padding: 10px 14px; border-bottom: 1px solid var(--border); }
-        .task-row-adv:hover { background: #f8f9fc; }
-        .task-row-adv.done .task-text { text-decoration: line-through; color: var(--text-secondary); }
-        .task-row-main { display: flex; align-items: center; gap: 10px; }
+        /* ===== Задачи 2.0: таблица, этап/приоритет, исполнители/наблюдатели, подзадачи, нагрузка ===== */
+        table.archive-table.tasks-table tr { cursor: default; }
+        table.archive-table.tasks-table th.sortable { cursor: pointer; }
+        .tasks-table tr.task-row-tr.done td.task-title-cell { text-decoration: line-through; color: var(--text-secondary); }
+        .tasks-table tr.task-row-tr.done { opacity: 0.65; }
+        .task-title-cell { min-width: 160px; }
         .task-select-cb { width: 16px; height: 16px; cursor: pointer; flex-shrink: 0; }
         .task-row-people { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 6px 0 0 26px; }
         .people-label { font-size: 10.5px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.03em; }
@@ -547,6 +544,21 @@
         }
         .subtasks-toggle-btn:hover { background: #e0e7ff; color: var(--primary-dark); }
         .subtasks-toggle-btn.has-items { background: #e0e7ff; color: var(--primary-dark); }
+
+        .stage-select, .priority-select {
+            border: none; border-radius: 20px; padding: 5px 9px; font-size: 11.5px; font-weight: 600;
+            cursor: pointer; font-family: inherit;
+        }
+        .stage-select.stage-planned { background: #eef0f4; color: var(--text-secondary); }
+        .stage-select.stage-in_progress { background: #fef3c7; color: #92400e; }
+        .stage-select.stage-done { background: #d1fae5; color: #065f46; }
+        .priority-select.priority-low { background: #eef0f4; color: var(--text-secondary); }
+        .priority-select.priority-medium { background: #fef3c7; color: #92400e; }
+        .priority-select.priority-high { background: #fde2e7; color: #a4133c; }
+
+        .task-detail-panel { display: flex; gap: 30px; flex-wrap: wrap; padding: 8px 4px 12px; }
+        .task-detail-col { min-width: 220px; flex: 1; }
+        .task-detail-col .people-label { display: block; margin-bottom: 6px; }
 
         .chip-picker { display: inline-flex; align-items: center; gap: 5px; flex-wrap: wrap; }
         .chip-picker-item {
@@ -562,7 +574,7 @@
         }
         .chip-picker-add:hover { border-color: var(--primary-light); color: var(--primary-dark); }
 
-        .subtasks-panel { margin: 8px 0 0 26px; padding: 8px 10px; background: #fbfbfd; border: 1px solid var(--border); border-radius: 8px; max-width: 460px; }
+        .subtasks-panel { margin: 4px 0 0; padding: 8px 10px; background: #fbfbfd; border: 1px solid var(--border); border-radius: 8px; max-width: 460px; }
         .subtask-item { display: flex; align-items: center; gap: 8px; padding: 3px 0; font-size: 12.5px; }
         .subtask-item input[type="checkbox"] { width: 14px; height: 14px; cursor: pointer; flex-shrink: 0; }
         .subtask-item span:not(.subtask-remove) { flex: 1; }
@@ -812,6 +824,11 @@
             <input type="date" id="newStandaloneTaskStart" title="Начало периода (необязательно)">
             <span class="task-date-arrow">→</span>
             <input type="date" id="newStandaloneTaskDue" title="Срок / конец периода">
+            <select id="newStandaloneTaskPriority" title="Приоритет">
+                <option value="low">Низкий приоритет</option>
+                <option value="medium" selected>Средний приоритет</option>
+                <option value="high">Высокий приоритет</option>
+            </select>
             <span class="chip-picker" id="newStandaloneTaskAssignees"></span>
             <button type="button" onclick="addStandaloneTask()"><i class="fas fa-plus"></i> Добавить задачу</button>
         </div>
@@ -849,7 +866,7 @@
             <button type="button" class="secondary" onclick="clearTasksSelection()">Снять выделение</button>
         </div>
         <div class="archive-table-wrap" id="tasksListWrap">
-            <div id="tasksList"></div>
+            <table class="archive-table tasks-table" id="tasksTable"></table>
         </div>
         <div id="tasksCalendarWrap" style="display:none;">
             <div class="calendar-nav">
@@ -1268,42 +1285,60 @@
                     </table>
                 </div>
                 <p>Таблица вверху вкладки — беглый обзор, у кого сколько открытых и просроченных задач, независимо от текущего фильтра «Показать»/«Ответственный» (иначе выбор конкретного сотрудника в фильтре схлопнул бы таблицу до одной строки). Если у задачи несколько исполнителей — она учитывается у каждого из них.</p>
-                <h4>Задача без заявки, исполнители и наблюдатели</h4>
+                <h4>Список задач — таблица с этапом и приоритетом</h4>
                 <div class="help-mock">
                     <div class="help-mock-label"><i class="fas fa-eye"></i> Как это выглядит</div>
-                    <div class="task-add-row standalone-task-add-row" style="margin-bottom:12px;">
-                        <input type="text" disabled placeholder="Новая задача, не привязанная к заявке...">
-                        <input type="date" disabled title="Начало периода (необязательно)">
-                        <span class="task-date-arrow">→</span>
-                        <input type="date" disabled title="Срок / конец периода">
-                        <span class="chip-picker"><select disabled><option>+ исполнитель</option></select></span>
-                        <button type="button"><i class="fas fa-plus"></i> Добавить задачу</button>
-                    </div>
-                    <div class="task-row-people" style="margin-left:0;">
-                        <span class="people-label">Исполнители:</span>
-                        <span class="chip-picker-item">Игорь<span class="chip-remove"><i class="fas fa-xmark"></i></span></span>
-                        <span class="chip-picker-item">Мария<span class="chip-remove"><i class="fas fa-xmark"></i></span></span>
-                        <select disabled class="chip-picker-add"><option>+ исполнитель</option></select>
-                        <span class="people-label">Наблюдатели:</span>
-                        <span class="chip-picker-item watcher-chip">Дарья<span class="chip-remove"><i class="fas fa-xmark"></i></span></span>
-                        <select disabled class="chip-picker-add"><option>+ наблюдатель</option></select>
+                    <div class="archive-table-wrap" style="max-height:none;">
+                        <table class="archive-table tasks-table">
+                            <tr><th></th><th class="sortable sorted">Задача <span class="sort-arrow">▲</span></th><th>Заявка</th><th>Этап</th><th>Приоритет</th><th>Срок</th><th>Исполнители</th></tr>
+                            <tr class="task-row-tr">
+                                <td><button type="button" class="subtasks-toggle-btn has-items"><i class="fas fa-list-check"></i> 1/2</button></td>
+                                <td class="task-title-cell">Подготовить договор</td>
+                                <td><span class="task-lead"><i class="fas fa-arrow-up-right-from-square"></i> Иванов Иван</span></td>
+                                <td><select class="stage-select stage-in_progress" disabled><option>В процессе</option></select></td>
+                                <td><select class="priority-select priority-high" disabled><option>Высокий</option></select></td>
+                                <td><span class="due badge overdue">просрочено 2026-09-10</span></td>
+                                <td><span class="chip-picker-item">Мария<span class="chip-remove"><i class="fas fa-xmark"></i></span></span></td>
+                            </tr>
+                            <tr class="task-row-tr">
+                                <td><button type="button" class="subtasks-toggle-btn"><i class="fas fa-list-check"></i></button></td>
+                                <td class="task-title-cell">Позвонить в приёмную комиссию</td>
+                                <td><span class="task-lead standalone"><i class="fas fa-thumbtack"></i> без заявки</span></td>
+                                <td><select class="stage-select stage-planned" disabled><option>Запланировано</option></select></td>
+                                <td><select class="priority-select priority-medium" disabled><option>Средний</option></select></td>
+                                <td>2026-09-16 → 2026-09-20</td>
+                                <td><span class="chip-picker-item">Игорь<span class="chip-remove"><i class="fas fa-xmark"></i></span></span></td>
+                            </tr>
+                        </table>
                     </div>
                 </div>
+                <p>Раньше выполненность задачи была одной галочкой — теперь у неё <b>«Этап»</b>: Запланировано → В процессе → Выполнено. Меняется прямо в строке, выпадающим списком, без открытия задачи. «Выполнено» — это и есть то, что раньше означала галочка: такая задача считается закрытой везде (счётчик просроченных, фильтр «Открытые», нагрузка по сотрудникам). Рядом — <b>«Приоритет»</b> (Низкий / Средний / Высокий), тоже меняется на месте; для самостоятельной задачи приоритет можно сразу выставить в форме добавления. Заголовок любого столбца кликабелен и сортирует таблицу по нему (стрелка показывает направление, повторный клик — переворачивает).</p>
                 <p>Форма над списком добавляет задачу-напоминание саму по себе — «позвонить в приёмную комиссию», «подготовить приказ» и т.п., без привязки к конкретной сделке. Она встанет в общий список рядом с задачами по заявкам, с пометкой <i class="fas fa-thumbtack"></i> «без заявки» вместо ссылки на неё. Привязка к заявке никуда не делась — как и раньше, создать задачу именно для конкретной сделки можно изнутри её карточки (раздел «Карточка заявки»), там же — быстро сменить единственного исполнителя.</p>
-                <p>У любой задачи в общем списке — свои строки <b>«Исполнители»</b> и <b>«Наблюдатели»</b>: синие «таблетки» — сколько угодно людей, каждый из которых может отметить задачу выполненной; серые — наблюдатели, которые просто видят задачу в своём списке (в этой CRM нет личных логинов, так что деление на исполнителя/наблюдателя — смысловая пометка, а не техническое ограничение доступа). Клик по крестику на «таблетке» убирает человека, выпадающий список рядом — добавляет. Задачи, созданные ещё по-старому (один исполнитель, до этого обновления) — просто показывают того единственного человека здесь же.</p>
-                <h4>Подзадачи</h4>
+                <p>Столбец <b>«Исполнители»</b> — сколько угодно синих «таблеток»-людей прямо в строке, каждый из которых может отметить задачу выполненной; крестик убирает человека, выпадающий список рядом — добавляет. Задачи, созданные ещё по-старому (один исполнитель, до этого обновления) — просто показывают того единственного человека здесь же.</p>
+                <h4>Наблюдатели и подзадачи — по клику на значок чек-листа</h4>
                 <div class="help-mock">
                     <div class="help-mock-label"><i class="fas fa-eye"></i> Как это выглядит</div>
-                    <button type="button" class="subtasks-toggle-btn has-items" style="margin-bottom:8px;"><i class="fas fa-list-check"></i> 1/2</button>
-                    <div class="subtasks-panel" style="margin-left:0;">
-                        <div class="subtask-item done"><input type="checkbox" checked disabled><span>Собрать сканы</span><span class="subtask-remove"><i class="fas fa-xmark"></i></span></div>
-                        <div class="subtask-item"><input type="checkbox" disabled><span>Проверить подписи</span><span class="subtask-remove"><i class="fas fa-xmark"></i></span></div>
-                        <div class="subtask-add-row"><input type="text" disabled placeholder="Новый пункт..."><button type="button"><i class="fas fa-plus"></i></button></div>
+                    <div class="task-detail-panel" style="background:#fbfbfd;border:1px solid var(--border);border-radius:8px;">
+                        <div class="task-detail-col">
+                            <span class="people-label">Наблюдатели</span>
+                            <div class="task-row-people" style="margin-left:0;">
+                                <span class="chip-picker-item watcher-chip">Дарья<span class="chip-remove"><i class="fas fa-xmark"></i></span></span>
+                                <select disabled class="chip-picker-add"><option>+ наблюдатель</option></select>
+                            </div>
+                        </div>
+                        <div class="task-detail-col">
+                            <span class="people-label">Подзадачи</span>
+                            <div class="subtasks-panel">
+                                <div class="subtask-item done"><input type="checkbox" checked disabled><span>Собрать сканы</span><span class="subtask-remove"><i class="fas fa-xmark"></i></span></div>
+                                <div class="subtask-item"><input type="checkbox" disabled><span>Проверить подписи</span><span class="subtask-remove"><i class="fas fa-xmark"></i></span></div>
+                                <div class="subtask-add-row"><input type="text" disabled placeholder="Новый пункт..."><button type="button"><i class="fas fa-plus"></i></button></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <p>Кнопка со значком чек-листа рядом с текстом задачи (число вида «1/2» появляется, когда пункты уже есть) разворачивает простой чек-лист прямо под задачей — например, из чего состоит «Подготовить набор документов». Пункты — только текст и галочка, без своих сроков и исполнителей; для полноценной отдельной задачи со своим сроком используйте обычную задачу, а не подзадачу.</p>
+                <p>Кнопка со значком чек-листа в первом столбце (число вида «1/2» появляется, когда пункты уже есть) разворачивает под строкой панель с двумя блоками: <b>наблюдатели</b> — люди, которые просто видят задачу в своём списке, не отмечая её выполненной (в этой CRM нет личных логинов, так что деление на исполнителя/наблюдателя — смысловая пометка, а не техническое ограничение доступа), и <b>подзадачи</b> — простой чек-лист внутри задачи, например из чего состоит «Подготовить набор документов». Пункты подзадач — только текст и галочка, без своих сроков и исполнителей; для полноценной отдельной задачи со своим сроком используйте обычную задачу, а не подзадачу.</p>
                 <h4>Массовое переназначение</h4>
-                <p>Кнопка <b>«Выбрать несколько»</b> над списком добавляет чекбокс у каждой задачи (отдельно от чекбокса «выполнено»). Отметьте нужные, выберите сотрудника в панели снизу и нажмите «Переназначить» — задачи перейдут к нему одним действием (прежние исполнители заменяются на выбранного) — удобно на время отпуска или при перераспределении нагрузки, когда видно по таблице сверху, кто перегружен.</p>
+                <p>Кнопка <b>«Выбрать несколько»</b> над списком добавляет чекбокс у каждой задачи в первом столбце. Отметьте нужные, выберите сотрудника в панели снизу и нажмите «Переназначить» — задачи перейдут к нему одним действием (прежние исполнители заменяются на выбранного) — удобно на время отпуска или при перераспределении нагрузки, когда видно по таблице сверху, кто перегружен.</p>
                 <h4>Период вместо одной даты</h4>
                 <p>У любой задачи (и по заявке, и самостоятельной) кроме срока (правая дата, «до») можно задать необязательное начало периода (левая дата) — например, «делать с 12 по 18 сентября». Если начало не заполнено — задача остаётся точечной, с одним сроком, как раньше. В списке период показывается как «12.09 → 18.09»; в календаре такая задача появляется на <b>каждом</b> дне периода, а не только в день срока. Просроченной задача считается по правой дате (сроку) независимо от того, задано начало или нет.</p>
                 <ul>
@@ -1652,6 +1687,17 @@
     ];
     const STAGE_KEYS = STAGES.map(s => s.key);
     const GROUP_THRESHOLD = 10; // одинаковый порог набора группы для всех программ (v1)
+
+    const TASK_STAGES = [
+        { key: 'planned', label: 'Запланировано' },
+        { key: 'in_progress', label: 'В процессе' },
+        { key: 'done', label: 'Выполнено' },
+    ];
+    const TASK_PRIORITIES = [
+        { key: 'low', label: 'Низкий' },
+        { key: 'medium', label: 'Средний' },
+        { key: 'high', label: 'Высокий' },
+    ];
 
     let allDeals = [];
     let allTasks = [];
@@ -4061,14 +4107,16 @@
         const due_date = document.getElementById('newStandaloneTaskDue').value;
         if (!validTaskRange(start_date, due_date)) return;
         const assignees = newStandaloneAssigneesList;
+        const priority = document.getElementById('newStandaloneTaskPriority').value;
         try {
-            const res = await postJSON('addTask', { data: { lead_id: null, text, start_date, due_date, manager: assignees[0] || '', assignees } });
+            const res = await postJSON('addTask', { data: { lead_id: null, text, start_date, due_date, manager: assignees[0] || '', assignees, priority } });
             if (res.status !== 'success') throw new Error(res.message || 'Ошибка');
             const tasksRes = await fetchJSON(`${API_URL}?action=getTasks`);
             if (tasksRes.status === 'success') allTasks = tasksRes.data;
             textEl.value = '';
             document.getElementById('newStandaloneTaskStart').value = '';
             document.getElementById('newStandaloneTaskDue').value = '';
+            document.getElementById('newStandaloneTaskPriority').value = 'medium';
             newStandaloneAssigneesList = [];
             renderMyTasksTab();
             showMessage('Задача добавлена');
@@ -4077,15 +4125,40 @@
         }
     }
 
+    // Простой чекбокс (карточка заявки / календарь) — бинарный, поэтому снятие
+    // галочки с задачи в статусе "В процессе" вернёт её сразу в "Запланировано",
+    // не восстанавливая промежуточный статус — полный выбор из 3 статусов только
+    // через селект "Этап" на вкладке "Задачи".
     async function toggleTask(taskId, done) {
+        const stage = done ? 'done' : 'planned';
         try {
-            await postJSON('updateTask', { data: { id: taskId, done } });
+            await postJSON('updateTask', { data: { id: taskId, done, stage } });
             const t = allTasks.find(x => x.id === taskId);
-            if (t) t.done = done;
+            if (t) { t.done = done; t.stage = stage; }
             if (editingId !== null) renderTasksForLead(editingId);
             if (currentTab === 'tasks') renderMyTasksTab();
         } catch (err) {
             showMessage('Не удалось сохранить задачу', 'error');
+        }
+    }
+
+    async function setTaskStage(taskId, stage) {
+        const t = allTasks.find(x => x.id === taskId);
+        if (!t) return;
+        const prevStage = t.stage, prevDone = t.done;
+        t.stage = stage;
+        t.done = stage === 'done';
+        if (editingId !== null) renderTasksForLead(editingId);
+        if (currentTab === 'tasks') renderMyTasksTab();
+        try {
+            const res = await postJSON('updateTask', { data: { id: taskId, stage, done: stage === 'done' } });
+            if (res.status !== 'success') throw new Error(res.message || 'Ошибка сохранения');
+        } catch (err) {
+            t.stage = prevStage;
+            t.done = prevDone;
+            if (editingId !== null) renderTasksForLead(editingId);
+            if (currentTab === 'tasks') renderMyTasksTab();
+            showMessage('Не удалось сохранить: ' + err.message, 'error');
         }
     }
 
@@ -4273,6 +4346,29 @@
         input.addEventListener('click', (e) => e.stopPropagation());
         input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); submit(); } });
         addBtn.addEventListener('click', (e) => { e.stopPropagation(); submit(); });
+    }
+
+    // ---- Сортировка таблицы задач по столбцам (тот же паттерн, что у архива) ----
+    let tasksSort = { key: 'due_date', dir: 'asc' };
+    function setTasksSort(key) {
+        if (tasksSort.key === key) tasksSort.dir = tasksSort.dir === 'asc' ? 'desc' : 'asc';
+        else tasksSort = { key, dir: 'asc' };
+        renderMyTasksTab();
+    }
+    function tasksSortValue(t, key) {
+        switch (key) {
+            case 'text': return (t.text || '').toLowerCase();
+            case 'lead': return (t.lead ? (t.lead.fio || t.lead.program || '') : '').toLowerCase();
+            case 'stage': return TASK_STAGES.findIndex(s => s.key === (t.stage || 'planned'));
+            case 'priority': return TASK_PRIORITIES.findIndex(p => p.key === (t.priority || 'medium'));
+            case 'assignees': return effectiveAssignees(t).join(', ').toLowerCase();
+            case 'due_date': default: return String(t.due_date || t.start_date || '9999');
+        }
+    }
+    function tasksSortableTh(label, key) {
+        const active = tasksSort.key === key;
+        const arrow = active ? (tasksSort.dir === 'asc' ? '▲' : '▼') : '';
+        return `<th class="sortable${active ? ' sorted' : ''}" onclick="setTasksSort('${key}')">${label} <span class="sort-arrow">${arrow}</span></th>`;
     }
 
     // ---- Выбор нескольких задач (массовая переброска другому сотруднику) ----
@@ -4467,8 +4563,9 @@
         if (manager) tasks = tasks.filter(t => effectiveAssignees(t).includes(manager));
 
         tasks.sort((a, b) => {
-            if (!!a.done !== !!b.done) return a.done ? 1 : -1;
-            return (a.due_date || '9999') < (b.due_date || '9999') ? -1 : 1;
+            const av = tasksSortValue(a, tasksSort.key), bv = tasksSortValue(b, tasksSort.key);
+            const cmp = av < bv ? -1 : av > bv ? 1 : 0;
+            return tasksSort.dir === 'asc' ? cmp : -cmp;
         });
 
         const overdueTotal = tasks.filter(t => t.overdue).length;
@@ -4479,35 +4576,61 @@
             <div class="stat-tile"><div class="label">Просроченных</div><div class="value" style="color:var(--danger);">${overdueTotal}</div></div>
         `;
 
-        const list = document.getElementById('tasksList');
-        list.innerHTML = tasks.length ? tasks.map(t => {
-            const progress = subtaskProgress(t);
-            return `
-            <div class="task-row-adv${t.done ? ' done' : ''}" data-task="${t.id}">
-                <div class="task-row-main">
-                    ${tasksSelectMode ? `<input type="checkbox" class="task-select-cb" data-task="${t.id}" ${selectedTaskIds.has(t.id) ? 'checked' : ''}>` : ''}
-                    <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTask(${t.id}, this.checked)">
-                    <span class="task-text">${escapeHtml(t.text)}</span>
-                    ${(t.due_date || t.start_date) ? `<span class="due${t.overdue ? ' badge overdue' : ''}">${formatTaskDateLabel(t, t.overdue)}</span>` : ''}
-                    ${t.lead
+        const totalCols = 6 + (tasksSelectMode ? 1 : 0);
+        const table = document.getElementById('tasksTable');
+        table.innerHTML = `
+            <tr>
+                ${tasksSelectMode ? '<th></th>' : ''}
+                <th></th>
+                ${tasksSortableTh('Задача', 'text')}
+                ${tasksSortableTh('Заявка', 'lead')}
+                ${tasksSortableTh('Этап', 'stage')}
+                ${tasksSortableTh('Приоритет', 'priority')}
+                ${tasksSortableTh('Срок', 'due_date')}
+                ${tasksSortableTh('Исполнители', 'assignees')}
+            </tr>
+            ${tasks.length ? tasks.map(t => {
+                const progress = subtaskProgress(t);
+                const stage = t.stage || 'planned';
+                const priority = t.priority || 'medium';
+                let rowsHtml = `
+                <tr class="task-row-tr${stage === 'done' ? ' done' : ''}" data-task="${t.id}">
+                    ${tasksSelectMode ? `<td><input type="checkbox" class="task-select-cb" data-task="${t.id}" ${selectedTaskIds.has(t.id) ? 'checked' : ''}></td>` : ''}
+                    <td><button type="button" class="subtasks-toggle-btn${progress ? ' has-items' : ''}" data-task="${t.id}" title="Подзадачи и наблюдатели"><i class="fas fa-list-check"></i>${progress ? ` ${progress.done}/${progress.total}` : ''}</button></td>
+                    <td class="task-title-cell">${escapeHtml(t.text)}</td>
+                    <td>${t.lead
                         ? `<span class="task-lead" onclick="openEditModal(allDeals.find(d => d.id === ${t.lead.id}))"><i class="fas fa-arrow-up-right-from-square"></i> ${escapeHtml(t.lead.fio || t.lead.program || 'заявка')}</span>`
-                        : `<span class="task-lead standalone" title="Задача не привязана к заявке"><i class="fas fa-thumbtack"></i> без заявки</span>`}
-                    <button type="button" class="subtasks-toggle-btn${progress ? ' has-items' : ''}" data-task="${t.id}" title="Подзадачи"><i class="fas fa-list-check"></i> ${progress ? `${progress.done}/${progress.total}` : ''}</button>
-                </div>
-                <div class="task-row-people">
-                    <span class="people-label">Исполнители:</span>
-                    <span class="task-assignees-picker" data-task="${t.id}"></span>
-                    <span class="people-label">Наблюдатели:</span>
-                    <span class="task-watchers-picker" data-task="${t.id}"></span>
-                </div>
-                ${expandedTaskSubtasks.has(t.id) ? renderSubtasksPanel(t) : ''}
-            </div>`;
-        }).join('') : '<div class="history-item" style="padding:20px;">Задач по текущему фильтру нет</div>';
+                        : `<span class="task-lead standalone" title="Задача не привязана к заявке"><i class="fas fa-thumbtack"></i> без заявки</span>`}</td>
+                    <td><select class="stage-select stage-${stage}" data-task="${t.id}" onchange="setTaskStage(${t.id}, this.value)">${TASK_STAGES.map(s => `<option value="${s.key}"${s.key === stage ? ' selected' : ''}>${s.label}</option>`).join('')}</select></td>
+                    <td><select class="priority-select priority-${priority}" data-task="${t.id}" onchange="updateTaskField(${t.id}, 'priority', this.value)">${TASK_PRIORITIES.map(p => `<option value="${p.key}"${p.key === priority ? ' selected' : ''}>${p.label}</option>`).join('')}</select></td>
+                    <td>${(t.due_date || t.start_date) ? `<span class="due${t.overdue ? ' badge overdue' : ''}">${formatTaskDateLabel(t, t.overdue)}</span>` : '—'}</td>
+                    <td><span class="task-assignees-picker" data-task="${t.id}"></span></td>
+                </tr>`;
+                if (expandedTaskSubtasks.has(t.id)) {
+                    rowsHtml += `
+                <tr class="task-detail-tr" data-task-detail="${t.id}">
+                    <td colspan="${totalCols}">
+                        <div class="task-detail-panel">
+                            <div class="task-detail-col">
+                                <span class="people-label">Наблюдатели</span>
+                                <span class="task-watchers-picker" data-task="${t.id}"></span>
+                            </div>
+                            <div class="task-detail-col">
+                                <span class="people-label">Подзадачи</span>
+                                ${renderSubtasksPanel(t)}
+                            </div>
+                        </div>
+                    </td>
+                </tr>`;
+                }
+                return rowsHtml;
+            }).join('') : `<tr><td colspan="${totalCols}" style="padding:20px;">Задач по текущему фильтру нет</td></tr>`}
+        `;
 
-        // Чипы исполнителей/наблюдателей и панель подзадач рендерятся строкой, а
-        // события им навешиваем отдельно — то же самое разбиение "строка → своя
-        // разметка → свои обработчики", что и у карточек на доске.
-        list.querySelectorAll('.task-select-cb').forEach(cb => {
+        // Чипы исполнителей/наблюдателей, селекты этапа/приоритета и панель подзадач
+        // рендерятся строкой, а события им навешиваем отдельно — то же самое
+        // разбиение "строка → своя разметка → свои обработчики", что и у карточек на доске.
+        table.querySelectorAll('.task-select-cb').forEach(cb => {
             cb.addEventListener('click', (e) => e.stopPropagation());
             cb.addEventListener('change', () => {
                 const id = Number(cb.dataset.task);
@@ -4517,21 +4640,21 @@
                 document.getElementById('tasksBulkCount').textContent = `Выбрано: ${selectedTaskIds.size}`;
             });
         });
-        list.querySelectorAll('.subtasks-toggle-btn').forEach(btn => {
+        table.querySelectorAll('.subtasks-toggle-btn').forEach(btn => {
             btn.addEventListener('click', (e) => { e.stopPropagation(); toggleSubtasksExpanded(Number(btn.dataset.task)); });
         });
-        list.querySelectorAll('.subtasks-panel').forEach(panel => {
+        table.querySelectorAll('.subtasks-panel').forEach(panel => {
             const t = tasks.find(x => x.id === Number(panel.dataset.task));
             if (t) wireSubtasksPanel(panel, t);
         });
-        list.querySelectorAll('.task-assignees-picker').forEach(el => {
+        table.querySelectorAll('.task-assignees-picker').forEach(el => {
             const t = tasks.find(x => x.id === Number(el.dataset.task));
             if (!t) return;
             const current = effectiveAssignees(t);
             el.innerHTML = renderChipPicker(current, mgrs, '+ исполнитель');
             wireChipPicker(el, current, (next) => updateTaskField(t.id, 'assignees', next));
         });
-        list.querySelectorAll('.task-watchers-picker').forEach(el => {
+        table.querySelectorAll('.task-watchers-picker').forEach(el => {
             const t = tasks.find(x => x.id === Number(el.dataset.task));
             if (!t) return;
             const current = effectiveWatchers(t);
