@@ -533,6 +533,58 @@
         .task-row .task-lead.standalone:hover { text-decoration: none; color: var(--text-secondary); }
         .task-row.done .task-text { text-decoration: line-through; color: var(--text-secondary); }
 
+        /* ===== Задачи 2.0: исполнители/наблюдатели, подзадачи, нагрузка, массовые действия ===== */
+        .task-row-adv { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+        .task-row-adv:hover { background: #f8f9fc; }
+        .task-row-adv.done .task-text { text-decoration: line-through; color: var(--text-secondary); }
+        .task-row-main { display: flex; align-items: center; gap: 10px; }
+        .task-select-cb { width: 16px; height: 16px; cursor: pointer; flex-shrink: 0; }
+        .task-row-people { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 6px 0 0 26px; }
+        .people-label { font-size: 10.5px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.03em; }
+        .subtasks-toggle-btn {
+            background: #f1f3f9; color: var(--text-secondary); border: none; border-radius: 20px;
+            padding: 3px 10px; font-size: 11px; cursor: pointer; flex-shrink: 0; display: inline-flex; align-items: center; gap: 5px;
+        }
+        .subtasks-toggle-btn:hover { background: #e0e7ff; color: var(--primary-dark); }
+        .subtasks-toggle-btn.has-items { background: #e0e7ff; color: var(--primary-dark); }
+
+        .chip-picker { display: inline-flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+        .chip-picker-item {
+            display: inline-flex; align-items: center; gap: 5px; background: #eef1ff; color: var(--primary-dark);
+            border-radius: 20px; padding: 2px 6px 2px 10px; font-size: 11px;
+        }
+        .chip-picker-item .chip-remove { cursor: pointer; font-size: 9px; opacity: 0.6; padding: 2px; }
+        .chip-picker-item .chip-remove:hover { opacity: 1; color: var(--danger); }
+        .chip-picker-item.watcher-chip { background: #f1f3f9; color: var(--text-secondary); }
+        .chip-picker-add {
+            border: 1px dashed var(--border); background: transparent; color: var(--text-secondary); font-size: 11px;
+            border-radius: 20px; padding: 2px 8px; font-family: inherit; cursor: pointer;
+        }
+        .chip-picker-add:hover { border-color: var(--primary-light); color: var(--primary-dark); }
+
+        .subtasks-panel { margin: 8px 0 0 26px; padding: 8px 10px; background: #fbfbfd; border: 1px solid var(--border); border-radius: 8px; max-width: 460px; }
+        .subtask-item { display: flex; align-items: center; gap: 8px; padding: 3px 0; font-size: 12.5px; }
+        .subtask-item input[type="checkbox"] { width: 14px; height: 14px; cursor: pointer; flex-shrink: 0; }
+        .subtask-item span:not(.subtask-remove) { flex: 1; }
+        .subtask-item.done span:not(.subtask-remove) { text-decoration: line-through; color: var(--text-secondary); }
+        .subtask-item .subtask-remove { cursor: pointer; opacity: 0.4; font-size: 11px; }
+        .subtask-item .subtask-remove:hover { opacity: 1; color: var(--danger); }
+        .subtask-add-row { display: flex; gap: 6px; margin-top: 6px; }
+        .subtask-add-row input { flex: 1; padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; }
+        .subtask-add-row button { padding: 5px 9px; font-size: 11px; }
+
+        .workload-panel { background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px 18px; margin-bottom: 16px; }
+        .workload-panel h4 { margin: 0 0 10px; font-size: 13px; color: var(--primary-dark); }
+
+        .tasks-bulk-bar {
+            display: none; align-items: center; gap: 10px; background: #eef1ff; border: 1px solid var(--primary-light);
+            border-radius: var(--radius); padding: 10px 16px; margin-bottom: 14px; font-size: 13px; flex-wrap: wrap;
+        }
+        .tasks-bulk-bar span { font-weight: 600; color: var(--primary-dark); }
+        .tasks-bulk-bar select { padding: 7px 12px; border: 1px solid var(--border); border-radius: 20px; font-size: 12.5px; }
+        .tasks-bulk-bar button { padding: 7px 14px; font-size: 12.5px; }
+        #tasksSelectModeBtn.active { background: var(--primary); color: white; }
+
         /* Модальное окно */
         #overlay {
             display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4);
@@ -751,12 +803,16 @@
 
     <div id="screen-tasks" class="screen">
         <div class="tasks-summary" id="tasksSummary"></div>
+        <div class="workload-panel">
+            <h4><i class="fas fa-scale-balanced"></i> Нагрузка по сотрудникам</h4>
+            <table class="mgr-table" id="tasksWorkloadTable"></table>
+        </div>
         <div class="task-add-row standalone-task-add-row">
             <input type="text" id="newStandaloneTaskText" placeholder="Новая задача, не привязанная к заявке...">
             <input type="date" id="newStandaloneTaskStart" title="Начало периода (необязательно)">
             <span class="task-date-arrow">→</span>
             <input type="date" id="newStandaloneTaskDue" title="Срок / конец периода">
-            <select id="newStandaloneTaskManager" title="Кому поручить"><option value="">без исполнителя</option></select>
+            <span class="chip-picker" id="newStandaloneTaskAssignees"></span>
             <button type="button" onclick="addStandaloneTask()"><i class="fas fa-plus"></i> Добавить задачу</button>
         </div>
         <div class="tasks-lead-filter-chip" id="tasksLeadFilterChip">
@@ -782,6 +838,15 @@
                     <button type="button" class="view-toggle-btn" data-view="calendar" onclick="setTasksView('calendar')"><i class="fas fa-calendar-days"></i> Календарь</button>
                 </div>
             </div>
+            <div class="report-filter-field" style="align-self:flex-end;">
+                <button type="button" class="secondary" id="tasksSelectModeBtn" onclick="toggleTasksSelectMode()"><i class="fas fa-square-check"></i> Выбрать несколько</button>
+            </div>
+        </div>
+        <div class="tasks-bulk-bar" id="tasksBulkBar">
+            <span id="tasksBulkCount"></span>
+            <select id="tasksBulkManagerSelect"><option value="">Выберите сотрудника…</option></select>
+            <button type="button" onclick="bulkReassignTasks()"><i class="fas fa-user-check"></i> Переназначить</button>
+            <button type="button" class="secondary" onclick="clearTasksSelection()">Снять выделение</button>
         </div>
         <div class="archive-table-wrap" id="tasksListWrap">
             <div id="tasksList"></div>
@@ -1193,25 +1258,58 @@
             <summary><i class="fas fa-list-check"></i> Задачи <i class="fas fa-chevron-down chev"></i></summary>
             <div class="help-body">
                 <p>Сводный список всех задач — и поставленных по заявкам (создаются внутри карточки заявки — см. раздел «Карточка заявки»), и самостоятельных, ни к чему не привязанных. Здесь удобно видеть их все разом, не открывая каждую заявку по отдельности.</p>
-                <h4>Задача без заявки</h4>
+                <h4>Нагрузка по сотрудникам</h4>
                 <div class="help-mock">
                     <div class="help-mock-label"><i class="fas fa-eye"></i> Как это выглядит</div>
-                    <div class="task-add-row standalone-task-add-row" style="margin-bottom:0;">
+                    <table class="mgr-table">
+                        <tr><th>Сотрудник</th><th>Открыто</th><th>Просрочено</th></tr>
+                        <tr><td>Мария</td><td>7</td><td style="color:var(--danger);font-weight:600;">2</td></tr>
+                        <tr><td>Игорь</td><td>3</td><td>0</td></tr>
+                    </table>
+                </div>
+                <p>Таблица вверху вкладки — беглый обзор, у кого сколько открытых и просроченных задач, независимо от текущего фильтра «Показать»/«Ответственный» (иначе выбор конкретного сотрудника в фильтре схлопнул бы таблицу до одной строки). Если у задачи несколько исполнителей — она учитывается у каждого из них.</p>
+                <h4>Задача без заявки, исполнители и наблюдатели</h4>
+                <div class="help-mock">
+                    <div class="help-mock-label"><i class="fas fa-eye"></i> Как это выглядит</div>
+                    <div class="task-add-row standalone-task-add-row" style="margin-bottom:12px;">
                         <input type="text" disabled placeholder="Новая задача, не привязанная к заявке...">
                         <input type="date" disabled title="Начало периода (необязательно)">
                         <span class="task-date-arrow">→</span>
                         <input type="date" disabled title="Срок / конец периода">
-                        <select disabled><option>без исполнителя</option></select>
+                        <span class="chip-picker"><select disabled><option>+ исполнитель</option></select></span>
                         <button type="button"><i class="fas fa-plus"></i> Добавить задачу</button>
                     </div>
+                    <div class="task-row-people" style="margin-left:0;">
+                        <span class="people-label">Исполнители:</span>
+                        <span class="chip-picker-item">Игорь<span class="chip-remove"><i class="fas fa-xmark"></i></span></span>
+                        <span class="chip-picker-item">Мария<span class="chip-remove"><i class="fas fa-xmark"></i></span></span>
+                        <select disabled class="chip-picker-add"><option>+ исполнитель</option></select>
+                        <span class="people-label">Наблюдатели:</span>
+                        <span class="chip-picker-item watcher-chip">Дарья<span class="chip-remove"><i class="fas fa-xmark"></i></span></span>
+                        <select disabled class="chip-picker-add"><option>+ наблюдатель</option></select>
+                    </div>
                 </div>
-                <p>Форма над списком добавляет задачу-напоминание сама по себе — «позвонить в приёмную комиссию», «подготовить приказ» и т.п., без привязки к конкретной сделке. Она встанет в общий список рядом с задачами по заявкам, с пометкой <i class="fas fa-thumbtack"></i> «без заявки» вместо ссылки на неё. Привязка к заявке никуда не делась — как и раньше, создать задачу именно для конкретной сделки можно изнутри её карточки (раздел «Карточка заявки»).</p>
+                <p>Форма над списком добавляет задачу-напоминание саму по себе — «позвонить в приёмную комиссию», «подготовить приказ» и т.п., без привязки к конкретной сделке. Она встанет в общий список рядом с задачами по заявкам, с пометкой <i class="fas fa-thumbtack"></i> «без заявки» вместо ссылки на неё. Привязка к заявке никуда не делась — как и раньше, создать задачу именно для конкретной сделки можно изнутри её карточки (раздел «Карточка заявки»), там же — быстро сменить единственного исполнителя.</p>
+                <p>У любой задачи в общем списке — свои строки <b>«Исполнители»</b> и <b>«Наблюдатели»</b>: синие «таблетки» — сколько угодно людей, каждый из которых может отметить задачу выполненной; серые — наблюдатели, которые просто видят задачу в своём списке (в этой CRM нет личных логинов, так что деление на исполнителя/наблюдателя — смысловая пометка, а не техническое ограничение доступа). Клик по крестику на «таблетке» убирает человека, выпадающий список рядом — добавляет. Задачи, созданные ещё по-старому (один исполнитель, до этого обновления) — просто показывают того единственного человека здесь же.</p>
+                <h4>Подзадачи</h4>
+                <div class="help-mock">
+                    <div class="help-mock-label"><i class="fas fa-eye"></i> Как это выглядит</div>
+                    <button type="button" class="subtasks-toggle-btn has-items" style="margin-bottom:8px;"><i class="fas fa-list-check"></i> 1/2</button>
+                    <div class="subtasks-panel" style="margin-left:0;">
+                        <div class="subtask-item done"><input type="checkbox" checked disabled><span>Собрать сканы</span><span class="subtask-remove"><i class="fas fa-xmark"></i></span></div>
+                        <div class="subtask-item"><input type="checkbox" disabled><span>Проверить подписи</span><span class="subtask-remove"><i class="fas fa-xmark"></i></span></div>
+                        <div class="subtask-add-row"><input type="text" disabled placeholder="Новый пункт..."><button type="button"><i class="fas fa-plus"></i></button></div>
+                    </div>
+                </div>
+                <p>Кнопка со значком чек-листа рядом с текстом задачи (число вида «1/2» появляется, когда пункты уже есть) разворачивает простой чек-лист прямо под задачей — например, из чего состоит «Подготовить набор документов». Пункты — только текст и галочка, без своих сроков и исполнителей; для полноценной отдельной задачи со своим сроком используйте обычную задачу, а не подзадачу.</p>
+                <h4>Массовое переназначение</h4>
+                <p>Кнопка <b>«Выбрать несколько»</b> над списком добавляет чекбокс у каждой задачи (отдельно от чекбокса «выполнено»). Отметьте нужные, выберите сотрудника в панели снизу и нажмите «Переназначить» — задачи перейдут к нему одним действием (прежние исполнители заменяются на выбранного) — удобно на время отпуска или при перераспределении нагрузки, когда видно по таблице сверху, кто перегружен.</p>
                 <h4>Период вместо одной даты</h4>
                 <p>У любой задачи (и по заявке, и самостоятельной) кроме срока (правая дата, «до») можно задать необязательное начало периода (левая дата) — например, «делать с 12 по 18 сентября». Если начало не заполнено — задача остаётся точечной, с одним сроком, как раньше. В списке период показывается как «12.09 → 18.09»; в календаре такая задача появляется на <b>каждом</b> дне периода, а не только в день срока. Просроченной задача считается по правой дате (сроку) независимо от того, задано начало или нет.</p>
                 <ul>
                     <li>Фильтр «Показать»: открытые / все / просроченные.</li>
-                    <li>Фильтр «Ответственный» — по тому, кому реально поручена задача (исполнителю), а не по менеджеру самой сделки: если задачу делегировали коллеге, она покажется у него.</li>
-                    <li>Клик по названию заявки в строке задачи сразу открывает её карточку. Серая «таблетка» справа — исполнитель задачи.</li>
+                    <li>Фильтр «Ответственный» — по тому, кому реально поручена задача (среди всех исполнителей), а не по менеджеру самой сделки: если задачу делегировали или поручили нескольким, она покажется у каждого из них.</li>
+                    <li>Клик по названию заявки в строке задачи сразу открывает её карточку.</li>
                     <li>Просроченные задачи (срок прошёл, а задача не отмечена выполненной) считаются отдельно и показывают красный счётчик на самой вкладке «Задачи» в верхнем меню — чтобы такие не терялись.</li>
                     <li>Если сюда попали с доски — кликнув по бейджу «просрочена задача» на карточке — список сразу отфильтрован по этой заявке, сверху показана синяя плашка с её названием и кнопкой «Убрать фильтр».</li>
                 </ul>
@@ -3962,15 +4060,16 @@
         const start_date = document.getElementById('newStandaloneTaskStart').value;
         const due_date = document.getElementById('newStandaloneTaskDue').value;
         if (!validTaskRange(start_date, due_date)) return;
-        const manager = document.getElementById('newStandaloneTaskManager').value;
+        const assignees = newStandaloneAssigneesList;
         try {
-            const res = await postJSON('addTask', { data: { lead_id: null, text, start_date, due_date, manager } });
+            const res = await postJSON('addTask', { data: { lead_id: null, text, start_date, due_date, manager: assignees[0] || '', assignees } });
             if (res.status !== 'success') throw new Error(res.message || 'Ошибка');
             const tasksRes = await fetchJSON(`${API_URL}?action=getTasks`);
             if (tasksRes.status === 'success') allTasks = tasksRes.data;
             textEl.value = '';
             document.getElementById('newStandaloneTaskStart').value = '';
             document.getElementById('newStandaloneTaskDue').value = '';
+            newStandaloneAssigneesList = [];
             renderMyTasksTab();
             showMessage('Задача добавлена');
         } catch (err) {
@@ -4056,6 +4155,186 @@
         return 'до ' + (due || start);
     }
 
+    // ========== Задачи 2.0: исполнители, наблюдатели, подзадачи ==========
+    // tasks.manager (один человек) остаётся легаси-полем — старые задачи и
+    // быстрое добавление из карточки заявки по-прежнему пишут только его.
+    // assignees — новый список из нескольких исполнителей; если он пуст,
+    // "эффективным" исполнителем считается manager (чтобы старые задачи не
+    // потеряли своего человека при переходе на новую модель).
+    function effectiveAssignees(t) {
+        if (t.assignees && t.assignees.length) return t.assignees;
+        return t.manager ? [t.manager] : [];
+    }
+    function effectiveWatchers(t) { return t.watchers || []; }
+    function effectiveSubtasks(t) { return t.subtasks || []; }
+    function subtaskProgress(t) {
+        const subs = effectiveSubtasks(t);
+        if (!subs.length) return null;
+        return { done: subs.filter(s => s.done).length, total: subs.length };
+    }
+
+    // Компактный виджет "чипы + добавить" — переиспользуется для исполнителей и
+    // наблюдателей и в форме создания, и в каждой строке списка задач.
+    function renderChipPicker(list, allOptions, placeholder, extraClass) {
+        return `
+            ${list.map(name => `<span class="chip-picker-item${extraClass ? ' ' + extraClass : ''}">${escapeHtml(name)}<span class="chip-remove" data-name="${escapeHtml(name)}"><i class="fas fa-xmark"></i></span></span>`).join('')}
+            <select class="chip-picker-add">
+                <option value="">${escapeHtml(placeholder)}</option>
+                ${allOptions.filter(m => !list.includes(m)).map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('')}
+            </select>
+        `;
+    }
+    function wireChipPicker(containerEl, currentList, onChange) {
+        containerEl.querySelectorAll('.chip-remove').forEach(el => {
+            el.addEventListener('click', (e) => {
+                e.stopPropagation();
+                onChange(currentList.filter(n => n !== el.dataset.name));
+            });
+        });
+        const addSel = containerEl.querySelector('.chip-picker-add');
+        if (!addSel) return;
+        addSel.addEventListener('click', (e) => e.stopPropagation());
+        addSel.addEventListener('mousedown', (e) => e.stopPropagation());
+        addSel.addEventListener('change', () => {
+            if (!addSel.value) return;
+            onChange([...currentList, addSel.value]);
+        });
+    }
+
+    // Точечная правка одного поля задачи (исполнители/наблюдатели/подзадачи/...) —
+    // с оптимистичным обновлением и откатом при ошибке, тот же паттерн, что и
+    // у quickSetManager/reassignTask.
+    async function updateTaskField(taskId, field, value, successMsg) {
+        const t = allTasks.find(x => x.id === taskId);
+        if (!t) return;
+        const prev = t[field];
+        t[field] = value;
+        const refresh = () => { if (editingId !== null) renderTasksForLead(editingId); if (currentTab === 'tasks') renderMyTasksTab(); };
+        refresh();
+        try {
+            const res = await postJSON('updateTask', { data: { id: taskId, [field]: value } });
+            if (res.status !== 'success') throw new Error(res.message || 'Ошибка сохранения');
+            if (successMsg) showMessage(successMsg);
+        } catch (err) {
+            t[field] = prev;
+            refresh();
+            showMessage('Не удалось сохранить: ' + err.message, 'error');
+        }
+    }
+
+    // ---- Подзадачи (чек-лист внутри задачи) ----
+    let expandedTaskSubtasks = new Set();
+    function toggleSubtasksExpanded(taskId) {
+        if (expandedTaskSubtasks.has(taskId)) expandedTaskSubtasks.delete(taskId);
+        else expandedTaskSubtasks.add(taskId);
+        renderMyTasksTab();
+    }
+    function renderSubtasksPanel(t) {
+        const subs = effectiveSubtasks(t);
+        return `
+            <div class="subtasks-panel" data-task="${t.id}">
+                ${subs.map((s, i) => `
+                    <div class="subtask-item${s.done ? ' done' : ''}">
+                        <input type="checkbox" ${s.done ? 'checked' : ''} data-idx="${i}" class="subtask-toggle-cb">
+                        <span>${escapeHtml(s.text)}</span>
+                        <span class="subtask-remove" data-idx="${i}"><i class="fas fa-xmark"></i></span>
+                    </div>
+                `).join('') || '<div class="readonly-hint">Пунктов пока нет</div>'}
+                <div class="subtask-add-row">
+                    <input type="text" class="subtask-add-input" placeholder="Новый пункт...">
+                    <button type="button" class="secondary subtask-add-btn"><i class="fas fa-plus"></i></button>
+                </div>
+            </div>`;
+    }
+    function wireSubtasksPanel(panelEl, t) {
+        const subs = effectiveSubtasks(t);
+        panelEl.querySelectorAll('.subtask-toggle-cb').forEach(cb => {
+            cb.addEventListener('click', (e) => e.stopPropagation());
+            cb.addEventListener('change', () => {
+                const idx = Number(cb.dataset.idx);
+                const next = subs.map((s, i) => i === idx ? { ...s, done: cb.checked } : s);
+                updateTaskField(t.id, 'subtasks', next);
+            });
+        });
+        panelEl.querySelectorAll('.subtask-remove').forEach(el => {
+            el.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const idx = Number(el.dataset.idx);
+                updateTaskField(t.id, 'subtasks', subs.filter((_, i) => i !== idx));
+            });
+        });
+        const input = panelEl.querySelector('.subtask-add-input');
+        const addBtn = panelEl.querySelector('.subtask-add-btn');
+        const submit = () => {
+            const text = input.value.trim();
+            if (!text) return;
+            updateTaskField(t.id, 'subtasks', [...subs, { text, done: false }]);
+        };
+        input.addEventListener('click', (e) => e.stopPropagation());
+        input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); submit(); } });
+        addBtn.addEventListener('click', (e) => { e.stopPropagation(); submit(); });
+    }
+
+    // ---- Выбор нескольких задач (массовая переброска другому сотруднику) ----
+    let tasksSelectMode = false;
+    let selectedTaskIds = new Set();
+    function toggleTasksSelectMode() {
+        tasksSelectMode = !tasksSelectMode;
+        if (!tasksSelectMode) selectedTaskIds.clear();
+        renderMyTasksTab();
+    }
+    function clearTasksSelection() {
+        selectedTaskIds.clear();
+        renderMyTasksTab();
+    }
+    async function bulkReassignTasks() {
+        const ids = [...selectedTaskIds];
+        if (!ids.length) return;
+        const newManager = document.getElementById('tasksBulkManagerSelect').value;
+        if (!newManager) { showMessage('Выберите сотрудника', 'error'); return; }
+        const prev = new Map(ids.map(id => { const t = allTasks.find(x => x.id === id); return [id, t ? { manager: t.manager, assignees: t.assignees } : null]; }));
+        ids.forEach(id => { const t = allTasks.find(x => x.id === id); if (t) { t.manager = newManager; t.assignees = [newManager]; } });
+        selectedTaskIds.clear();
+        renderMyTasksTab();
+        try {
+            const res = await postJSON('updateTask', { data: ids.map(id => ({ id, manager: newManager, assignees: [newManager] })) });
+            if (res.status !== 'success') throw new Error(res.message || 'Ошибка сохранения');
+            showMessage(`Переназначено задач: ${ids.length}`);
+        } catch (err) {
+            ids.forEach(id => { const p = prev.get(id); const t = allTasks.find(x => x.id === id); if (t && p) { t.manager = p.manager; t.assignees = p.assignees; } });
+            renderMyTasksTab();
+            showMessage('Не удалось сохранить: ' + err.message, 'error');
+        }
+    }
+
+    // ---- Нагрузка по сотрудникам ----
+    function computeTasksWorkload(baseTasks) {
+        const byPerson = new Map();
+        baseTasks.forEach(t => {
+            const people = effectiveAssignees(t);
+            (people.length ? people : ['(без исполнителя)']).forEach(name => {
+                if (!byPerson.has(name)) byPerson.set(name, { open: 0, overdue: 0 });
+                const rec = byPerson.get(name);
+                if (!t.done) rec.open++;
+                if (t.overdue) rec.overdue++;
+            });
+        });
+        return [...byPerson.entries()].sort((a, b) => b[1].open - a[1].open);
+    }
+
+    // ---- Исполнители для новой самостоятельной задачи (форма на вкладке "Задачи") ----
+    let newStandaloneAssigneesList = [];
+    function renderStandaloneAssigneesPicker() {
+        const container = document.getElementById('newStandaloneTaskAssignees');
+        if (!container) return;
+        const mgrs = [...new Set(allDeals.map(d => d.manager).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ru'));
+        container.innerHTML = renderChipPicker(newStandaloneAssigneesList, mgrs, '+ исполнитель');
+        wireChipPicker(container, newStandaloneAssigneesList, (next) => {
+            newStandaloneAssigneesList = next;
+            renderStandaloneAssigneesPicker();
+        });
+    }
+
     function setTasksView(view) {
         tasksView = view;
         document.querySelectorAll('.view-toggle-btn').forEach(b => b.classList.toggle('active', b.dataset.view === view));
@@ -4118,7 +4397,7 @@
             html += `
                 <div class="cal-cell${inMonth ? '' : ' cal-outside'}${key === todayKey ? ' cal-today' : ''}">
                     <div class="cal-daynum">${d.getDate()}</div>
-                    ${dayTasks.slice(0, 3).map(t => `<div class="cal-task${t.overdue ? ' overdue' : ''}${t.done ? ' done' : ''}" title="${escapeHtml(t.text)}${t.manager ? ' — ' + escapeHtml(t.manager) : ''}${t.lead ? '' : ' (без заявки)'}" onclick="${t.lead ? `openEditModal(allDeals.find(x => x.id === ${t.lead.id}))` : `toggleTask(${t.id}, ${!t.done})`}">${escapeHtml(t.text)}</div>`).join('')}
+                    ${dayTasks.slice(0, 3).map(t => `<div class="cal-task${t.overdue ? ' overdue' : ''}${t.done ? ' done' : ''}" title="${escapeHtml(t.text)}${effectiveAssignees(t).length ? ' — ' + escapeHtml(effectiveAssignees(t).join(', ')) : ''}${t.lead ? '' : ' (без заявки)'}" onclick="${t.lead ? `openEditModal(allDeals.find(x => x.id === ${t.lead.id}))` : `toggleTask(${t.id}, ${!t.done})`}">${escapeHtml(t.text)}</div>`).join('')}
                     ${dayTasks.length > 3 ? `<div class="cal-more">+${dayTasks.length - 3} ещё</div>` : ''}
                 </div>`;
         }
@@ -4132,10 +4411,20 @@
         mgrSel.innerHTML = '<option value="">Все</option>' + mgrs.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
         mgrSel.value = keepMgr;
 
-        const standaloneMgrSel = document.getElementById('newStandaloneTaskManager');
-        const keepStandaloneMgr = standaloneMgrSel.value;
-        standaloneMgrSel.innerHTML = '<option value="">без исполнителя</option>' + mgrs.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
-        standaloneMgrSel.value = keepStandaloneMgr;
+        renderStandaloneAssigneesPicker();
+
+        const selectBtn = document.getElementById('tasksSelectModeBtn');
+        selectBtn.classList.toggle('active', tasksSelectMode);
+        selectBtn.innerHTML = tasksSelectMode
+            ? '<i class="fas fa-xmark"></i> Отменить выбор'
+            : '<i class="fas fa-square-check"></i> Выбрать несколько';
+        const bulkBar = document.getElementById('tasksBulkBar');
+        bulkBar.style.display = (tasksSelectMode && selectedTaskIds.size > 0) ? 'flex' : 'none';
+        document.getElementById('tasksBulkCount').textContent = `Выбрано: ${selectedTaskIds.size}`;
+        const bulkMgrSelect = document.getElementById('tasksBulkManagerSelect');
+        const keepBulkMgr = bulkMgrSelect.value;
+        bulkMgrSelect.innerHTML = '<option value="">Выберите сотрудника…</option>' + mgrs.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
+        if (mgrs.includes(keepBulkMgr)) bulkMgrSelect.value = keepBulkMgr;
 
         const chip = document.getElementById('tasksLeadFilterChip');
         if (tasksLeadFilter !== null) {
@@ -4159,13 +4448,23 @@
             return { ...t, lead, overdue: !t.done && t.due_date && String(t.due_date).slice(0, 10) < today };
         }).filter(t => !hasLead(t) || t.lead);
 
+        // Нагрузку считаем по ПОЛНОМУ набору задач (без учёта "Показать"/"Ответственный"/
+        // заявки) — открытые и просроченные у таблицы свои отдельные колонки, а если
+        // ещё и сузить исходный список фильтром "Показать", дашборд схлопнется до
+        // одного человека вместе с остальным списком вместо общей картины по всем.
+        const workloadRows = computeTasksWorkload(tasks);
+        document.getElementById('tasksWorkloadTable').innerHTML = workloadRows.length ? `
+            <tr><th>Сотрудник</th><th>Открыто</th><th>Просрочено</th></tr>
+            ${workloadRows.map(([name, r]) => `<tr><td>${escapeHtml(name)}</td><td>${r.open}</td><td${r.overdue ? ' style="color:var(--danger);font-weight:600;"' : ''}>${r.overdue}</td></tr>`).join('')}
+        ` : '<tr><td>Нет данных</td></tr>';
+
         if (tasksLeadFilter !== null) tasks = tasks.filter(t => t.lead && t.lead.id === tasksLeadFilter);
         if (filterMode === 'open') tasks = tasks.filter(t => !t.done);
         else if (filterMode === 'overdue') tasks = tasks.filter(t => t.overdue);
-        // Фильтр — по исполнителю ЗАДАЧИ (кому поручена), а не по менеджеру сделки:
-        // задачу можно делегировать другому, и список должен показывать её у того,
-        // кому она реально поручена.
-        if (manager) tasks = tasks.filter(t => (t.manager || '') === manager);
+        // Фильтр — по исполнителю ЗАДАЧИ (кому поручена, включая со-исполнителей), а
+        // не по менеджеру сделки: задачу можно делегировать/поручить нескольким, и
+        // список должен показывать её у каждого, кому она реально поручена.
+        if (manager) tasks = tasks.filter(t => effectiveAssignees(t).includes(manager));
 
         tasks.sort((a, b) => {
             if (!!a.done !== !!b.done) return a.done ? 1 : -1;
@@ -4181,17 +4480,64 @@
         `;
 
         const list = document.getElementById('tasksList');
-        list.innerHTML = tasks.length ? tasks.map(t => `
-            <div class="task-row${t.done ? ' done' : ''}">
-                <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTask(${t.id}, this.checked)">
-                <span class="task-text">${escapeHtml(t.text)}</span>
-                ${(t.due_date || t.start_date) ? `<span class="due${t.overdue ? ' badge overdue' : ''}">${formatTaskDateLabel(t, t.overdue)}</span>` : ''}
-                ${t.lead
-                    ? `<span class="task-lead" onclick="openEditModal(allDeals.find(d => d.id === ${t.lead.id}))"><i class="fas fa-arrow-up-right-from-square"></i> ${escapeHtml(t.lead.fio || t.lead.program || 'заявка')}</span>`
-                    : `<span class="task-lead standalone" title="Задача не привязана к заявке"><i class="fas fa-thumbtack"></i> без заявки</span>`}
-                ${t.manager ? `<span class="manager-chip" title="Исполнитель">${escapeHtml(t.manager)}</span>` : ''}
-            </div>
-        `).join('') : '<div class="history-item" style="padding:20px;">Задач по текущему фильтру нет</div>';
+        list.innerHTML = tasks.length ? tasks.map(t => {
+            const progress = subtaskProgress(t);
+            return `
+            <div class="task-row-adv${t.done ? ' done' : ''}" data-task="${t.id}">
+                <div class="task-row-main">
+                    ${tasksSelectMode ? `<input type="checkbox" class="task-select-cb" data-task="${t.id}" ${selectedTaskIds.has(t.id) ? 'checked' : ''}>` : ''}
+                    <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTask(${t.id}, this.checked)">
+                    <span class="task-text">${escapeHtml(t.text)}</span>
+                    ${(t.due_date || t.start_date) ? `<span class="due${t.overdue ? ' badge overdue' : ''}">${formatTaskDateLabel(t, t.overdue)}</span>` : ''}
+                    ${t.lead
+                        ? `<span class="task-lead" onclick="openEditModal(allDeals.find(d => d.id === ${t.lead.id}))"><i class="fas fa-arrow-up-right-from-square"></i> ${escapeHtml(t.lead.fio || t.lead.program || 'заявка')}</span>`
+                        : `<span class="task-lead standalone" title="Задача не привязана к заявке"><i class="fas fa-thumbtack"></i> без заявки</span>`}
+                    <button type="button" class="subtasks-toggle-btn${progress ? ' has-items' : ''}" data-task="${t.id}" title="Подзадачи"><i class="fas fa-list-check"></i> ${progress ? `${progress.done}/${progress.total}` : ''}</button>
+                </div>
+                <div class="task-row-people">
+                    <span class="people-label">Исполнители:</span>
+                    <span class="task-assignees-picker" data-task="${t.id}"></span>
+                    <span class="people-label">Наблюдатели:</span>
+                    <span class="task-watchers-picker" data-task="${t.id}"></span>
+                </div>
+                ${expandedTaskSubtasks.has(t.id) ? renderSubtasksPanel(t) : ''}
+            </div>`;
+        }).join('') : '<div class="history-item" style="padding:20px;">Задач по текущему фильтру нет</div>';
+
+        // Чипы исполнителей/наблюдателей и панель подзадач рендерятся строкой, а
+        // события им навешиваем отдельно — то же самое разбиение "строка → своя
+        // разметка → свои обработчики", что и у карточек на доске.
+        list.querySelectorAll('.task-select-cb').forEach(cb => {
+            cb.addEventListener('click', (e) => e.stopPropagation());
+            cb.addEventListener('change', () => {
+                const id = Number(cb.dataset.task);
+                if (cb.checked) selectedTaskIds.add(id); else selectedTaskIds.delete(id);
+                const bar = document.getElementById('tasksBulkBar');
+                bar.style.display = selectedTaskIds.size > 0 ? 'flex' : 'none';
+                document.getElementById('tasksBulkCount').textContent = `Выбрано: ${selectedTaskIds.size}`;
+            });
+        });
+        list.querySelectorAll('.subtasks-toggle-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => { e.stopPropagation(); toggleSubtasksExpanded(Number(btn.dataset.task)); });
+        });
+        list.querySelectorAll('.subtasks-panel').forEach(panel => {
+            const t = tasks.find(x => x.id === Number(panel.dataset.task));
+            if (t) wireSubtasksPanel(panel, t);
+        });
+        list.querySelectorAll('.task-assignees-picker').forEach(el => {
+            const t = tasks.find(x => x.id === Number(el.dataset.task));
+            if (!t) return;
+            const current = effectiveAssignees(t);
+            el.innerHTML = renderChipPicker(current, mgrs, '+ исполнитель');
+            wireChipPicker(el, current, (next) => updateTaskField(t.id, 'assignees', next));
+        });
+        list.querySelectorAll('.task-watchers-picker').forEach(el => {
+            const t = tasks.find(x => x.id === Number(el.dataset.task));
+            if (!t) return;
+            const current = effectiveWatchers(t);
+            el.innerHTML = renderChipPicker(current, mgrs, '+ наблюдатель', 'watcher-chip');
+            wireChipPicker(el, current, (next) => updateTaskField(t.id, 'watchers', next));
+        });
 
         renderTasksCalendar(tasks);
     }
