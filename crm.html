@@ -475,6 +475,11 @@
             font-family: inherit; color: var(--text-secondary); background: white; cursor: pointer; max-width: 150px;
         }
         .task-add-row button { padding: 7px 12px; font-size: 12.5px; }
+        .task-date-arrow { color: var(--text-secondary); font-size: 12px; align-self: center; }
+        .standalone-task-add-row {
+            background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow);
+            padding: 14px 16px; margin-bottom: 14px; margin-top: 0;
+        }
         .assignee-select { border: none; background: #f1f3f9; border-radius: 20px; padding: 2px 20px 2px 9px; font-size: 11px; margin-top: 3px; }
         .assignee-select:hover, .assignee-select:focus { background: #e0e7ff; color: var(--primary-dark); outline: none; }
         .amount-edit-input {
@@ -524,6 +529,8 @@
         .task-row .task-text { flex: 1; font-size: 13.5px; }
         .task-row .task-lead { font-size: 12px; color: var(--text-secondary); cursor: pointer; }
         .task-row .task-lead:hover { text-decoration: underline; color: var(--primary); }
+        .task-row .task-lead.standalone { cursor: default; opacity: 0.65; font-style: italic; }
+        .task-row .task-lead.standalone:hover { text-decoration: none; color: var(--text-secondary); }
         .task-row.done .task-text { text-decoration: line-through; color: var(--text-secondary); }
 
         /* Модальное окно */
@@ -744,6 +751,14 @@
 
     <div id="screen-tasks" class="screen">
         <div class="tasks-summary" id="tasksSummary"></div>
+        <div class="task-add-row standalone-task-add-row">
+            <input type="text" id="newStandaloneTaskText" placeholder="Новая задача, не привязанная к заявке...">
+            <input type="date" id="newStandaloneTaskStart" title="Начало периода (необязательно)">
+            <span class="task-date-arrow">→</span>
+            <input type="date" id="newStandaloneTaskDue" title="Срок / конец периода">
+            <select id="newStandaloneTaskManager" title="Кому поручить"><option value="">без исполнителя</option></select>
+            <button type="button" onclick="addStandaloneTask()"><i class="fas fa-plus"></i> Добавить задачу</button>
+        </div>
         <div class="tasks-lead-filter-chip" id="tasksLeadFilterChip">
             <span id="tasksLeadFilterText"></span>
             <button type="button" class="secondary" onclick="clearTasksLeadFilter()"><i class="fas fa-xmark"></i> Убрать фильтр</button>
@@ -1177,7 +1192,22 @@
         <details class="help-section" id="help-tasks">
             <summary><i class="fas fa-list-check"></i> Задачи <i class="fas fa-chevron-down chev"></i></summary>
             <div class="help-body">
-                <p>Сводный список всех задач, поставленных по заявкам (создаются внутри карточки заявки — см. раздел «Карточка заявки»). Здесь удобно видеть их все разом, не открывая каждую заявку по отдельности.</p>
+                <p>Сводный список всех задач — и поставленных по заявкам (создаются внутри карточки заявки — см. раздел «Карточка заявки»), и самостоятельных, ни к чему не привязанных. Здесь удобно видеть их все разом, не открывая каждую заявку по отдельности.</p>
+                <h4>Задача без заявки</h4>
+                <div class="help-mock">
+                    <div class="help-mock-label"><i class="fas fa-eye"></i> Как это выглядит</div>
+                    <div class="task-add-row standalone-task-add-row" style="margin-bottom:0;">
+                        <input type="text" disabled placeholder="Новая задача, не привязанная к заявке...">
+                        <input type="date" disabled title="Начало периода (необязательно)">
+                        <span class="task-date-arrow">→</span>
+                        <input type="date" disabled title="Срок / конец периода">
+                        <select disabled><option>без исполнителя</option></select>
+                        <button type="button"><i class="fas fa-plus"></i> Добавить задачу</button>
+                    </div>
+                </div>
+                <p>Форма над списком добавляет задачу-напоминание сама по себе — «позвонить в приёмную комиссию», «подготовить приказ» и т.п., без привязки к конкретной сделке. Она встанет в общий список рядом с задачами по заявкам, с пометкой <i class="fas fa-thumbtack"></i> «без заявки» вместо ссылки на неё. Привязка к заявке никуда не делась — как и раньше, создать задачу именно для конкретной сделки можно изнутри её карточки (раздел «Карточка заявки»).</p>
+                <h4>Период вместо одной даты</h4>
+                <p>У любой задачи (и по заявке, и самостоятельной) кроме срока (правая дата, «до») можно задать необязательное начало периода (левая дата) — например, «делать с 12 по 18 сентября». Если начало не заполнено — задача остаётся точечной, с одним сроком, как раньше. В списке период показывается как «12.09 → 18.09»; в календаре такая задача появляется на <b>каждом</b> дне периода, а не только в день срока. Просроченной задача считается по правой дате (сроку) независимо от того, задано начало или нет.</p>
                 <ul>
                     <li>Фильтр «Показать»: открытые / все / просроченные.</li>
                     <li>Фильтр «Ответственный» — по тому, кому реально поручена задача (исполнителю), а не по менеджеру самой сделки: если задачу делегировали коллеге, она покажется у него.</li>
@@ -1186,7 +1216,7 @@
                     <li>Если сюда попали с доски — кликнув по бейджу «просрочена задача» на карточке — список сразу отфильтрован по этой заявке, сверху показана синяя плашка с её названием и кнопкой «Убрать фильтр».</li>
                 </ul>
                 <h4>Список / Календарь</h4>
-                <p>Переключатель вверху вкладки меняет вид: обычный <b>список</b> или <b>календарь</b> — месячная сетка, где задачи разложены по дате срока. Действуют те же фильтры «Показать»/«Ответственный», что и в списке. Клик по задаче в календаре открывает карточку заявки; если в один день попало больше трёх задач, лишние скрыты под «+N ещё» — тогда проще посмотреть этот день через список с сортировкой по дате.</p>
+                <p>Переключатель вверху вкладки меняет вид: обычный <b>список</b> или <b>календарь</b> — месячная сетка, где задачи разложены по датам (для периода — по каждому дню периода). Действуют те же фильтры «Показать»/«Ответственный», что и в списке. Клик по задаче с заявкой открывает её карточку; клик по самостоятельной задаче отмечает её выполненной/невыполненной прямо в календаре. Если в один день попало больше трёх задач, лишние скрыты под «+N ещё» — тогда проще посмотреть этот день через список с сортировкой по дате.</p>
             </div>
         </details>
 
@@ -1459,7 +1489,9 @@
                 <div id="taskList"></div>
                 <div class="task-add-row">
                     <input type="text" id="newTaskText" placeholder="Например: перезвонить">
-                    <input type="date" id="newTaskDue">
+                    <input type="date" id="newTaskStart" title="Начало периода (необязательно)">
+                    <span class="task-date-arrow">→</span>
+                    <input type="date" id="newTaskDue" title="Срок / конец периода">
                     <select id="newTaskManager" title="Кому поручить задачу"></select>
                     <button type="button" onclick="addTask()"><i class="fas fa-plus"></i></button>
                 </div>
@@ -1653,7 +1685,7 @@
             }
             knownLeadIds = new Set(freshDeals.map(d => d.id));
 
-            const today = new Date().toISOString().slice(0, 10);
+            const today = toLocalDateKey(new Date());
             freshTasks.forEach(t => {
                 const overdue = !t.done && t.due_date && String(t.due_date).slice(0, 10) < today;
                 if (overdue && !notifiedOverdueTaskIds.has(t.id)) {
@@ -1781,7 +1813,7 @@
     // источник "тормозов". Рендерим только ту вкладку, что реально видна; баннер
     // уведомлений — лёгкий, его обновляем всегда.
     function leadHasOverdueTask(id) {
-        const today = new Date().toISOString().slice(0, 10);
+        const today = toLocalDateKey(new Date());
         return allTasks.some(t => String(t.lead_id) === String(id) && !t.done && t.due_date && String(t.due_date).slice(0, 10) < today);
     }
 
@@ -3863,7 +3895,7 @@
     // ========== Задачи по сделке ==========
     function renderTasksForLead(leadId) {
         const tasks = allTasks.filter(t => String(t.lead_id) === String(leadId));
-        const today = new Date().toISOString().slice(0, 10);
+        const today = toLocalDateKey(new Date());
         const list = document.getElementById('taskList');
         const managersList = [...new Set(allDeals.map(d => d.manager).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ru'));
         const assigneeOptions = (current) => '<option value="">без исполнителя</option>' + managersList.map(m =>
@@ -3876,7 +3908,7 @@
                 <div class="task-item${t.done ? ' done' : ''}">
                     <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTask(${t.id}, this.checked)">
                     <div class="task-body">
-                        <span>${escapeHtml(t.text)}${t.due_date ? `<span class="due${overdue ? ' badge overdue' : ''}">${overdue ? 'просрочено ' : 'до '}${String(t.due_date).slice(0, 10)}</span>` : ''}</span><br>
+                        <span>${escapeHtml(t.text)}${(t.due_date || t.start_date) ? `<span class="due${overdue ? ' badge overdue' : ''}">${formatTaskDateLabel(t, overdue)}</span>` : ''}</span><br>
                         <select class="assignee-select" title="Кому поручена задача" onchange="reassignTask(${t.id}, this.value)">${assigneeOptions(t.manager || '')}</select>
                     </div>
                 </div>`;
@@ -3888,20 +3920,59 @@
         document.getElementById('newTaskManager').innerHTML = assigneeOptions(dealManager);
     }
 
+    // Начало периода не может быть позже срока/конца — иначе диапазон в календаре
+    // не построить. Сравнение строковое ("YYYY-MM-DD"), допустимое для ISO-дат.
+    function validTaskRange(start, due) {
+        if (start && due && start > due) {
+            showMessage('Начало периода не может быть позже срока', 'error');
+            return false;
+        }
+        return true;
+    }
+
     async function addTask() {
         const text = document.getElementById('newTaskText').value.trim();
         if (!text) return;
         if (editingId === null) { showMessage('Сначала сохраните сделку', 'error'); return; }
+        const start_date = document.getElementById('newTaskStart').value;
         const due_date = document.getElementById('newTaskDue').value;
+        if (!validTaskRange(start_date, due_date)) return;
         const manager = document.getElementById('newTaskManager').value;
         try {
-            const res = await postJSON('addTask', { data: { lead_id: editingId, text, due_date, manager } });
+            const res = await postJSON('addTask', { data: { lead_id: editingId, text, start_date, due_date, manager } });
             if (res.status !== 'success') throw new Error(res.message || 'Ошибка');
             const tasksRes = await fetchJSON(`${API_URL}?action=getTasks`);
             if (tasksRes.status === 'success') allTasks = tasksRes.data;
             document.getElementById('newTaskText').value = '';
+            document.getElementById('newTaskStart').value = '';
             document.getElementById('newTaskDue').value = '';
             renderTasksForLead(editingId);
+        } catch (err) {
+            showMessage('Не удалось добавить задачу: ' + err.message, 'error');
+        }
+    }
+
+    // Задача без заявки — просто напоминание себе/коллеге ("позвонить в приёмную
+    // комиссию", "подготовить приказ" и т.п.), не завязанное ни на одну сделку.
+    // lead_id уходит null — backend это уже поддерживает (addTask не требует lead_id).
+    async function addStandaloneTask() {
+        const textEl = document.getElementById('newStandaloneTaskText');
+        const text = textEl.value.trim();
+        if (!text) return;
+        const start_date = document.getElementById('newStandaloneTaskStart').value;
+        const due_date = document.getElementById('newStandaloneTaskDue').value;
+        if (!validTaskRange(start_date, due_date)) return;
+        const manager = document.getElementById('newStandaloneTaskManager').value;
+        try {
+            const res = await postJSON('addTask', { data: { lead_id: null, text, start_date, due_date, manager } });
+            if (res.status !== 'success') throw new Error(res.message || 'Ошибка');
+            const tasksRes = await fetchJSON(`${API_URL}?action=getTasks`);
+            if (tasksRes.status === 'success') allTasks = tasksRes.data;
+            textEl.value = '';
+            document.getElementById('newStandaloneTaskStart').value = '';
+            document.getElementById('newStandaloneTaskDue').value = '';
+            renderMyTasksTab();
+            showMessage('Задача добавлена');
         } catch (err) {
             showMessage('Не удалось добавить задачу: ' + err.message, 'error');
         }
@@ -3943,7 +4014,7 @@
     // Раньше просроченную задачу было видно только на карточке конкретной сделки —
     // чтобы понять, что вообще горит, нужно было обойти все карточки на доске вручную.
     function updateTasksOverdueBadge() {
-        const today = new Date().toISOString().slice(0, 10);
+        const today = toLocalDateKey(new Date());
         const overdueCount = allTasks.filter(t => !t.done && t.due_date && String(t.due_date).slice(0, 10) < today).length;
         const badge = document.getElementById('tasksOverdueBadge');
         if (overdueCount > 0) { badge.textContent = overdueCount; badge.style.display = 'inline-block'; }
@@ -3966,6 +4037,24 @@
     // ========== Календарный вид задач ==========
     let tasksView = 'list'; // 'list' | 'calendar'
     let tasksCalendarMonth = new Date();
+
+    // due_date хранится как обычная дата без времени ("YYYY-MM-DD"), а
+    // toISOString() переводит в UTC — из-за сдвига часового пояса локальная
+    // полночь могла попадать на "соседний" UTC-день, и задачи/"сегодня" в
+    // календаре съезжали на день. Форматируем по локальным полям Date, без UTC.
+    function toLocalDateKey(d) {
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+
+    // Текст под задачей в списке — диапазон ("с ... по ..."), если задан
+    // start_date, иначе как раньше — одна дата-срок.
+    function formatTaskDateLabel(t, overdue) {
+        const due = t.due_date ? String(t.due_date).slice(0, 10) : '';
+        const start = t.start_date ? String(t.start_date).slice(0, 10) : '';
+        if (overdue) return 'просрочено ' + (due || start);
+        if (start && due && start !== due) return `${start} → ${due}`;
+        return 'до ' + (due || start);
+    }
 
     function setTasksView(view) {
         tasksView = view;
@@ -3992,29 +4081,44 @@
         const month = tasksCalendarMonth.getMonth();
         document.getElementById('tasksCalendarLabel').textContent = tasksCalendarMonth.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
 
+        // Задача с диапазоном (start_date задан и отличается от due_date) попадает
+        // в ячейки ВСЕХ дней между ними, а не только в день срока — "делать с 12 по
+        // 18 сентября" должна быть видна на каждом из этих дней. Без start_date —
+        // как раньше, один день (сам due_date).
         const byDate = {};
         tasks.forEach(t => {
-            if (!t.due_date) return;
-            const key = String(t.due_date).slice(0, 10);
-            (byDate[key] = byDate[key] || []).push(t);
+            if (!t.due_date && !t.start_date) return;
+            const endStr = String(t.due_date || t.start_date).slice(0, 10);
+            const startStr = String(t.start_date || t.due_date).slice(0, 10);
+            let cur = new Date(startStr + 'T00:00:00');
+            const end = new Date(endStr + 'T00:00:00');
+            if (isNaN(cur) || isNaN(end)) return;
+            if (cur > end) cur = new Date(end); // на случай кривых данных (начало после срока)
+            let guard = 0;
+            while (cur <= end && guard < 120) { // защита от аномально длинных диапазонов
+                const key = toLocalDateKey(cur);
+                (byDate[key] = byDate[key] || []).push(t);
+                cur.setDate(cur.getDate() + 1);
+                guard++;
+            }
         });
 
         const firstOfMonth = new Date(year, month, 1);
         const startOffset = (firstOfMonth.getDay() + 6) % 7; // 0 = понедельник
         const startDate = new Date(year, month, 1 - startOffset);
-        const todayKey = new Date().toISOString().slice(0, 10);
+        const todayKey = toLocalDateKey(new Date());
         const dayNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 
         let html = dayNames.map(d => `<div class="cal-dow">${d}</div>`).join('');
         for (let i = 0; i < 42; i++) {
             const d = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + i);
-            const key = d.toISOString().slice(0, 10);
+            const key = toLocalDateKey(d);
             const inMonth = d.getMonth() === month;
             const dayTasks = byDate[key] || [];
             html += `
                 <div class="cal-cell${inMonth ? '' : ' cal-outside'}${key === todayKey ? ' cal-today' : ''}">
                     <div class="cal-daynum">${d.getDate()}</div>
-                    ${dayTasks.slice(0, 3).map(t => `<div class="cal-task${t.overdue ? ' overdue' : ''}${t.done ? ' done' : ''}" title="${escapeHtml(t.text)}${t.manager ? ' — ' + escapeHtml(t.manager) : ''}" onclick="openEditModal(allDeals.find(x => x.id === ${t.lead.id}))">${escapeHtml(t.text)}</div>`).join('')}
+                    ${dayTasks.slice(0, 3).map(t => `<div class="cal-task${t.overdue ? ' overdue' : ''}${t.done ? ' done' : ''}" title="${escapeHtml(t.text)}${t.manager ? ' — ' + escapeHtml(t.manager) : ''}${t.lead ? '' : ' (без заявки)'}" onclick="${t.lead ? `openEditModal(allDeals.find(x => x.id === ${t.lead.id}))` : `toggleTask(${t.id}, ${!t.done})`}">${escapeHtml(t.text)}</div>`).join('')}
                     ${dayTasks.length > 3 ? `<div class="cal-more">+${dayTasks.length - 3} ещё</div>` : ''}
                 </div>`;
         }
@@ -4028,6 +4132,11 @@
         mgrSel.innerHTML = '<option value="">Все</option>' + mgrs.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
         mgrSel.value = keepMgr;
 
+        const standaloneMgrSel = document.getElementById('newStandaloneTaskManager');
+        const keepStandaloneMgr = standaloneMgrSel.value;
+        standaloneMgrSel.innerHTML = '<option value="">без исполнителя</option>' + mgrs.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
+        standaloneMgrSel.value = keepStandaloneMgr;
+
         const chip = document.getElementById('tasksLeadFilterChip');
         if (tasksLeadFilter !== null) {
             const lead = allDeals.find(d => d.id === tasksLeadFilter);
@@ -4039,14 +4148,18 @@
 
         const filterMode = document.getElementById('tasks_filter').value;
         const manager = mgrSel.value;
-        const today = new Date().toISOString().slice(0, 10);
+        const today = toLocalDateKey(new Date());
 
+        // Задача не обязана быть привязана к заявке (lead_id может быть пустым —
+        // самостоятельная задача/напоминание). Прячем только "осиротевшие" задачи,
+        // у которых lead_id ЕСТЬ, но такой заявки больше нет (была удалена).
+        const hasLead = (t) => t.lead_id !== null && t.lead_id !== undefined && t.lead_id !== '';
         let tasks = allTasks.map(t => {
-            const lead = allDeals.find(d => String(d.id) === String(t.lead_id));
+            const lead = hasLead(t) ? allDeals.find(d => String(d.id) === String(t.lead_id)) : null;
             return { ...t, lead, overdue: !t.done && t.due_date && String(t.due_date).slice(0, 10) < today };
-        }).filter(t => t.lead); // задачи удалённых заявок не показываем
+        }).filter(t => !hasLead(t) || t.lead);
 
-        if (tasksLeadFilter !== null) tasks = tasks.filter(t => t.lead.id === tasksLeadFilter);
+        if (tasksLeadFilter !== null) tasks = tasks.filter(t => t.lead && t.lead.id === tasksLeadFilter);
         if (filterMode === 'open') tasks = tasks.filter(t => !t.done);
         else if (filterMode === 'overdue') tasks = tasks.filter(t => t.overdue);
         // Фильтр — по исполнителю ЗАДАЧИ (кому поручена), а не по менеджеру сделки:
@@ -4072,8 +4185,10 @@
             <div class="task-row${t.done ? ' done' : ''}">
                 <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTask(${t.id}, this.checked)">
                 <span class="task-text">${escapeHtml(t.text)}</span>
-                ${t.due_date ? `<span class="due${t.overdue ? ' badge overdue' : ''}">${t.overdue ? 'просрочено ' : 'до '}${String(t.due_date).slice(0, 10)}</span>` : ''}
-                <span class="task-lead" onclick="openEditModal(allDeals.find(d => d.id === ${t.lead.id}))"><i class="fas fa-arrow-up-right-from-square"></i> ${escapeHtml(t.lead.fio || t.lead.program || 'заявка')}</span>
+                ${(t.due_date || t.start_date) ? `<span class="due${t.overdue ? ' badge overdue' : ''}">${formatTaskDateLabel(t, t.overdue)}</span>` : ''}
+                ${t.lead
+                    ? `<span class="task-lead" onclick="openEditModal(allDeals.find(d => d.id === ${t.lead.id}))"><i class="fas fa-arrow-up-right-from-square"></i> ${escapeHtml(t.lead.fio || t.lead.program || 'заявка')}</span>`
+                    : `<span class="task-lead standalone" title="Задача не привязана к заявке"><i class="fas fa-thumbtack"></i> без заявки</span>`}
                 ${t.manager ? `<span class="manager-chip" title="Исполнитель">${escapeHtml(t.manager)}</span>` : ''}
             </div>
         `).join('') : '<div class="history-item" style="padding:20px;">Задач по текущему фильтру нет</div>';
