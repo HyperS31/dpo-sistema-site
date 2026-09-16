@@ -1654,7 +1654,8 @@
                 </div>
                 <div class="field">
                     <label>Ответственный менеджер</label>
-                    <input type="text" id="f_manager">
+                    <input type="text" id="f_manager" list="managerDatalist">
+                    <datalist id="managerDatalist"></datalist>
                 </div>
             </div>
             <div class="field-row">
@@ -1755,6 +1756,15 @@
     ];
     const STAGE_KEYS = STAGES.map(s => s.key);
     const GROUP_THRESHOLD = 10; // одинаковый порог набора группы для всех программ (v1)
+
+    // Менеджеры/исполнители всегда доступны во всех выпадающих списках — даже без
+    // единой заявки/задачи, иначе новый сотрудник не появится в списке, пока ему
+    // не назначат хоть что-то. Имена из реальных сделок (в manager может оказаться
+    // кто угодно, если ввели вручную) добавляются к этому списку, а не заменяют его.
+    const KNOWN_MANAGERS = ['Абабин Михаил', 'Солдатенкова Анна', 'Хомутова Мария', 'Пудов Максим', 'Переверзев Артем', 'Переверзев Алексей', 'Белоусова Анастасия'];
+    function getManagersList() {
+        return [...new Set([...KNOWN_MANAGERS, ...allDeals.map(d => d.manager).filter(Boolean)])].sort((a, b) => a.localeCompare(b, 'ru'));
+    }
 
     const TASK_STAGES = [
         { key: 'planned', label: 'Запланировано' },
@@ -2293,9 +2303,12 @@
     function populateManagerFilter() {
         const select = document.getElementById('managerFilter');
         const prev = select.value;
-        const managers = [...new Set(allDeals.map(d => d.manager).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ru'));
+        const managers = getManagersList();
         select.innerHTML = '<option value="">Все менеджеры</option>' + managers.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
         if (managers.includes(prev)) select.value = prev;
+
+        const dl = document.getElementById('managerDatalist');
+        if (dl) dl.innerHTML = managers.map(m => `<option value="${escapeHtml(m)}">`).join('');
     }
 
     // ========== Сохранённые виды (поиск + фильтры одной кнопкой) ==========
@@ -3690,7 +3703,7 @@
         board.classList.toggle('select-mode', boardSelectMode);
         board.classList.toggle('compact', boardDensity === 'compact');
 
-        const managersList = [...new Set(allDeals.map(d => d.manager).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ru'));
+        const managersList = getManagersList();
 
         const selectBtn = document.getElementById('boardSelectModeBtn');
         selectBtn.classList.toggle('active', boardSelectMode);
@@ -4109,7 +4122,7 @@
         const tasks = allTasks.filter(t => String(t.lead_id) === String(leadId));
         const today = toLocalDateKey(new Date());
         const list = document.getElementById('taskList');
-        const managersList = [...new Set(allDeals.map(d => d.manager).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ru'));
+        const managersList = getManagersList();
         const assigneeOptions = (current) => '<option value="">без исполнителя</option>' + managersList.map(m =>
             `<option value="${escapeHtml(m)}" ${m === current ? 'selected' : ''}>${escapeHtml(m)}</option>`
         ).join('');
@@ -4186,17 +4199,14 @@
         if (e.target.id === 'taskModalOverlay') closeTaskModal();
     });
 
-    function taskModalManagerOptions() {
-        return [...new Set(allDeals.map(d => d.manager).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ru'));
-    }
     function renderTaskModalAssignees() {
         const el = document.getElementById('tm_assigneesPicker');
-        el.innerHTML = renderChipPicker(tmAssignees, taskModalManagerOptions(), '+ исполнитель');
+        el.innerHTML = renderChipPicker(tmAssignees, getManagersList(), '+ исполнитель');
         wireChipPicker(el, tmAssignees, (next) => { tmAssignees = next; renderTaskModalAssignees(); });
     }
     function renderTaskModalWatchers() {
         const el = document.getElementById('tm_watchersPicker');
-        el.innerHTML = renderChipPicker(tmWatchers, taskModalManagerOptions(), '+ наблюдатель', 'watcher-chip');
+        el.innerHTML = renderChipPicker(tmWatchers, getManagersList(), '+ наблюдатель', 'watcher-chip');
         wireChipPicker(el, tmWatchers, (next) => { tmWatchers = next; renderTaskModalWatchers(); });
     }
 
@@ -4650,7 +4660,7 @@
     function renderMyTasksTab() {
         const mgrSel = document.getElementById('tasks_manager');
         const keepMgr = mgrSel.value;
-        const mgrs = [...new Set(allDeals.map(d => d.manager).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ru'));
+        const mgrs = getManagersList();
         mgrSel.innerHTML = '<option value="">Все</option>' + mgrs.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
         mgrSel.value = keepMgr;
 
