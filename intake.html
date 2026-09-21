@@ -85,6 +85,19 @@
         }
         #loading-overlay span { color: var(--text-secondary); font-size: 13.5px; }
 
+        .payer-card {
+            background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow);
+            padding: 16px 20px; margin-bottom: 20px;
+        }
+        .payer-card .radio-group { flex-wrap: wrap; }
+        #passwordScreen { max-width: 420px; margin: 60px auto 0; text-align: center; }
+        #passwordScreen i.lock { font-size: 38px; color: var(--primary); margin-bottom: 14px; }
+        #passwordScreen h2 { font-size: 19px; margin: 0 0 8px; }
+        #passwordScreen p { color: var(--text-secondary); font-size: 14px; margin: 0 0 16px; }
+        #passwordScreen input { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 16px; text-align: center; letter-spacing: 0.08em; margin-bottom: 10px; }
+        #passwordScreen input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(67,97,238,0.15); }
+        #passwordError { color: var(--danger); font-size: 13px; min-height: 18px; margin-bottom: 6px; }
+        #passwordScreen button { width: 100%; justify-content: center; }
         [hidden] { display: none !important; }
     </style>
 </head>
@@ -103,6 +116,15 @@
         <p id="successText">Отдел ДПО получил анкету и свяжется с вами при необходимости.</p>
     </div>
 
+    <div id="passwordScreen" hidden>
+        <i class="fas fa-lock lock"></i>
+        <h2>Введите пароль</h2>
+        <p>Пароль указан в письме со ссылкой на анкету. Если письма нет — свяжитесь с отделом ДПО.</p>
+        <input type="text" id="passwordInput" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Пароль из письма">
+        <div id="passwordError"></div>
+        <button type="button" id="passwordBtn" onclick="submitPassword()"><i class="fas fa-unlock"></i> Открыть анкету</button>
+    </div>
+
     <div id="formScreen" hidden>
         <header>
             <h1><i class="fas fa-user-pen"></i> Анкета для зачисления</h1>
@@ -112,6 +134,20 @@
         <div class="context-card">
             <div class="prog" id="ctxProgram"></div>
             <div class="meta" id="ctxMeta"></div>
+        </div>
+
+        <div class="payer-card">
+            <div class="field" style="margin-bottom:0;">
+                <label>Кто оплачивает обучение <span class="req">*</span></label>
+                <div class="radio-group">
+                    <label><input type="radio" name="payer" value="fl" onchange="onPayerChange()"> Физическое лицо (за себя)</label>
+                    <label><input type="radio" name="payer" value="yl" onchange="onPayerChange()"> Организация</label>
+                </div>
+            </div>
+            <div class="field org-only" style="margin:14px 0 0;" hidden>
+                <label>Название организации <span class="req">*</span></label>
+                <input type="text" id="payerOrgName">
+            </div>
         </div>
 
         <div id="studentsContainer"></div>
@@ -139,6 +175,18 @@
     const token = params.get('token');
 
     let blockCount = 0;
+    let accessPassword = '';
+
+    function payerType() {
+        return document.querySelector('input[name="payer"]:checked')?.value || '';
+    }
+
+    // Поля про организацию (название, «руководитель», «сотрудник») нужны только
+    // когда платит организация — физлицу они бессмысленны и путают.
+    function onPayerChange() {
+        const isOrg = payerType() === 'yl';
+        document.querySelectorAll('.org-only').forEach(el => { el.hidden = !isOrg; });
+    }
 
     function showLoading(show, text) {
         document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none';
@@ -220,7 +268,7 @@
                 <input type="file" class="s-scan" accept="image/*,.pdf">
                 <div class="hint">До ${MAX_FILE_MB} МБ. Разборчивое фото или скан разворота с квалификацией.</div>
             </div>
-            <div class="field-row">
+            <div class="field-row org-only"${payerType() === 'yl' ? '' : ' hidden'}>
                 <div class="field">
                     <label><input type="checkbox" class="s-is-manager" style="width:auto;margin-right:6px;"> Руководитель организации-заказчика</label>
                 </div>
@@ -244,6 +292,11 @@
     async function submitForm() {
         const blocks = [...document.querySelectorAll('.student-block')];
         if (!blocks.length) { alert('Добавьте хотя бы одного слушателя'); return; }
+
+        const payer = payerType();
+        if (!payer) { alert('Укажите, кто оплачивает обучение: физическое лицо или организация'); return; }
+        const orgName = document.getElementById('payerOrgName').value.trim();
+        if (payer === 'yl' && !orgName) { alert('Укажите название организации'); return; }
 
         const students = [];
         for (const block of blocks) {
@@ -279,8 +332,8 @@
                 diploma_year: block.querySelector('.s-year').value,
                 diploma_series: block.querySelector('.s-series').value.trim(),
                 diploma_number: block.querySelector('.s-number').value.trim(),
-                is_manager: block.querySelector('.s-is-manager').checked,
-                is_own_employee: block.querySelector('.s-is-employee').checked,
+                is_manager: payer === 'yl' && block.querySelector('.s-is-manager').checked,
+                is_own_employee: payer === 'yl' && block.querySelector('.s-is-employee').checked,
                 _file: file,
             });
         }
@@ -299,7 +352,7 @@
             const resp = await fetch(API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({ action: 'submitEnrollment', leadId, token, students }),
+                body: JSON.stringify({ action: 'submitEnrollment', leadId, token, password: accessPassword, payer_type: payer, org_name: payer === 'yl' ? orgName : '', students }),
             });
             const result = await resp.json();
             if (result.status !== 'success') throw new Error(result.message || 'Не удалось отправить анкету');
@@ -314,6 +367,79 @@
         }
     }
 
+    function showForm(ctx) {
+        document.getElementById('passwordScreen').hidden = true;
+        document.getElementById('ctxProgram').textContent = ctx.program || '(программа не указана)';
+        const isFl = ctx.contract_type === 'С физическим лицом';
+        const isYl = ctx.contract_type === 'С юридическим лицом' || (!isFl && !!ctx.org_name);
+        let meta = `Заявитель: ${ctx.fio || '—'}`;
+        if (isYl && ctx.org_name) meta += ` · ${ctx.org_name}`;
+        if (ctx.participants > 1) meta += ` · заявлено слушателей: ${ctx.participants}`;
+        document.getElementById('ctxMeta').textContent = meta;
+
+        // Выбор заказчика предзаполняем тем, что менеджер уже знает по заявке,
+        // но слушатель может поправить.
+        if (isFl) document.querySelector('input[name="payer"][value="fl"]').checked = true;
+        else if (isYl) document.querySelector('input[name="payer"][value="yl"]').checked = true;
+        document.getElementById('payerOrgName').value = ctx.org_name || '';
+
+        const blocksToCreate = Math.max(1, Number(ctx.participants) || 1);
+        for (let i = 0; i < blocksToCreate; i++) {
+            addStudentBlock(blocksToCreate === 1 ? ctx.fio : '');
+        }
+        onPayerChange();
+        document.getElementById('formScreen').hidden = false;
+    }
+
+    async function loadContext() {
+        const pwd = accessPassword ? `&password=${encodeURIComponent(accessPassword)}` : '';
+        const resp = await fetch(`${API_URL}?action=getIntakeContext&leadId=${encodeURIComponent(leadId)}&token=${encodeURIComponent(token)}${pwd}`);
+        return resp.json();
+    }
+
+    async function openWithCurrentPassword() {
+        const result = await loadContext();
+        if (result.code === 'password_required' || result.code === 'password_wrong') {
+            sessionStorage.removeItem('intake_pwd_' + leadId);
+            document.getElementById('passwordScreen').hidden = false;
+            document.getElementById('passwordError').textContent = result.code === 'password_wrong' ? 'Неверный пароль, проверьте письмо' : '';
+            document.getElementById('passwordInput').focus();
+            return;
+        }
+        if (result.status !== 'success') throw new Error(result.message || 'Ссылка недействительна');
+        if (accessPassword) sessionStorage.setItem('intake_pwd_' + leadId, accessPassword);
+
+        const ctx = result.data;
+        // Анкета по этой заявке уже отправлена — форма заново не открывается
+        // (сервер всё равно отклонит повторную отправку, но лучше не показывать
+        // человеку форму, которую всё равно не получится отправить).
+        if (ctx.already_submitted > 0) {
+            document.getElementById('passwordScreen').hidden = true;
+            document.getElementById('successTitle').textContent = 'Анкета уже отправлена';
+            document.getElementById('successText').textContent = 'Данные по этой заявке уже переданы в отдел ДПО ранее. Если нужно что-то исправить — свяжитесь с отделом ДПО напрямую.';
+            document.getElementById('successScreen').hidden = false;
+            return;
+        }
+        showForm(ctx);
+    }
+
+    async function submitPassword() {
+        const val = document.getElementById('passwordInput').value.trim();
+        if (!val) return;
+        accessPassword = val;
+        showLoading(true, 'Проверяем пароль…');
+        try {
+            await openWithCurrentPassword();
+        } catch (err) {
+            document.getElementById('passwordScreen').hidden = true;
+            document.getElementById('errorText').textContent = err.message;
+            document.getElementById('errorScreen').hidden = false;
+        } finally {
+            showLoading(false);
+        }
+    }
+    document.getElementById('passwordInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') submitPassword(); });
+
     async function init() {
         if (!leadId || !token) {
             document.getElementById('errorText').textContent = 'В ссылке не хватает параметров. Используйте ссылку из письма целиком.';
@@ -321,37 +447,11 @@
             return;
         }
 
+        // После обновления страницы не заставляем вводить пароль заново.
+        accessPassword = sessionStorage.getItem('intake_pwd_' + leadId) || '';
         showLoading(true, 'Загрузка анкеты…');
         try {
-            const resp = await fetch(`${API_URL}?action=getIntakeContext&leadId=${encodeURIComponent(leadId)}&token=${encodeURIComponent(token)}`);
-            const result = await resp.json();
-            if (result.status !== 'success') throw new Error(result.message || 'Ссылка недействительна');
-
-            const ctx = result.data;
-
-            // Анкета по этой заявке уже отправлена — форма заново не открывается
-            // (сервер всё равно отклонит повторную отправку, но лучше не показывать
-            // человеку форму, которую всё равно не получится отправить).
-            if (ctx.already_submitted > 0) {
-                document.getElementById('successTitle').textContent = 'Анкета уже отправлена';
-                document.getElementById('successText').textContent = 'Данные по этой заявке уже переданы в отдел ДПО ранее. Если нужно что-то исправить — свяжитесь с отделом ДПО напрямую.';
-                document.getElementById('successScreen').hidden = false;
-                showLoading(false);
-                return;
-            }
-
-            document.getElementById('ctxProgram').textContent = ctx.program || '(программа не указана)';
-            let meta = `Заявитель: ${ctx.fio || '—'}`;
-            if (ctx.org_name) meta += ` · ${ctx.org_name}`;
-            if (ctx.participants > 1) meta += ` · заявлено слушателей: ${ctx.participants}`;
-            document.getElementById('ctxMeta').textContent = meta;
-
-            const blocksToCreate = Math.max(1, Number(ctx.participants) || 1);
-            for (let i = 0; i < blocksToCreate; i++) {
-                addStudentBlock(blocksToCreate === 1 ? ctx.fio : '');
-            }
-
-            document.getElementById('formScreen').hidden = false;
+            await openWithCurrentPassword();
         } catch (err) {
             document.getElementById('errorText').textContent = err.message;
             document.getElementById('errorScreen').hidden = false;

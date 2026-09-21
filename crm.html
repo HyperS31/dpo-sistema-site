@@ -561,8 +561,21 @@
         .subtasks-panel { margin: 4px 0 0; padding: 8px 10px; background: #fbfbfd; border: 1px solid var(--border); border-radius: 8px; max-width: 460px; }
         .subtask-item { display: flex; align-items: center; gap: 8px; padding: 3px 0; font-size: 12.5px; }
         .subtask-item input[type="checkbox"] { width: 14px; height: 14px; cursor: pointer; flex-shrink: 0; }
-        .subtask-item span:not(.subtask-remove) { flex: 1; }
-        .subtask-item.done span:not(.subtask-remove) { text-decoration: line-through; color: var(--text-secondary); }
+        .subtask-item span:not(.subtask-remove):not(.subtask-comment-btn) { flex: 1; }
+        .subtask-item.done span:not(.subtask-remove):not(.subtask-comment-btn) { text-decoration: line-through; color: var(--text-secondary); }
+        .subtask-comment-btn { cursor: pointer; opacity: 0.35; font-size: 12px; flex-shrink: 0; }
+        .subtask-comment-btn:hover { opacity: 1; color: var(--primary); }
+        .subtask-comment-btn.has-comment { opacity: 1; color: var(--primary); }
+        .subtask-comment-row { padding: 0 0 6px 22px; }
+        .subtask-comment-row textarea {
+            width: 100%; min-height: 44px; padding: 6px 8px; border: 1px solid var(--primary-light); border-radius: 6px;
+            font-size: 12px; font-family: inherit; resize: vertical; box-sizing: border-box;
+        }
+        .subtask-comment-row textarea:focus { outline: none; box-shadow: 0 0 0 3px rgba(67,97,238,0.15); }
+        .subtask-comment-text {
+            margin: 0 0 6px 22px; padding: 4px 8px; background: #f1f3f9; border-radius: 6px; font-size: 12px;
+            color: var(--text-secondary); white-space: pre-wrap; cursor: text;
+        }
         .subtask-item .subtask-remove { cursor: pointer; opacity: 0.4; font-size: 11px; }
         .subtask-item .subtask-remove:hover { opacity: 1; color: var(--danger); }
         .subtask-add-row { display: flex; gap: 6px; margin-top: 6px; }
@@ -1112,10 +1125,20 @@
                             <div class="field" style="margin-bottom:0;"><input type="text" readonly value="https://.../intake.html?token=a1b2c3..." style="font-size:12.5px;"></div>
                             <button type="button" class="secondary" style="flex-shrink:0;"><i class="fas fa-copy"></i></button>
                         </div>
+                        <div class="field-row" style="align-items:flex-end;margin-top:8px;">
+                            <div class="field" style="margin-bottom:0;">
+                                <label>Пароль для слушателя</label>
+                                <input type="text" readonly value="k7Rm4xQe" style="font-size:14px;font-family:monospace;letter-spacing:0.08em;">
+                            </div>
+                            <button type="button" class="secondary" style="flex-shrink:0;"><i class="fas fa-copy"></i></button>
+                            <button type="button" class="secondary" style="flex-shrink:0;"><i class="fas fa-rotate"></i></button>
+                        </div>
                         <button type="button" style="margin-top:10px;font-size:12.5px;padding:8px 14px;"><i class="fas fa-paper-plane"></i> Отправить на email заявки</button>
                     </div>
                 </div>
-                <p>Кнопка «Создать ссылку на анкету» генерирует персональную ссылку — слушатель переходит по ней и сам заполняет свои паспортные и контактные данные (форма <code>intake.html</code>), не заставляя менеджера вбивать их вручную. Ссылку можно скопировать и отправить самостоятельно, либо нажать «Отправить на email заявки» — письмо со ссылкой уйдёт автоматически на email, указанный в заявке.</p>
+                <p>Кнопка «Создать ссылку на анкету» генерирует персональную ссылку <b>и пароль к ней</b> — слушатель переходит по ссылке, вводит пароль и сам заполняет свои паспортные и контактные данные (форма <code>intake.html</code>), не заставляя менеджера вбивать их вручную. Без пароля анкету по одной только ссылке не открыть. Ссылку и пароль можно скопировать (кнопки рядом) и отправить самостоятельно, либо нажать «Отправить на email заявки» — письмо со ссылкой и паролем уйдёт автоматически на email, указанный в заявке.</p>
+                <p>Пароль виден в блоке сразу под ссылкой. Если слушатель его потерял или пароль попал не тому человеку — кнопка со стрелками рядом с паролем создаёт новый (прежний тут же перестаёт работать; ссылка остаётся той же). Ссылки, выданные до появления паролей, получают пароль при первой отправке письма или при нажатии на эту кнопку — с этого момента открыть их можно только с ним, поэтому отправьте слушателю письмо заново.</p>
+                <p>В самой анкете слушатель выбирает, <b>кто оплачивает обучение</b>: физическое лицо или организация. Для физлица поля про организацию (название, «руководитель организации», «сотрудник организации») не показываются. Выбор подставляется из заявки, если тип договора там уже указан, и сохраняется обратно в заявку, только если поле «Тип договора» у неё было пустым — уже заполненные менеджером данные анкета не перезаписывает.</p>
                 <h4>Блок «Документы»</h4>
                 <p>Кнопки «Сформировать КП» и «Сформировать СЗ на счёт» готовят коммерческое предложение и счёт на оплату по шаблону, подставляя данные заявки и программы (цену, часы, реквизиты). Договор, лист выдачи и другие документы группы формируются на вкладке «Группы», когда заявка уже включена в набор (см. ниже).</p>
                 <div class="help-warn"><i class="fas fa-triangle-exclamation"></i> <span>Документы формируются по данным программы из справочника «Программы» — если в КП неверная цена или часы, поправьте это один раз в справочнике, а не в самом документе.</span></div>
@@ -1327,6 +1350,15 @@
                 <p>Клик по строке задачи в списке (или по значку чек-листа в первом столбце) — а также клик по задаче в календаре — открывает тот же самый попап, но уже для просмотра и редактирования существующей задачи, со всеми теми же полями сразу. Раньше по клику в списке раскрывался список прямо под строкой, а клик в календаре у самостоятельной задачи мгновенно переключал её статус на «Выполнено», из-за чего задача пропадала из вида под фильтром «Показать: Открытые» — выглядело так, будто она удалилась, хотя на самом деле оставалась в базе. Теперь и там, и там клик просто открывает попап; менять статус — явным выбором в самой модалке. Каждое поле в попапе сохраняется отдельно, как только вы уберёте курсор из него (или сразу при выборе в выпадающем списке) — отдельной кнопки «Сохранить» не требуется.</p>
                 <h4>Ответственный за каждую подзадачу</h4>
                 <p>У пункта чек-листа подзадач теперь свой ответственный — выпадающий список рядом с текстом пункта, выбор из исполнителей самой задачи (чтобы не поручать пункт человеку, вообще не причастному к задаче). Если исполнителей у задачи ещё нет — сначала добавьте хотя бы одного в «Исполнители», тогда список для подзадач перестанет быть пустым.</p>
+                <h4>Комментарий к подзадаче</h4>
+                <div class="help-mock">
+                    <div class="help-mock-label"><i class="fas fa-eye"></i> Как это выглядит</div>
+                    <div class="subtasks-panel" style="max-width:none;">
+                        <div class="subtask-item"><input type="checkbox" disabled><span>Проверить подписи</span><select class="subtask-assignee-select" disabled><option>Мария</option></select><span class="subtask-comment-btn has-comment"><i class="far fa-comment"></i></span><span class="subtask-remove"><i class="fas fa-xmark"></i></span></div>
+                        <div class="subtask-comment-text">Нет подписи на второй странице — запросили новый скан у заказчика.</div>
+                    </div>
+                </div>
+                <p>Значок облачка справа от пункта открывает поле для комментария — уточнение, что именно сделано или мешает («ждём скан от заказчика», «отправили на подпись 21.09»). Значок синий, если комментарий уже есть, а сам текст показывается серой плашкой под пунктом; клик по плашке или по значку снова открывает поле. Комментарий сохраняется, когда убираете курсор из поля; чтобы удалить — сотрите текст. Работает и в попапе просмотра задачи, и при создании задачи.</p>
                 <h4>Массовое переназначение</h4>
                 <p>Кнопка <b>«Выбрать несколько»</b> над списком добавляет чекбокс у каждой задачи в первом столбце. Отметьте нужные, выберите сотрудника в панели снизу и нажмите «Переназначить» — задачи перейдут к нему одним действием (прежние исполнители заменяются на выбранного) — удобно на время отпуска или при перераспределении нагрузки, когда видно по таблице сверху, кто перегружен.</p>
                 <h4>Период вместо одной даты</h4>
@@ -1756,6 +1788,14 @@
                             <input type="text" id="intakeLinkField" readonly style="font-size:12.5px;">
                         </div>
                         <button type="button" class="secondary" onclick="copyIntakeLink()" style="flex-shrink:0;"><i class="fas fa-copy"></i></button>
+                    </div>
+                    <div class="field-row" style="align-items:flex-end;margin-top:8px;">
+                        <div class="field" style="margin-bottom:0;">
+                            <label>Пароль для слушателя</label>
+                            <input type="text" id="intakePasswordField" readonly style="font-size:14px;font-family:monospace;letter-spacing:0.08em;" placeholder="не задан — ссылка открывается без пароля">
+                        </div>
+                        <button type="button" class="secondary" onclick="copyIntakePassword()" style="flex-shrink:0;" title="Скопировать пароль"><i class="fas fa-copy"></i></button>
+                        <button type="button" class="secondary" id="intakePasswordRegenBtn" onclick="regenerateIntakePassword()" style="flex-shrink:0;" title="Сгенерировать новый пароль"><i class="fas fa-rotate"></i></button>
                     </div>
                     <button type="button" onclick="sendIntakeEmailNow()" style="margin-top:10px;font-size:12.5px;padding:8px 14px;" id="sendIntakeBtn"><i class="fas fa-paper-plane"></i> Отправить на email заявки</button>
                 </div>
@@ -3015,7 +3055,8 @@
                     if (res.status === 'success') { token = res.token; d.intake_token = token; }
                 }
                 if (!token) continue;
-                await postJSON('sendIntakeEmail', { leadId: d.id, link: intakeLinkFor(d) });
+                const sent = await postJSON('sendIntakeEmail', { leadId: d.id, link: intakeLinkFor(d) });
+                if (sent.status === 'success' && sent.password) d.intake_password = sent.password;
                 await new Promise(r => setTimeout(r, 150));
             }
             showMessage(`Анкеты отправлены: ${targets.length}`);
@@ -4111,6 +4152,7 @@
             document.getElementById('intakeNoLink').style.display = 'none';
             document.getElementById('intakeHasLink').style.display = 'block';
             document.getElementById('intakeLinkField').value = intakeLinkFor(d);
+            document.getElementById('intakePasswordField').value = d.intake_password || '';
         } else {
             document.getElementById('intakeNoLink').style.display = 'block';
             document.getElementById('intakeHasLink').style.display = 'none';
@@ -4124,9 +4166,9 @@
             const res = await postJSON('generateIntakeLink', { leadId: editingId });
             if (res.status !== 'success') throw new Error(res.message || 'Ошибка');
             const deal = allDeals.find(d => d.id === editingId);
-            if (deal) deal.intake_token = res.token;
+            if (deal) { deal.intake_token = res.token; deal.intake_password = res.password; }
             renderIntakeSection(deal);
-            showMessage('Ссылка создана');
+            showMessage('Ссылка и пароль созданы');
         } catch (err) {
             showMessage('Ошибка: ' + err.message, 'error');
         } finally {
@@ -4143,6 +4185,36 @@
         });
     }
 
+    function copyIntakePassword() {
+        const field = document.getElementById('intakePasswordField');
+        if (!field.value) { showMessage('Пароль ещё не создан — отправьте письмо или сгенерируйте пароль кнопкой рядом', 'error'); return; }
+        field.select();
+        navigator.clipboard?.writeText(field.value).then(() => showMessage('Пароль скопирован')).catch(() => {
+            document.execCommand('copy');
+            showMessage('Пароль скопирован');
+        });
+    }
+
+    async function regenerateIntakePassword() {
+        if (editingId === null) return;
+        const deal = allDeals.find(d => d.id === editingId);
+        if (!deal) return;
+        if (deal.intake_password && !confirm('Прежний пароль перестанет работать — слушателю нужно будет отправить новый. Сгенерировать новый пароль?')) return;
+        showLoading(true);
+        try {
+            const res = await postJSON('regenerateIntakePassword', { leadId: editingId });
+            if (res.status !== 'success') throw new Error(res.message || 'Ошибка');
+            deal.intake_token = res.token;
+            deal.intake_password = res.password;
+            renderIntakeSection(deal);
+            showMessage('Новый пароль создан — не забудьте отправить его слушателю');
+        } catch (err) {
+            showMessage('Ошибка: ' + err.message, 'error');
+        } finally {
+            showLoading(false);
+        }
+    }
+
     async function sendIntakeEmailNow() {
         if (editingId === null) return;
         const deal = allDeals.find(d => d.id === editingId);
@@ -4153,7 +4225,8 @@
         try {
             const res = await postJSON('sendIntakeEmail', { leadId: editingId, link: intakeLinkFor(deal) });
             if (res.status !== 'success') throw new Error(res.message || 'Ошибка отправки');
-            showMessage('Письмо отправлено на ' + deal.email);
+            if (res.password) { deal.intake_password = res.password; renderIntakeSection(deal); }
+            showMessage('Письмо со ссылкой и паролем отправлено на ' + deal.email);
         } catch (err) {
             showMessage('Ошибка: ' + err.message, 'error');
         } finally {
@@ -4201,6 +4274,7 @@
     let tmAssignees = [];
     let tmWatchers = [];
     let tmSubtasks = [];
+    const tmCommentOpen = new Set();
 
     function openTaskModal(leadId) {
         const overlay = document.getElementById('taskModalOverlay');
@@ -4228,6 +4302,7 @@
         tmAssignees = (lead && lead.manager) ? [lead.manager] : [];
         tmWatchers = [];
         tmSubtasks = [];
+        tmCommentOpen.clear();
         renderTaskModalAssignees();
         renderTaskModalWatchers();
         renderTaskModalSubtasks();
@@ -4254,6 +4329,58 @@
         wireChipPicker(el, tmWatchers, (next) => { tmWatchers = next; renderTaskModalWatchers(); });
     }
 
+    // Общая разметка/обработчики пункта чек-листа для попапа создания и попапа
+    // просмотра задачи (в первом пункты правятся локально до сохранения, во втором —
+    // сразу на сервере, отсюда колбэки). openSet — какие комментарии сейчас
+    // раскрыты для редактирования; ключ — любая строка, уникальная для пункта.
+    function subtaskItemHtml(s, i, assigneeOptions, commentOpen, cls) {
+        const hasComment = !!(s.comment && s.comment.trim());
+        return `
+            <div class="subtask-item${s.done ? ' done' : ''}">
+                <input type="checkbox" ${s.done ? 'checked' : ''} data-idx="${i}" class="${cls.toggle}">
+                <span>${escapeHtml(s.text)}</span>
+                <select class="subtask-assignee-select ${cls.assignee}" data-idx="${i}" title="Ответственный за пункт">
+                    <option value="">не назначено</option>
+                    ${assigneeOptions.map(m => `<option value="${escapeHtml(m)}"${m === s.assignee ? ' selected' : ''}>${escapeHtml(m)}</option>`).join('')}
+                    ${s.assignee && !assigneeOptions.includes(s.assignee) ? `<option value="${escapeHtml(s.assignee)}" selected>${escapeHtml(s.assignee)}</option>` : ''}
+                </select>
+                <span class="subtask-comment-btn${hasComment ? ' has-comment' : ''}" data-idx="${i}" title="Комментарий к пункту"><i class="far fa-comment"></i></span>
+                <span class="subtask-remove" data-idx="${i}"><i class="fas fa-xmark"></i></span>
+            </div>
+            ${commentOpen
+                ? `<div class="subtask-comment-row"><textarea class="subtask-comment-input" data-idx="${i}" placeholder="Комментарий к пункту...">${escapeHtml(s.comment || '')}</textarea></div>`
+                : hasComment ? `<div class="subtask-comment-text" data-idx="${i}" title="Нажмите, чтобы изменить">${escapeHtml(s.comment)}</div>` : ''}`;
+    }
+
+    function wireSubtaskComments(panelEl, subs, openSet, keyFor, onSave, rerender) {
+        const openEditor = (idx) => {
+            openSet.add(keyFor(idx));
+            rerender();
+            const ta = panelEl.querySelector(`.subtask-comment-input[data-idx="${idx}"]`);
+            if (ta) ta.focus();
+        };
+        panelEl.querySelectorAll('.subtask-comment-btn, .subtask-comment-text').forEach(el => {
+            el.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const idx = Number(el.dataset.idx);
+                if (openSet.has(keyFor(idx))) { openSet.delete(keyFor(idx)); rerender(); }
+                else openEditor(idx);
+            });
+        });
+        panelEl.querySelectorAll('.subtask-comment-input').forEach(ta => {
+            let done = false; // blur может сработать повторно при перерисовке — сохраняем один раз
+            ta.addEventListener('blur', () => {
+                if (done) return;
+                done = true;
+                const idx = Number(ta.dataset.idx);
+                openSet.delete(keyFor(idx));
+                const val = ta.value.trim();
+                if (val !== ((subs[idx] && subs[idx].comment) || '')) onSave(idx, val);
+                else rerender();
+            });
+        });
+    }
+
     // Чек-лист подзадач редактируется локально (в tmSubtasks) до сохранения самой
     // задачи — отдельного id для подзадач на этом этапе ещё нет, поэтому
     // renderSubtasksPanel/wireSubtasksPanel (рассчитанные на updateTaskField по
@@ -4261,18 +4388,7 @@
     function renderTaskModalSubtasks() {
         const panel = document.getElementById('tm_subtasksPanel');
         panel.innerHTML = `
-            ${tmSubtasks.map((s, i) => `
-                <div class="subtask-item${s.done ? ' done' : ''}">
-                    <input type="checkbox" ${s.done ? 'checked' : ''} data-idx="${i}" class="tm-subtask-toggle">
-                    <span>${escapeHtml(s.text)}</span>
-                    <select class="subtask-assignee-select tm-subtask-assignee" data-idx="${i}" title="Ответственный за пункт">
-                        <option value="">не назначено</option>
-                        ${tmAssignees.map(m => `<option value="${escapeHtml(m)}"${m === s.assignee ? ' selected' : ''}>${escapeHtml(m)}</option>`).join('')}
-                        ${s.assignee && !tmAssignees.includes(s.assignee) ? `<option value="${escapeHtml(s.assignee)}" selected>${escapeHtml(s.assignee)}</option>` : ''}
-                    </select>
-                    <span class="subtask-remove" data-idx="${i}"><i class="fas fa-xmark"></i></span>
-                </div>
-            `).join('') || '<div class="readonly-hint">Пунктов пока нет</div>'}
+            ${tmSubtasks.map((s, i) => subtaskItemHtml(s, i, tmAssignees, tmCommentOpen.has(String(i)), { toggle: 'tm-subtask-toggle', assignee: 'tm-subtask-assignee' })).join('') || '<div class="readonly-hint">Пунктов пока нет</div>'}
             <div class="subtask-add-row">
                 <input type="text" id="tm_subtaskInput" placeholder="Новый пункт...">
                 <button type="button" class="secondary" id="tm_subtaskAddBtn"><i class="fas fa-plus"></i></button>
@@ -4292,10 +4408,15 @@
                 tmSubtasks = tmSubtasks.map((s, i) => i === idx ? { ...s, assignee: sel.value } : s);
             });
         });
+        wireSubtaskComments(panel, tmSubtasks, tmCommentOpen, (idx) => String(idx), (idx, val) => {
+            tmSubtasks = tmSubtasks.map((s, i) => i === idx ? { ...s, comment: val } : s);
+            renderTaskModalSubtasks();
+        }, renderTaskModalSubtasks);
         panel.querySelectorAll('.subtask-remove').forEach(el => {
             el.addEventListener('click', () => {
                 const idx = Number(el.dataset.idx);
                 tmSubtasks = tmSubtasks.filter((_, i) => i !== idx);
+                tmCommentOpen.clear(); // индексы сдвинулись — открытые редакторы больше не соответствуют пунктам
                 renderTaskModalSubtasks();
             });
         });
@@ -4303,7 +4424,7 @@
         const submit = () => {
             const text = input.value.trim();
             if (!text) return;
-            tmSubtasks = [...tmSubtasks, { text, done: false, assignee: '' }];
+            tmSubtasks = [...tmSubtasks, { text, done: false, assignee: '', comment: '' }];
             renderTaskModalSubtasks();
             document.getElementById('tm_subtaskInput').focus();
         };
@@ -4642,23 +4763,14 @@
     // (чтобы не плодить путаницу с людьми, вообще не причастными к задаче), но
     // если ответственного убрали из исполнителей позже, его имя всё равно
     // остаётся видно в селекте текущим значением, а не пропадает молча.
+    // Ключи раскрытых редакторов комментариев — "id задачи:номер пункта".
+    const openSubtaskComments = new Set();
     function renderSubtasksPanel(t) {
         const subs = effectiveSubtasks(t);
         const assigneeOptions = effectiveAssignees(t);
         return `
             <div class="subtasks-panel" data-task="${t.id}">
-                ${subs.map((s, i) => `
-                    <div class="subtask-item${s.done ? ' done' : ''}">
-                        <input type="checkbox" ${s.done ? 'checked' : ''} data-idx="${i}" class="subtask-toggle-cb">
-                        <span>${escapeHtml(s.text)}</span>
-                        <select class="subtask-assignee-select" data-idx="${i}" title="Ответственный за пункт">
-                            <option value="">не назначено</option>
-                            ${assigneeOptions.map(m => `<option value="${escapeHtml(m)}"${m === s.assignee ? ' selected' : ''}>${escapeHtml(m)}</option>`).join('')}
-                            ${s.assignee && !assigneeOptions.includes(s.assignee) ? `<option value="${escapeHtml(s.assignee)}" selected>${escapeHtml(s.assignee)}</option>` : ''}
-                        </select>
-                        <span class="subtask-remove" data-idx="${i}"><i class="fas fa-xmark"></i></span>
-                    </div>
-                `).join('') || '<div class="readonly-hint">Пунктов пока нет</div>'}
+                ${subs.map((s, i) => subtaskItemHtml(s, i, assigneeOptions, openSubtaskComments.has(`${t.id}:${i}`), { toggle: 'subtask-toggle-cb', assignee: '' })).join('') || '<div class="readonly-hint">Пунктов пока нет</div>'}
                 <div class="subtask-add-row">
                     <input type="text" class="subtask-add-input" placeholder="Новый пункт...">
                     <button type="button" class="secondary subtask-add-btn"><i class="fas fa-plus"></i></button>
@@ -4685,10 +4797,14 @@
                 updateTaskField(t.id, 'subtasks', next);
             });
         });
+        wireSubtaskComments(panelEl, subs, openSubtaskComments, (idx) => `${t.id}:${idx}`, (idx, val) => {
+            updateTaskField(t.id, 'subtasks', subs.map((s, i) => i === idx ? { ...s, comment: val } : s));
+        }, () => refreshTaskDetailIfOpen(t.id));
         panelEl.querySelectorAll('.subtask-remove').forEach(el => {
             el.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const idx = Number(el.dataset.idx);
+                [...openSubtaskComments].filter(k => k.startsWith(`${t.id}:`)).forEach(k => openSubtaskComments.delete(k)); // индексы сдвинулись
                 updateTaskField(t.id, 'subtasks', subs.filter((_, i) => i !== idx));
             });
         });
@@ -4697,7 +4813,7 @@
         const submit = () => {
             const text = input.value.trim();
             if (!text) return;
-            updateTaskField(t.id, 'subtasks', [...subs, { text, done: false, assignee: '' }]);
+            updateTaskField(t.id, 'subtasks', [...subs, { text, done: false, assignee: '', comment: '' }]);
         };
         input.addEventListener('click', (e) => e.stopPropagation());
         input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); submit(); } });
