@@ -730,21 +730,94 @@
         #authKeyInput:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(67,97,238,0.15); }
         #authError { color: var(--danger); font-size: 12.5px; margin-bottom: 10px; display: none; }
         #authBox button { width: 100%; justify-content: center; padding: 11px; }
+        #authBox .auth-input {
+            width: 100%; padding: 11px 14px; border: 1px solid var(--border); border-radius: 8px;
+            font-size: 15px; margin-bottom: 10px; font-family: inherit;
+        }
+        #authBox .auth-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(67,97,238,0.15); }
+        #authLegacyLink { display: inline-block; margin-top: 14px; font-size: 12px; color: var(--text-secondary); }
+
+        /* Шапка с пользователем и уведомлениями */
+        .topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+        #userBar { display: flex; align-items: center; gap: 10px; position: relative; font-size: 13px; }
+        #userBar[hidden] { display: none; }
+        #userBar button { padding: 6px 12px; font-size: 12.5px; }
+        #userName { font-weight: 600; color: var(--primary-dark); }
+        .role-badge { font-size: 11px; padding: 2px 9px; border-radius: 12px; background: #e0e7ff; color: var(--primary-dark); }
+        .role-badge.warn { background: #fef3c7; color: #92400e; }
+        .ntf-bell { position: relative; cursor: pointer; font-size: 17px; color: var(--primary-dark); padding: 4px 6px; }
+        #ntfBadge { position: absolute; top: -4px; right: -6px; background: var(--danger); color: #fff; font-size: 10px; font-weight: 700; border-radius: 10px; padding: 1px 5px; }
+        #ntfPanel {
+            display: none; position: absolute; top: 38px; right: 0; width: 340px; max-height: 420px; overflow-y: auto; z-index: 1500;
+            background: #fff; border-radius: var(--radius); box-shadow: 0 12px 34px rgba(0,0,0,0.22);
+        }
+        #ntfPanel.open { display: block; }
+        .ntf-head { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: #fff; }
+        .ntf-head button { padding: 4px 10px; font-size: 11.5px; }
+        .ntf-item { padding: 10px 14px; border-bottom: 1px solid var(--border); cursor: pointer; font-size: 13px; }
+        .ntf-item:hover { background: #f1f4ff; }
+        .ntf-item.unread { background: #eef1ff; font-weight: 600; }
+
+        /* Права: элементы, недоступные роли, скрываются (сервер всё равно проверяет каждый запрос) */
+        body:not(.role-admin) .admin-only { display: none !important; }
+        body.role-viewer .write-only { display: none !important; }
+        body.role-viewer #intakeSection button, body.role-viewer #cohortFeedbackBox button, body.role-viewer #tasksBulkBar,
+        body.role-viewer #cohortDetailCol .cohort-meta-field button, body.role-viewer #cohortDetailCol .cohort-doc-upload,
+        body.role-viewer #cohortMembers button { display: none !important; }
+        body.role-viewer #modal input, body.role-viewer #modal select, body.role-viewer #modal textarea,
+        body.role-viewer #taskDetailModal input, body.role-viewer #taskDetailModal select, body.role-viewer #taskDetailModal textarea,
+        body.role-viewer .card-manager-select, body.role-viewer .stage-select, body.role-viewer .priority-select, body.role-viewer .chip-picker-add {
+            pointer-events: none; background: #f4f5f8;
+        }
+
+        #pwOverlay, #userOverlay, #credOverlay {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+            align-items: center; justify-content: center; z-index: 2500; padding: 20px;
+        }
+        #pwOverlay.open, #userOverlay.open, #credOverlay.open { display: flex; }
+        #pwModal, #userModal, #credModal {
+            background: white; border-radius: var(--radius); padding: 26px 28px; width: 100%;
+            max-width: 440px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+        }
+        #pwModal h2, #userModal h2, #credModal h2 { margin: 0 0 16px; font-size: 19px; color: var(--primary-dark); }
+        .cred-box { background: #f8f9fc; border: 1px dashed var(--border); border-radius: 10px; padding: 14px 16px; font-size: 14px; line-height: 1.8; }
+        .team-banner { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 16px; border-radius: 10px; margin-bottom: 14px; font-size: 13px; }
+        .team-banner span { flex: 1; min-width: 240px; }
+        .team-banner.warn { background: #fef3c7; color: #92400e; }
+        .team-banner.ok { background: #d1fae5; color: #065f46; }
+        .team-banner button { padding: 7px 14px; font-size: 12.5px; }
     </style>
 </head>
 <body>
 <div id="authOverlay">
     <div id="authBox">
         <i class="fas fa-lock"></i>
-        <h2>Доступ к CRM</h2>
-        <p>Система содержит персональные данные слушателей. Введите пароль отдела ДПО.</p>
-        <input type="password" id="authKeyInput" placeholder="Пароль" autocomplete="off">
+        <h2>Вход в CRM</h2>
+        <p>Система содержит персональные данные слушателей. Войдите под своей учётной записью.</p>
+        <div id="authLoginForm">
+            <input type="text" id="authLoginInput" class="auth-input" placeholder="Логин" autocomplete="username" autocapitalize="off" spellcheck="false">
+            <input type="password" id="authPasswordInput" class="auth-input" placeholder="Пароль" autocomplete="current-password">
+        </div>
+        <div id="authLegacyForm" hidden>
+            <input type="password" id="authKeyInput" class="auth-input" placeholder="Общий пароль отдела" autocomplete="off">
+        </div>
         <div id="authError">Неверный пароль</div>
-        <button type="button" onclick="submitAuthKey()"><i class="fas fa-arrow-right-to-bracket"></i> Войти</button>
+        <button type="button" id="authSubmitBtn" onclick="authSubmit()"><i class="fas fa-arrow-right-to-bracket"></i> Войти</button>
+        <a href="#" id="authLegacyLink" onclick="event.preventDefault(); toggleLegacyLoginForm();">Войти по общему паролю</a>
     </div>
 </div>
 <div class="container">
-    <h1><i class="fas fa-diagram-project"></i> CRM · Воронка сделок</h1>
+    <div class="topbar">
+        <h1><i class="fas fa-diagram-project"></i> CRM · Воронка сделок</h1>
+        <div id="userBar" hidden>
+            <span id="ntfBell" class="ntf-bell" onclick="toggleInboxPanel(event)" title="Уведомления"><i class="fas fa-bell"></i><span id="ntfBadge" style="display:none;"></span></span>
+            <span id="userName"></span>
+            <span id="userRole" class="role-badge"></span>
+            <button type="button" class="secondary" id="userPwBtn" onclick="openChangePassword(false)" title="Сменить пароль"><i class="fas fa-key"></i></button>
+            <button type="button" class="secondary" onclick="logout()"><i class="fas fa-right-from-bracket"></i> Выйти</button>
+            <div id="ntfPanel"></div>
+        </div>
+    </div>
     <div id="notifBanner"></div>
 
     <div class="toolbar">
@@ -764,7 +837,7 @@
         <span id="recordCount"></span>
         <button type="button" class="secondary" id="notifToggleBtn" onclick="toggleBrowserNotifications()"><i class="fas fa-bell-slash"></i> Уведомления</button>
         <button type="button" class="secondary" onclick="exportFilteredToExcel()"><i class="fas fa-file-excel"></i> Экспорт</button>
-        <button onclick="openCreateModal()"><i class="fas fa-plus"></i> Новая сделка</button>
+        <button class="write-only" onclick="openCreateModal()"><i class="fas fa-plus"></i> Новая сделка</button>
     </div>
 
     <div class="saved-views-row" id="savedViewsRow"></div>
@@ -780,6 +853,8 @@
         <button class="tab-btn" data-tab="tasks" onclick="switchTab('tasks')"><i class="fas fa-list-check"></i> Задачи<span id="tasksOverdueBadge" style="display:none;"></span></button>
         <button class="tab-btn" data-tab="programs" onclick="switchTab('programs')"><i class="fas fa-book"></i> Программы</button>
         <button class="tab-btn" data-tab="reports" onclick="switchTab('reports')"><i class="fas fa-file-lines"></i> Отчётность</button>
+        <button class="tab-btn admin-only" data-tab="team" onclick="switchTab('team')"><i class="fas fa-user-gear"></i> Сотрудники</button>
+        <button class="tab-btn admin-only" data-tab="log" onclick="switchTab('log')"><i class="fas fa-clock-rotate-left"></i> Журнал</button>
         <button class="tab-btn" data-tab="help" onclick="switchTab('help')"><i class="fas fa-circle-question"></i> Помощь</button>
     </div>
 
@@ -787,7 +862,7 @@
         <div class="board-toolbar">
             <div class="board-toolbar-left">
                 <button type="button" class="secondary" id="boardDensityBtn" onclick="toggleBoardDensity()"><i class="fas fa-compress"></i> Компактный вид</button>
-                <button type="button" class="secondary" id="boardSelectModeBtn" onclick="toggleBoardSelectMode()"><i class="fas fa-square-check"></i> Выбрать несколько</button>
+                <button type="button" class="secondary write-only" id="boardSelectModeBtn" onclick="toggleBoardSelectMode()"><i class="fas fa-square-check"></i> Выбрать несколько</button>
                 <div class="board-bulk-bar" id="boardBulkBar">
                     <span id="boardBulkCount"></span>
                     <select id="boardBulkManagerSelect"><option value="">Выберите менеджера…</option></select>
@@ -917,7 +992,7 @@
             <table class="mgr-table" id="tasksWorkloadTable"></table>
         </div>
         <div class="modal-actions" style="justify-content:flex-start;margin-bottom:14px;">
-            <button type="button" onclick="openTaskModal(null)"><i class="fas fa-plus"></i> Добавить задачу</button>
+            <button type="button" class="write-only" onclick="openTaskModal(null)"><i class="fas fa-plus"></i> Добавить задачу</button>
         </div>
         <div class="tasks-lead-filter-chip" id="tasksLeadFilterChip">
             <span id="tasksLeadFilterText"></span>
@@ -943,7 +1018,10 @@
                 </div>
             </div>
             <div class="report-filter-field" style="align-self:flex-end;">
-                <button type="button" class="secondary" id="tasksSelectModeBtn" onclick="toggleTasksSelectMode()"><i class="fas fa-square-check"></i> Выбрать несколько</button>
+                <button type="button" class="chip-filter" id="tasksMineBtn" onclick="toggleTasksMine()"><i class="fas fa-user"></i> Только мои</button>
+            </div>
+            <div class="report-filter-field" style="align-self:flex-end;">
+                <button type="button" class="secondary write-only" id="tasksSelectModeBtn" onclick="toggleTasksSelectMode()"><i class="fas fa-square-check"></i> Выбрать несколько</button>
             </div>
         </div>
         <div class="tasks-bulk-bar" id="tasksBulkBar">
@@ -970,7 +1048,7 @@
 
     <div id="screen-programs" class="screen">
         <div class="modal-actions" style="justify-content:flex-start;margin-bottom:14px;gap:10px;">
-            <button type="button" onclick="openProgramModal(null)"><i class="fas fa-plus"></i> Добавить программу</button>
+            <button type="button" class="write-only" onclick="openProgramModal(null)"><i class="fas fa-plus"></i> Добавить программу</button>
             <button type="button" class="chip-filter" id="programsOkvedFilterBtn" onclick="toggleProgramsOkvedFilter()"><i class="fas fa-triangle-exclamation"></i> Только без ОКВЭД</button>
         </div>
         <div class="archive-table-wrap">
@@ -1037,6 +1115,27 @@
         </div>
     </div>
 
+    <div id="screen-team" class="screen">
+        <div id="teamLegacyBanner" class="team-banner"></div>
+        <div class="modal-actions" style="justify-content:flex-start;margin-bottom:14px;">
+            <button type="button" onclick="openUserModal(null)"><i class="fas fa-user-plus"></i> Добавить сотрудника</button>
+        </div>
+        <div class="archive-table-wrap"><table class="archive-table" id="teamTable" style="cursor:default;"></table></div>
+    </div>
+
+    <div id="screen-log" class="screen">
+        <div class="report-filters">
+            <div class="report-filter-field"><label>Сотрудник</label><select id="log_actor" onchange="renderLogTab(false)"></select></div>
+            <div class="report-filter-field"><label>Действия</label><select id="log_action" onchange="renderLogTab(false)"></select></div>
+            <div class="report-filter-field"><label>Поиск</label><input type="text" id="log_q" placeholder="ФИО, программа, текст…" onchange="renderLogTab(false)"></div>
+            <div class="report-filter-field"><label>С</label><input type="date" id="log_from" onchange="renderLogTab(false)"></div>
+            <div class="report-filter-field"><label>По</label><input type="date" id="log_to" onchange="renderLogTab(false)"></div>
+            <div class="report-filter-field" style="align-self:flex-end;"><button type="button" class="secondary" onclick="resetLogFilters()"><i class="fas fa-rotate-left"></i> Сбросить</button></div>
+        </div>
+        <div class="archive-table-wrap"><table class="archive-table" id="logTable" style="cursor:default;"></table></div>
+        <div id="logMore" style="margin-top:10px;"></div>
+    </div>
+
     <div id="screen-help" class="screen">
         <div class="help-intro">
             <h2><i class="fas fa-circle-question"></i> Руководство пользователя</h2>
@@ -1054,6 +1153,7 @@
             <a href="#help-clients">Клиенты</a>
             <a href="#help-analytics">Аналитика</a>
             <a href="#help-feedback">Отзывы</a>
+            <a href="#help-access">Вход, роли, журнал</a>
             <a href="#help-tasks">Задачи</a>
             <a href="#help-programs">Программы</a>
             <a href="#help-reports">Отчётность</a>
@@ -1412,6 +1512,49 @@
             </div>
         </details>
 
+        <details class="help-section" id="help-access">
+            <summary><i class="fas fa-user-shield"></i> Вход, роли, уведомления и журнал <i class="fas fa-chevron-down chev"></i></summary>
+            <div class="help-body">
+                <p>Каждый сотрудник входит в CRM под своей учётной записью — логин и пароль вместо одного общего пароля. Благодаря этому система знает, кто что сделал: изменения подписываются именем, уведомления приходят конкретному человеку, а «Задачи» сразу показывают задачи самого сотрудника.</p>
+                <h4>Вход и пароль</h4>
+                <ul>
+                    <li>Учётные записи заводит руководитель на вкладке «Сотрудники». При создании система показывает <b>логин и временный пароль</b> — их нужно передать сотруднику (кнопка «Скопировать»). Позже этот пароль увидеть уже нельзя.</li>
+                    <li>При первом входе с временным паролем система предложит задать свой (не короче 8 символов) — пока это не сделано, работать нельзя.</li>
+                    <li>Своя смена пароля — кнопка с ключом в шапке. После смены пароля вход на других устройствах закрывается — нужно войти заново.</li>
+                    <li>Забыли пароль — попросите руководителя нажать «Новый пароль» в строке вашей учётки; он покажет новый временный пароль.</li>
+                    <li>После 5 неверных паролей подряд вход на 10 минут блокируется — это защита от подбора.</li>
+                </ul>
+                <h4>Роли</h4>
+                <div class="help-mock">
+                    <div class="help-mock-label"><i class="fas fa-eye"></i> Что доступно</div>
+                    <table class="mgr-table">
+                        <tr><th></th><th>Руководитель</th><th>Менеджер</th><th>Только чтение</th></tr>
+                        <tr><td>Смотреть заявки, задачи, группы, отчёты</td><td>да</td><td>да</td><td>да</td></tr>
+                        <tr><td>Создавать и править заявки, задачи, группы, программы, рассылать анкеты и отзывы</td><td>да</td><td>да</td><td>нет</td></tr>
+                        <tr><td>Открывать сканы документов слушателей</td><td>да</td><td>да</td><td>нет</td></tr>
+                        <tr><td>Удалять заявки, программы, отзывы</td><td>да</td><td>нет</td><td>нет</td></tr>
+                        <tr><td>Сотрудники, журнал, настройки входа</td><td>да</td><td>нет</td><td>нет</td></tr>
+                    </table>
+                </div>
+                <p>Кнопки, недоступные роли, просто скрыты; но главное — права проверяет сервер на каждый запрос, поэтому обойти ограничение через интерфейс или другую страницу нельзя. Последнего руководителя отключить или понизить нельзя, себе роль тоже менять нельзя — чтобы система не осталась без администратора.</p>
+                <h4>Вход по общему паролю (переходный период)</h4>
+                <p>Пока все не перешли на личные учётки, старый общий пароль продолжает работать — как руководитель, но без имени: в журнале такие действия подписаны «Общий пароль». На вкладке «Сотрудники» над таблицей видна жёлтая плашка с кнопкой «Отключить общий пароль». Когда у каждого есть личный вход — отключите его (система не даст это сделать, пока нет руководителя с личной учёткой). При необходимости включить обратно можно той же кнопкой; на экране входа общий пароль вводится по ссылке «Войти по общему паролю».</p>
+                <h4>Уведомления (колокольчик в шапке)</h4>
+                <ul>
+                    <li>Вам назначили задачу или добавили наблюдателем.</li>
+                    <li>Вам передали заявку (сменили ответственного менеджера).</li>
+                    <li>Задача, в которой вы исполнитель или наблюдатель, выполнена другим сотрудником.</li>
+                    <li>Слушатели заполнили анкету по вашей заявке.</li>
+                </ul>
+                <p>Число на колокольчике — непрочитанные; клик по уведомлению открывает задачу или заявку. Уведомления проверяются раз в минуту, новое дополнительно показывается всплывающей плашкой. Себя система не уведомляет. Сотрудник находится по имени в заявке/задаче: «Мария Хомутова» и «Хомутова Мария» — один человек; одно слово («Мария») подходит, только если оно однозначно.</p>
+                <h4>«Мои задачи»</h4>
+                <p>При первом открытии вкладки «Задачи» после входа показываются задачи самого сотрудника (фильтр «Ответственный» = вы). Кнопка «Только мои» переключает между «мои» и «все».</p>
+                <h4>Журнал — кто что изменил (только руководитель)</h4>
+                <p>Вкладка «Журнал» — хронология всех действий: заявки (изменения полей, передача, удаление), задачи, группы, программы, анкеты и отзывы, изменения данных слушателей, <b>открытие сканов документов</b>, входы, смена паролей. Для каждой записи видно время, кто (или «не сотрудник» — заявка с сайта, слушатель, общий пароль), что и над чем. Фильтры — по сотруднику, виду действий, тексту и датам. В карточке заявки блок «История изменений» тоже показывает имя автора. Значения персональных данных слушателей в журнал не пишутся — только факт правки и список изменённых полей.</p>
+                <div class="help-tip"><i class="fas fa-lightbulb"></i> <span>Имя сотрудника в учётной записи должно совпадать с тем, как его называют в заявках и задачах (порядок слов не важен) — от этого зависят уведомления и «Только мои».</span></div>
+            </div>
+        </details>
+
         <details class="help-section" id="help-tasks">
             <summary><i class="fas fa-list-check"></i> Задачи <i class="fas fa-chevron-down chev"></i></summary>
             <div class="help-body">
@@ -1596,9 +1739,9 @@
             <label><input type="checkbox" id="p_active" style="width:auto;"> Активна (показывается в подборе программ)</label>
         </div>
         <div class="modal-actions">
-            <button type="button" class="danger-outline" id="p_deleteBtn" style="display:none;margin-right:auto;" onclick="deleteProgramConfirm()"><i class="fas fa-trash"></i> Удалить</button>
+            <button type="button" class="danger-outline admin-only" id="p_deleteBtn" style="display:none;margin-right:auto;" onclick="deleteProgramConfirm()"><i class="fas fa-trash"></i> Удалить</button>
             <button type="button" class="secondary" onclick="closeProgramModal()">Отмена</button>
-            <button type="button" onclick="saveProgram()"><i class="fas fa-check"></i> Сохранить</button>
+            <button type="button" class="write-only" onclick="saveProgram()"><i class="fas fa-check"></i> Сохранить</button>
         </div>
     </div>
 </div>
@@ -1670,13 +1813,65 @@
     </div>
 </div>
 
+<!-- Смена пароля -->
+<div id="pwOverlay">
+    <div id="pwModal">
+        <h2>Смена пароля</h2>
+        <p class="readonly-hint" id="pwForcedHint" hidden style="font-size:13px;margin:0 0 14px;">Вы вошли по временному паролю — задайте свой собственный, прежде чем продолжить работу.</p>
+        <div class="field"><label>Текущий пароль</label><input type="password" id="pw_old" autocomplete="current-password"></div>
+        <div class="field"><label>Новый пароль (не короче 8 символов)</label><input type="password" id="pw_new" autocomplete="new-password"></div>
+        <div class="field"><label>Новый пароль ещё раз</label><input type="password" id="pw_new2" autocomplete="new-password"></div>
+        <div class="modal-actions">
+            <button type="button" class="secondary" id="pwCancelBtn" onclick="closeChangePassword()">Отмена</button>
+            <button type="button" onclick="submitChangePassword()"><i class="fas fa-check"></i> Сменить пароль</button>
+        </div>
+    </div>
+</div>
+
+<!-- Сотрудник: создание/правка -->
+<div id="userOverlay">
+    <div id="userModal">
+        <h2 id="userModalTitle">Сотрудник</h2>
+        <div class="field"><label>Имя — так же, как его пишут в заявках и задачах</label><input type="text" id="u_name" placeholder="Например: Хомутова Мария"></div>
+        <div class="field"><label>Логин (латиницей)</label><input type="text" id="u_login" placeholder="khomutova" autocapitalize="off" spellcheck="false"></div>
+        <div class="field"><label>Роль</label>
+            <select id="u_role">
+                <option value="manager">Менеджер — работает с заявками, задачами, группами</option>
+                <option value="admin">Руководитель — всё, включая удаление, сотрудников и журнал</option>
+                <option value="viewer">Только чтение — смотрит, ничего не меняет и не видит сканы</option>
+            </select>
+        </div>
+        <div class="field" id="u_activeRow" hidden><label><input type="checkbox" id="u_active" style="width:auto;"> Активен (может входить в систему)</label></div>
+        <div class="modal-actions">
+            <button type="button" class="secondary" onclick="closeUserModal()">Отмена</button>
+            <button type="button" onclick="saveUserModal()"><i class="fas fa-check"></i> Сохранить</button>
+        </div>
+    </div>
+</div>
+
+<!-- Учётные данные (показываются один раз) -->
+<div id="credOverlay">
+    <div id="credModal">
+        <h2 id="credTitle">Учётные данные</h2>
+        <p class="readonly-hint" style="font-size:13px;margin:0 0 12px;">Передайте сотруднику. Пароль временный — при первом входе система попросит задать свой. Позже этот пароль увидеть уже не получится.</p>
+        <div class="cred-box">
+            <div>Логин: <b id="credLogin"></b></div>
+            <div>Пароль: <b id="credPassword" style="font-family:monospace;font-size:16px;letter-spacing:0.06em;"></b></div>
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="secondary" onclick="copyCredentials()"><i class="fas fa-copy"></i> Скопировать</button>
+            <button type="button" onclick="document.getElementById('credOverlay').classList.remove('open')">Готово</button>
+        </div>
+    </div>
+</div>
+
 <!-- Модалка одного отзыва -->
 <div id="feedbackDetailOverlay">
     <div id="feedbackDetailModal">
         <h2>Отзыв</h2>
         <div id="fbDetailBody"></div>
         <div class="modal-actions">
-            <button type="button" class="danger-outline" id="fbDetailDeleteBtn" style="margin-right:auto;"><i class="fas fa-trash"></i> Удалить</button>
+            <button type="button" class="danger-outline admin-only" id="fbDetailDeleteBtn" style="margin-right:auto;"><i class="fas fa-trash"></i> Удалить</button>
             <button type="button" class="secondary" onclick="closeFeedbackDetail()">Закрыть</button>
         </div>
     </div>
@@ -1900,7 +2095,7 @@
             <div class="subsection" id="tasksSection" style="display:none;">
                 <h4><i class="fas fa-list-check"></i> Задачи</h4>
                 <div id="taskList"></div>
-                <button type="button" class="secondary" onclick="openTaskModal(editingId)" style="margin-top:8px;"><i class="fas fa-plus"></i> Добавить задачу</button>
+                <button type="button" class="secondary write-only" onclick="openTaskModal(editingId)" style="margin-top:8px;"><i class="fas fa-plus"></i> Добавить задачу</button>
             </div>
 
             <div class="subsection" id="intakeSection" style="display:none;">
@@ -1944,10 +2139,10 @@
             </div>
 
             <div class="modal-actions">
-                <button type="button" class="danger-outline" id="deleteBtn" style="display:none; margin-right:auto;" onclick="deleteCurrentLead()"><i class="fas fa-trash"></i> Удалить</button>
-                <button type="button" class="secondary" id="archiveToggleBtn" style="display:none;" onclick="toggleArchived(editingId)"></button>
+                <button type="button" class="danger-outline admin-only" id="deleteBtn" style="display:none; margin-right:auto;" onclick="deleteCurrentLead()"><i class="fas fa-trash"></i> Удалить</button>
+                <button type="button" class="secondary write-only" id="archiveToggleBtn" style="display:none;" onclick="toggleArchived(editingId)"></button>
                 <button type="button" class="secondary" onclick="closeModal()">Отмена</button>
-                <button type="button" onclick="saveModal()"><i class="fas fa-check"></i> Сохранить</button>
+                <button type="button" class="write-only" onclick="saveModal()"><i class="fas fa-check"></i> Сохранить</button>
             </div>
         </form>
     </div>
@@ -1973,9 +2168,21 @@
     // единой заявки/задачи, иначе новый сотрудник не появится в списке, пока ему
     // не назначат хоть что-то. Имена из реальных сделок (в manager может оказаться
     // кто угодно, если ввели вручную) добавляются к этому списку, а не заменяют его.
+    let currentUser = null; // { id, login, name, role, legacy, mustChange } после входа
+    let teamMembers = [];   // активные сотрудники с личными учётками (getTeam)
+    // Имя в заявке/задаче — свободный текст, поэтому сравниваем по набору слов без
+    // учёта порядка и регистра ("Мария Хомутова" = "Хомутова Мария"); то же правило
+    // на сервере (names.js), иначе «мои задачи» и уведомления расходились бы.
+    function nameTokens(s) { return String(s || '').toLowerCase().replace(/ё/g, 'е').split(/[\s.,]+/).filter(Boolean).sort(); }
+    function sameNameClient(a, b) {
+        const x = nameTokens(a), y = nameTokens(b);
+        return x.length > 0 && x.length === y.length && x.every((t, i) => t === y[i]);
+    }
     const KNOWN_MANAGERS = ['Абабин Михаил', 'Солдатенкова Анна', 'Хомутова Мария', 'Пудов Максим', 'Переверзев Артем', 'Переверзев Алексей', 'Белоусова Анастасия'];
     function getManagersList() {
-        return [...new Set([...KNOWN_MANAGERS, ...allDeals.map(d => d.manager).filter(Boolean)])].sort((a, b) => a.localeCompare(b, 'ru'));
+        const out = teamMembers.length ? teamMembers.map(m => m.name) : [...KNOWN_MANAGERS];
+        allDeals.map(d => d.manager).filter(Boolean).forEach(n => { if (!out.some(x => sameNameClient(x, n))) out.push(n); });
+        return out.sort((a, b) => a.localeCompare(b, 'ru'));
     }
 
     const TASK_STAGES = [
@@ -2144,16 +2351,29 @@
     }
 
     // ========== Доступ к CRM ==========
-    // Пароль хранится только в localStorage этого браузера, никогда — в самом файле.
-    // Сервер (script-google) проверяет его как CRM_KEY на каждый запрос; без него
-    // Apps Script отвечает {status:'error', message:'Unauthorized'}.
+    // В localStorage лежит токен сессии (после входа по логину/паролю) либо, пока
+    // не отключён, старый общий пароль — сервер принимает оба в параметре key.
     function getCrmKey() { return localStorage.getItem('crm_key') || ''; }
     function onUnauthorized() {
+        const hadKey = !!getCrmKey();
         localStorage.removeItem('crm_key');
-        document.getElementById('authError').style.display = 'block';
+        if (inboxTimer) { clearInterval(inboxTimer); inboxTimer = null; }
+        const err = document.getElementById('authError');
+        err.textContent = hadKey ? 'Сессия закончилась или пароль изменён — войдите снова' : 'Неверный логин или пароль';
+        err.style.display = hadKey ? 'block' : 'none';
         document.getElementById('authOverlay').classList.add('open');
         showLoading(false);
     }
+    let legacyLoginShown = false;
+    function toggleLegacyLoginForm() {
+        legacyLoginShown = !legacyLoginShown;
+        document.getElementById('authLoginForm').hidden = legacyLoginShown;
+        document.getElementById('authLegacyForm').hidden = !legacyLoginShown;
+        document.getElementById('authLegacyLink').textContent = legacyLoginShown ? 'Войти по логину и паролю' : 'Войти по общему паролю';
+        document.getElementById('authError').style.display = 'none';
+        (legacyLoginShown ? document.getElementById('authKeyInput') : document.getElementById('authLoginInput')).focus();
+    }
+    function authSubmit() { return legacyLoginShown ? submitAuthKey() : submitLogin(); }
     async function submitAuthKey() {
         const val = document.getElementById('authKeyInput').value.trim();
         if (!val) return;
@@ -2289,6 +2509,8 @@
         else if (currentTab === 'clients') renderClients(filtered);
         else if (currentTab === 'analytics') renderAnalytics(filtered);
         else if (currentTab === 'feedback') renderFeedbackTab();
+        else if (currentTab === 'team') renderTeamTab();
+        else if (currentTab === 'log') renderLogTab(false);
         else if (currentTab === 'tasks') renderMyTasksTab();
         else if (currentTab === 'programs') renderPrograms();
         else if (currentTab === 'reports') renderReports();
@@ -3985,7 +4207,7 @@
     function renderCard(d, stageKey, managersList, columnItems) {
         const card = document.createElement('div');
         card.className = 'card' + (stageKey === 'отказ' ? ' stage-otkaz-card' : '');
-        card.draggable = !boardSelectMode;
+        card.draggable = !boardSelectMode && !isViewer();
         card.dataset.id = d.id;
 
         let badges = '';
@@ -4069,6 +4291,7 @@
             `<option value="${escapeHtml(m)}" ${m === (d.manager || '') ? 'selected' : ''}>${escapeHtml(m)}</option>`
         ).join('');
         mgrSelect.classList.toggle('unassigned', !d.manager);
+        mgrSelect.disabled = isViewer();
         mgrSelect.draggable = false;
         mgrSelect.addEventListener('click', (e) => e.stopPropagation());
         mgrSelect.addEventListener('mousedown', (e) => e.stopPropagation());
@@ -5097,6 +5320,13 @@
         const mgrs = getManagersList();
         mgrSel.innerHTML = '<option value="">Все</option>' + mgrs.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
         mgrSel.value = keepMgr;
+        // При первом открытии вкладки после входа показываем задачи самого сотрудника;
+        // «Все» в фильтре возвращает общий список.
+        if (!tasksMineApplied && myTaskName()) {
+            tasksMineApplied = true;
+            if (!keepMgr && mgrs.includes(myTaskName())) mgrSel.value = myTaskName();
+        }
+        document.getElementById('tasksMineBtn').classList.toggle('active', !!myTaskName() && mgrSel.value === myTaskName());
 
         const selectBtn = document.getElementById('tasksSelectModeBtn');
         selectBtn.classList.toggle('active', tasksSelectMode);
@@ -5149,7 +5379,7 @@
         // Фильтр — по исполнителю ЗАДАЧИ (кому поручена, включая со-исполнителей), а
         // не по менеджеру сделки: задачу можно делегировать/поручить нескольким, и
         // список должен показывать её у каждого, кому она реально поручена.
-        if (manager) tasks = tasks.filter(t => effectiveAssignees(t).includes(manager));
+        if (manager) tasks = tasks.filter(t => effectiveAssignees(t).some(n => sameNameClient(n, manager)));
 
         tasks.sort((a, b) => {
             const av = tasksSortValue(a, tasksSort.key), bv = tasksSortValue(b, tasksSort.key);
@@ -5802,6 +6032,382 @@
         }
     }
 
+    // ========== Вход, роли, сотрудники, журнал, уведомления ==========
+    const ROLE_LABELS = { admin: 'Руководитель', manager: 'Менеджер', viewer: 'Только чтение' };
+    const isViewer = () => !!currentUser && currentUser.role === 'viewer';
+
+    async function submitLogin() {
+        const login = document.getElementById('authLoginInput').value.trim();
+        const password = document.getElementById('authPasswordInput').value;
+        if (!login || !password) return;
+        const errEl = document.getElementById('authError');
+        errEl.style.display = 'none';
+        showLoading(true);
+        try {
+            const resp = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: 'login', login, password }),
+            });
+            const data = await resp.json();
+            if (data.status !== 'success') throw new Error(data.message || 'Не удалось войти');
+            // Токен кладём под тем же ключом, что и раньше общий пароль: documents.html
+            // читает его оттуда же и продолжает работать без изменений.
+            localStorage.setItem('crm_key', data.token);
+            document.getElementById('authPasswordInput').value = '';
+            document.getElementById('authOverlay').classList.remove('open');
+            await initApp();
+        } catch (err) {
+            errEl.textContent = err.message;
+            errEl.style.display = 'block';
+        } finally {
+            showLoading(false);
+        }
+    }
+    ['authLoginInput', 'authPasswordInput'].forEach(id => document.getElementById(id).addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') submitLogin();
+    }));
+    function logout() {
+        localStorage.removeItem('crm_key');
+        location.reload(); // чистый лист: в памяти не остаётся данных предыдущего сотрудника
+    }
+
+    async function loadWhoami() {
+        const res = await fetchJSON(`${API_URL}?action=whoami`);
+        if (res.status !== 'success') throw new Error(res.message || 'Не удалось определить пользователя');
+        currentUser = res.data;
+        applyRoleUi();
+    }
+
+    function applyRoleUi() {
+        const role = currentUser ? currentUser.role : '';
+        ['admin', 'manager', 'viewer'].forEach(r => document.body.classList.toggle('role-' + r, r === role));
+        document.getElementById('userBar').hidden = !currentUser;
+        if (!currentUser) return;
+        document.getElementById('userName').textContent = currentUser.legacy ? 'Общий пароль' : currentUser.name;
+        const badge = document.getElementById('userRole');
+        badge.textContent = currentUser.legacy ? 'без личной учётки' : ROLE_LABELS[currentUser.role];
+        badge.classList.toggle('warn', !!currentUser.legacy);
+        document.getElementById('userPwBtn').style.display = currentUser.legacy ? 'none' : '';
+        document.getElementById('ntfBell').style.display = currentUser.legacy ? 'none' : '';
+    }
+
+    async function loadTeam() {
+        try {
+            const res = await fetchJSON(`${API_URL}?action=getTeam`);
+            if (res.status === 'success') teamMembers = res.data;
+        } catch (err) { /* без списка сотрудников работаем на резервном списке KNOWN_MANAGERS */ }
+    }
+
+    // ---- смена пароля ----
+    function openChangePassword(forced) {
+        document.getElementById('pwForcedHint').hidden = !forced;
+        document.getElementById('pwCancelBtn').hidden = !!forced;
+        ['pw_old', 'pw_new', 'pw_new2'].forEach(id => { document.getElementById(id).value = ''; });
+        document.getElementById('pwOverlay').dataset.forced = forced ? '1' : '';
+        document.getElementById('pwOverlay').classList.add('open');
+        document.getElementById('pw_old').focus();
+    }
+    function closeChangePassword() {
+        if (document.getElementById('pwOverlay').dataset.forced) return; // при обязательной смене закрыть окно нельзя
+        document.getElementById('pwOverlay').classList.remove('open');
+    }
+    async function submitChangePassword() {
+        const oldPassword = document.getElementById('pw_old').value;
+        const newPassword = document.getElementById('pw_new').value;
+        if (newPassword !== document.getElementById('pw_new2').value) { showMessage('Новые пароли не совпадают', 'error'); return; }
+        showLoading(true);
+        try {
+            const res = await postJSON('changePassword', { oldPassword, newPassword });
+            if (res.status !== 'success') throw new Error(res.message || 'Ошибка');
+            localStorage.setItem('crm_key', res.token); // прежний токен после смены пароля уже недействителен
+            document.getElementById('pwOverlay').dataset.forced = '';
+            document.getElementById('pwOverlay').classList.remove('open');
+            if (currentUser) currentUser.mustChange = false;
+            showMessage('Пароль изменён');
+        } catch (err) {
+            showMessage(err.message, 'error');
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    // ---- уведомления ----
+    let inbox = { items: [], unread: 0 };
+    let inboxKnownMax = null;
+    let inboxTimer = null;
+
+    async function refreshInbox() {
+        if (!currentUser || currentUser.legacy) return;
+        try {
+            const res = await fetchJSON(`${API_URL}?action=getNotifications`);
+            if (res.status !== 'success') return;
+            const maxId = res.data.reduce((m, n) => Math.max(m, n.id), 0);
+            if (inboxKnownMax !== null) {
+                res.data.filter(n => n.id > inboxKnownMax && !n.read_at).reverse().forEach(n => showMessage(n.text));
+            }
+            inboxKnownMax = Math.max(maxId, inboxKnownMax || 0);
+            inbox = { items: res.data, unread: res.unread };
+            renderInbox();
+        } catch (err) { /* тихо: попробуем на следующем опросе */ }
+    }
+    function startInboxPolling() {
+        if (inboxTimer || !currentUser || currentUser.legacy) return;
+        refreshInbox();
+        inboxTimer = setInterval(refreshInbox, 60000);
+    }
+
+    function renderInbox() {
+        const badge = document.getElementById('ntfBadge');
+        badge.textContent = inbox.unread > 99 ? '99+' : inbox.unread;
+        badge.style.display = inbox.unread ? 'inline-block' : 'none';
+        const panel = document.getElementById('ntfPanel');
+        panel.innerHTML = `
+            <div class="ntf-head"><b>Уведомления</b>
+                <button type="button" class="secondary" ${inbox.unread ? '' : 'disabled'} onclick="markInboxRead()">Прочитать все</button></div>
+            ${inbox.items.length ? inbox.items.map(n => `
+                <div class="ntf-item${n.read_at ? '' : ' unread'}" data-id="${n.id}" data-link="${escapeHtml(n.link || '')}">
+                    <div>${escapeHtml(n.text)}</div>
+                    <div class="readonly-hint">${new Date(n.created_at).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</div>
+                </div>`).join('') : '<div class="readonly-hint" style="padding:14px;">Пока ничего нет. Здесь появятся задачи, назначенные вам, и переданные вам заявки.</div>'}`;
+        panel.querySelectorAll('.ntf-item').forEach(el => el.addEventListener('click', () => {
+            markInboxRead([Number(el.dataset.id)]);
+            openInboxLink(el.dataset.link);
+            panel.classList.remove('open');
+        }));
+    }
+    function toggleInboxPanel(e) {
+        e.stopPropagation();
+        document.getElementById('ntfPanel').classList.toggle('open');
+    }
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('#ntfPanel') && !e.target.closest('#ntfBell')) document.getElementById('ntfPanel').classList.remove('open');
+    });
+    async function markInboxRead(ids) {
+        const now = new Date().toISOString();
+        inbox.items.forEach(n => { if (!ids || ids.includes(n.id)) n.read_at = n.read_at || now; });
+        inbox.unread = inbox.items.filter(n => !n.read_at).length;
+        renderInbox();
+        try { await postJSON('markNotificationsRead', { data: ids ? { ids } : {} }); } catch (err) { /* сервер всё равно пометит при следующем опросе */ }
+    }
+    function openInboxLink(link) {
+        const m = String(link || '').match(/^(task|lead):(\d+)$/);
+        if (!m) return;
+        const id = Number(m[2]);
+        if (m[1] === 'task') {
+            if (!allTasks.some(t => t.id === id)) { showMessage('Задача уже удалена или недоступна', 'error'); return; }
+            switchTab('tasks');
+            openTaskDetail(id);
+        } else {
+            const deal = allDeals.find(d => d.id === id);
+            if (deal) openEditModal(deal); else showMessage('Заявка не найдена', 'error');
+        }
+    }
+
+    // ---- «Сотрудники» ----
+    let teamUsers = [];
+    let teamSettings = { legacy_key_enabled: true };
+
+    async function renderTeamTab() {
+        const table = document.getElementById('teamTable');
+        try {
+            const [u, s] = await Promise.all([fetchJSON(`${API_URL}?action=listUsers`), fetchJSON(`${API_URL}?action=getSettings`)]);
+            if (u.status !== 'success') throw new Error(u.message);
+            teamUsers = u.data;
+            if (s.status === 'success') teamSettings = s.data;
+        } catch (err) {
+            if (err.message !== 'Unauthorized') table.innerHTML = `<tr><td>Не удалось загрузить: ${escapeHtml(err.message)}</td></tr>`;
+            return;
+        }
+        const legacyOn = teamSettings.legacy_key_enabled;
+        document.getElementById('teamLegacyBanner').className = 'team-banner ' + (legacyOn ? 'warn' : 'ok');
+        document.getElementById('teamLegacyBanner').innerHTML = legacyOn
+            ? `<i class="fas fa-triangle-exclamation"></i> <span>Пока включён <b>вход по общему паролю</b>: любой, кто его знает, входит как руководитель, а в журнале его действия подписаны «Общий пароль». Заведите всем личные учётки и отключите общий пароль.</span>
+               <button type="button" class="secondary" onclick="toggleLegacyKey(false)">Отключить общий пароль</button>`
+            : `<i class="fas fa-circle-check"></i> <span>Вход по общему паролю отключён — в систему входят только по личным учёткам.</span>
+               <button type="button" class="secondary" onclick="toggleLegacyKey(true)">Включить обратно</button>`;
+        table.innerHTML = `
+            <tr><th>Сотрудник</th><th>Логин</th><th>Роль</th><th>Статус</th><th>Последний вход</th><th></th></tr>
+            ${teamUsers.map(u => `
+                <tr data-id="${u.id}"${u.active ? '' : ' style="opacity:0.55;"'}>
+                    <td><b>${escapeHtml(u.name)}</b></td>
+                    <td>${escapeHtml(u.login)}</td>
+                    <td>${ROLE_LABELS[u.role] || u.role}</td>
+                    <td>${u.active ? (u.mustChange ? '<span class="badge stale">ждёт первого входа</span>' : 'активен') : 'отключён'}</td>
+                    <td>${u.last_login_at ? new Date(u.last_login_at).toLocaleString('ru-RU') : '—'}</td>
+                    <td style="white-space:nowrap;">
+                        <button type="button" class="secondary team-edit" style="font-size:12px;padding:5px 10px;">Изменить</button>
+                        <button type="button" class="secondary team-reset" style="font-size:12px;padding:5px 10px;">Новый пароль</button>
+                    </td>
+                </tr>`).join('') || '<tr><td colspan="6">Личных учёток пока нет. Нажмите «Добавить сотрудника».</td></tr>'}`;
+        table.querySelectorAll('.team-edit').forEach(b => b.addEventListener('click', () => openUserModal(Number(b.closest('tr').dataset.id))));
+        table.querySelectorAll('.team-reset').forEach(b => b.addEventListener('click', () => resetUserPasswordUi(Number(b.closest('tr').dataset.id))));
+    }
+
+    function openUserModal(id) {
+        const u = id === null ? null : teamUsers.find(x => x.id === id);
+        document.getElementById('userModalTitle').textContent = u ? 'Сотрудник' : 'Новый сотрудник';
+        document.getElementById('u_name').value = u ? u.name : '';
+        document.getElementById('u_login').value = u ? u.login : '';
+        document.getElementById('u_login').readOnly = !!u;
+        document.getElementById('u_role').value = u ? u.role : 'manager';
+        document.getElementById('u_activeRow').hidden = !u;
+        document.getElementById('u_active').checked = u ? u.active : true;
+        const self = u && currentUser && u.id === currentUser.id;
+        document.getElementById('u_role').disabled = !!self;
+        document.getElementById('u_active').disabled = !!self;
+        document.getElementById('userOverlay').dataset.id = u ? String(u.id) : '';
+        document.getElementById('userOverlay').classList.add('open');
+        document.getElementById('u_name').focus();
+    }
+    function closeUserModal() { document.getElementById('userOverlay').classList.remove('open'); }
+
+    function showCredentials(title, login, password) {
+        document.getElementById('credTitle').textContent = title;
+        document.getElementById('credLogin').textContent = login;
+        document.getElementById('credPassword').textContent = password;
+        document.getElementById('credOverlay').classList.add('open');
+    }
+    function copyCredentials() {
+        const text = `Логин: ${document.getElementById('credLogin').textContent}\nПароль: ${document.getElementById('credPassword').textContent}`;
+        navigator.clipboard?.writeText(text).then(() => showMessage('Скопировано')).catch(() => showMessage('Не удалось скопировать — выделите вручную', 'error'));
+    }
+
+    async function saveUserModal() {
+        const overlay = document.getElementById('userOverlay');
+        const id = overlay.dataset.id ? Number(overlay.dataset.id) : null;
+        const name = document.getElementById('u_name').value.trim();
+        const login = document.getElementById('u_login').value.trim();
+        const role = document.getElementById('u_role').value;
+        if (!name) { showMessage('Укажите имя сотрудника', 'error'); return; }
+        showLoading(true);
+        try {
+            if (id === null) {
+                const res = await postJSON('createUser', { data: { name, login, role } });
+                if (res.status !== 'success') throw new Error(res.message || 'Ошибка');
+                closeUserModal();
+                showCredentials('Сотрудник добавлен', login.toLowerCase(), res.password);
+            } else {
+                const patch = { id, name };
+                if (!document.getElementById('u_role').disabled) { patch.role = role; patch.active = document.getElementById('u_active').checked; }
+                const res = await postJSON('updateUser', { data: patch });
+                if (res.status !== 'success') throw new Error(res.message || 'Ошибка');
+                closeUserModal();
+                showMessage('Сохранено');
+            }
+            await loadTeam();
+            renderTeamTab();
+        } catch (err) {
+            showMessage(err.message, 'error');
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    async function resetUserPasswordUi(id) {
+        const u = teamUsers.find(x => x.id === id);
+        if (!u || !confirm(`Сбросить пароль сотрудника «${u.name}»? Он будет выведен из системы на всех устройствах и при входе задаст новый пароль.`)) return;
+        showLoading(true);
+        try {
+            const res = await postJSON('resetUserPassword', { data: { id } });
+            if (res.status !== 'success') throw new Error(res.message || 'Ошибка');
+            showCredentials('Новый временный пароль', u.login, res.password);
+            renderTeamTab();
+        } catch (err) {
+            showMessage(err.message, 'error');
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    async function toggleLegacyKey(enable) {
+        const msg = enable ? 'Снова разрешить вход по общему паролю?'
+            : 'Отключить вход по общему паролю? Все, у кого нет личной учётки, потеряют доступ (вы останетесь в системе под своей учёткой). Включить обратно можно в любой момент.';
+        if (!confirm(msg)) return;
+        try {
+            const res = await postJSON('setSetting', { data: { key: 'legacy_key_enabled', value: enable } });
+            if (res.status !== 'success') throw new Error(res.message || 'Ошибка');
+            renderTeamTab();
+        } catch (err) {
+            showMessage(err.message, 'error');
+        }
+    }
+
+    // ---- «Журнал» ----
+    const LOG_LABELS = {
+        login: 'Вход в систему', login_failed: 'Неудачная попытка входа', password_changed: 'Смена пароля', user_password_reset: 'Сброс пароля сотрудника',
+        user_create: 'Новый сотрудник', user_update: 'Изменение сотрудника', setting_changed: 'Изменение настройки',
+        lead_create: 'Заявка с сайта', lead_add_manual: 'Заявка добавлена вручную', lead_update: 'Изменение заявки', lead_delete: 'Удаление заявки',
+        lead_task_add: 'Задача по заявке создана', lead_task_update: 'Задача по заявке изменена', lead_student_update: 'Изменены данные слушателя',
+        task_add: 'Задача создана', task_update: 'Задача изменена',
+        cohort_create: 'Группа создана', cohort_update: 'Группа изменена', cohort_assign: 'Заявки добавлены в группу',
+        cohort_doc_upload: 'Документ группы загружен', cohort_doc_delete: 'Документ группы удалён',
+        program_add: 'Программа добавлена', program_update: 'Программа изменена', program_delete: 'Программа удалена',
+        intake_email_sent: 'Анкета отправлена на email', intake_submitted: 'Анкета заполнена слушателем', intake_password_regenerated: 'Новый пароль анкеты',
+        feedback_email_sent: 'Ссылка на отзыв отправлена', feedback_submitted: 'Получен отзыв',
+        scan_view: 'Открыт скан документа', add: 'Реестр: добавление', update: 'Реестр: изменение', delete: 'Реестр: удаление',
+    };
+    const LOG_GROUPS = [
+        ['', 'Все действия'], ['login', 'Входы'], ['lead_', 'Заявки и их задачи'], ['task_', 'Задачи без заявки'], ['cohort_', 'Группы'],
+        ['program_', 'Программы'], ['intake_', 'Анкеты'], ['feedback_', 'Отзывы'], ['scan_', 'Просмотр сканов'], ['user_', 'Сотрудники'],
+    ];
+    let logRows = [];
+    let logHasMore = false;
+
+    async function renderLogTab(append) {
+        const actorSel = document.getElementById('log_actor');
+        if (!actorSel.dataset.filled) {
+            try {
+                const u = await fetchJSON(`${API_URL}?action=listUsers`);
+                teamUsers = u.data || [];
+            } catch (err) { /* без списка сотрудников фильтр по автору просто пуст */ }
+            actorSel.innerHTML = '<option value="">Все сотрудники</option><option value="none">Не сотрудник (сайт, слушатели, общий пароль)</option>' +
+                teamUsers.map(u => `<option value="${u.id}">${escapeHtml(u.name)}</option>`).join('');
+            document.getElementById('log_action').innerHTML = LOG_GROUPS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
+            actorSel.dataset.filled = '1';
+        }
+        const params = new URLSearchParams({ action: 'getActivityLog', limit: '100' });
+        const f = { actor: actorSel.value, action: document.getElementById('log_action').value, q: document.getElementById('log_q').value.trim(), from: document.getElementById('log_from').value, to: document.getElementById('log_to').value };
+        Object.entries(f).forEach(([k, v]) => { if (v) params.set(k, v); });
+        if (append && logRows.length) params.set('beforeId', logRows[logRows.length - 1].id);
+        try {
+            const res = await fetchJSON(`${API_URL}?${params}`);
+            if (res.status !== 'success') throw new Error(res.message);
+            logRows = append ? logRows.concat(res.data) : res.data;
+            logHasMore = res.hasMore;
+        } catch (err) {
+            if (err.message !== 'Unauthorized') document.getElementById('logTable').innerHTML = `<tr><td>Не удалось загрузить: ${escapeHtml(err.message)}</td></tr>`;
+            return;
+        }
+        document.getElementById('logTable').innerHTML = `
+            <tr><th>Время</th><th>Кто</th><th>Действие</th><th>Объект</th><th>Подробности</th></tr>
+            ${logRows.map(r => `
+                <tr>
+                    <td style="white-space:nowrap;">${new Date(r.ts).toLocaleString('ru-RU')}</td>
+                    <td>${r.actor_name ? escapeHtml(r.actor_name) : '<span class="readonly-hint">не сотрудник</span>'}</td>
+                    <td>${escapeHtml(LOG_LABELS[r.action] || r.action)}</td>
+                    <td>${escapeHtml([r.full_name, r.program].filter(Boolean).join(' · '))}</td>
+                    <td style="max-width:420px;word-break:break-word;">${escapeHtml(r.details || '')}</td>
+                </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;padding:24px;">Записей нет</td></tr>'}`;
+        document.getElementById('logMore').innerHTML = logHasMore
+            ? '<button type="button" class="secondary" onclick="renderLogTab(true)" style="font-size:12.5px;padding:8px 14px;">Показать ещё</button>' : '';
+    }
+    function resetLogFilters() {
+        ['log_actor', 'log_action', 'log_q', 'log_from', 'log_to'].forEach(id => { document.getElementById(id).value = ''; });
+        renderLogTab(false);
+    }
+
+    // ---- «Только мои» на вкладке задач ----
+    let tasksMineApplied = false;
+    function myTaskName() { return currentUser && !currentUser.legacy ? currentUser.name : ''; }
+    function toggleTasksMine() {
+        const mine = myTaskName();
+        if (!mine) { showMessage('«Только мои» работает при входе под личной учётной записью', 'error'); return; }
+        const sel = document.getElementById('tasks_manager');
+        sel.value = sel.value === mine ? '' : mine;
+        renderMyTasksTab();
+    }
+
     // ========== История изменений ==========
     async function loadHistoryForLead(leadId) {
         try {
@@ -5812,7 +6418,7 @@
                 return;
             }
             list.innerHTML = res.data.map(h => `
-                <div class="history-item"><span class="ts">${String(h.timestamp || '').slice(0, 16).replace('T', ' ')}</span>${escapeHtml(h.details || h.action)}</div>
+                <div class="history-item"><span class="ts">${new Date(h.timestamp).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>${h.actor_name ? `<b>${escapeHtml(h.actor_name)}:</b> ` : ''}${escapeHtml(h.details || h.action)}</div>
             `).join('');
         } catch (err) {
             document.getElementById('historyList').innerHTML = '<div class="history-item">Не удалось загрузить историю</div>';
@@ -5901,6 +6507,14 @@
     });
 
     async function initApp() {
+        try {
+            await loadWhoami();
+        } catch (err) {
+            return; // 'Unauthorized' уже показал экран входа
+        }
+        await loadTeam();
+        if (currentUser.mustChange) openChangePassword(true);
+        startInboxPolling();
         document.getElementById('showArchivedToggle').checked = showArchivedOnBoard;
         renderSavedViews();
         await loadDeals();
@@ -5921,7 +6535,7 @@
         initApp();
     } else {
         document.getElementById('authOverlay').classList.add('open');
-        document.getElementById('authKeyInput').focus();
+        document.getElementById('authLoginInput').focus();
     }
 </script>
 </body>
