@@ -431,6 +431,32 @@
         .analytics-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; align-items: start; }
         @media (max-width: 1100px) { .analytics-grid { grid-template-columns: 1fr; } }
         .panel { background: var(--card-bg); border-radius: var(--radius); padding: 20px 22px; box-shadow: var(--shadow); }
+        .fb-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; margin-bottom: 18px; }
+        .fb-tiles .readonly-hint { margin-top: 2px; }
+        .fb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; align-items: start; margin-bottom: 8px; }
+        .fb-h { margin: 26px 0 12px; font-size: 16px; color: var(--primary-dark); }
+        .fb-hist { display: flex; align-items: flex-end; gap: 6px; height: 140px; }
+        .fb-hist-col { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 3px; }
+        .fb-hist-col > div { width: 100%; border-radius: 4px 4px 0 0; min-height: 2px; }
+        .fb-hist-n { font-size: 10.5px; color: var(--text-secondary); min-height: 13px; }
+        .fb-hist-x { font-size: 11.5px; color: var(--text-secondary); }
+        .fb-hist-bar.pos, .fb-bar-fill.pos { background: var(--success); }
+        .fb-hist-bar.mid, .fb-bar-fill.mid { background: var(--warning); }
+        .fb-hist-bar.neg, .fb-bar-fill.neg { background: var(--danger); }
+        .fb-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 12.5px; }
+        .fb-bar-label { flex: 0 0 38%; }
+        .fb-bar-track { flex: 1; height: 16px; background: #eef0f4; border-radius: 4px; overflow: hidden; }
+        .fb-bar-fill { height: 100%; background: var(--primary); min-width: 2px; }
+        .fb-bar-val { flex: 0 0 74px; text-align: right; color: var(--text-secondary); }
+        table.fb-table td, table.fb-table th { font-size: 12.5px; }
+        .fb-item { padding: 9px 11px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; cursor: pointer; }
+        .fb-item:hover { background: #f1f4ff; }
+        .fb-item-head { font-size: 13px; margin-bottom: 4px; }
+        .fb-item-text { font-size: 13px; white-space: pre-wrap; }
+        .fb-item-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 4px; }
+        .fb-chip { font-size: 11px; padding: 2px 8px; border-radius: 12px; background: #eef0f4; color: var(--text-secondary); }
+        .fb-chip.neg { background: #fde2e7; color: #a4133c; }
+        .fb-text-tabs { display: flex; flex-wrap: wrap; gap: 8px; }
         .panel h3 { margin: 0 0 16px; font-size: 15px; color: var(--primary-dark); }
         .period-compare { display: flex; gap: 24px; flex-wrap: wrap; align-items: center; }
         .period-compare-col { min-width: 160px; }
@@ -643,6 +669,20 @@
             border-radius: 20px; padding: 2px 8px; font-family: inherit; cursor: pointer; max-width: 130px;
         }
         .subtask-assignee-select:hover { border-color: var(--primary-light); color: var(--primary-dark); }
+        #feedbackDetailOverlay {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+            align-items: center; justify-content: center; z-index: 1000; padding: 20px;
+        }
+        #feedbackDetailOverlay.open { display: flex; }
+        #feedbackDetailModal {
+            background: white; border-radius: var(--radius); padding: 26px 28px; width: 100%;
+            max-width: 620px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+        }
+        #feedbackDetailModal h2 { margin: 0 0 6px; font-size: 19px; color: var(--primary-dark); }
+        .fb-detail-h { margin: 16px 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.03em; color: var(--primary-dark); border-bottom: 1px solid var(--border); padding-bottom: 4px; }
+        .fb-detail-q { margin-bottom: 8px; }
+        .fb-detail-label { font-size: 12px; color: var(--text-secondary); }
+        .fb-detail-val { font-size: 13.5px; white-space: pre-wrap; }
         .field { margin-bottom: 14px; }
         .field label { display: block; font-size: 12.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 5px; }
         .field input, .field select, .field textarea {
@@ -736,6 +776,7 @@
         <button class="tab-btn" data-tab="archive" onclick="switchTab('archive')"><i class="fas fa-box-archive"></i> Архив<span id="archiveCountBadge" style="display:none;"></span></button>
         <button class="tab-btn" data-tab="clients" onclick="switchTab('clients')"><i class="fas fa-address-book"></i> Клиенты</button>
         <button class="tab-btn" data-tab="analytics" onclick="switchTab('analytics')"><i class="fas fa-chart-simple"></i> Аналитика</button>
+        <button class="tab-btn" data-tab="feedback" onclick="switchTab('feedback')"><i class="fas fa-comments"></i> Отзывы</button>
         <button class="tab-btn" data-tab="tasks" onclick="switchTab('tasks')"><i class="fas fa-list-check"></i> Задачи<span id="tasksOverdueBadge" style="display:none;"></span></button>
         <button class="tab-btn" data-tab="programs" onclick="switchTab('programs')"><i class="fas fa-book"></i> Программы</button>
         <button class="tab-btn" data-tab="reports" onclick="switchTab('reports')"><i class="fas fa-file-lines"></i> Отчётность</button>
@@ -836,6 +877,37 @@
                 <table class="mgr-table" id="mgrTable"></table>
             </div>
         </div>
+    </div>
+
+    <div id="screen-feedback" class="screen">
+        <div class="report-filters">
+            <div class="report-filter-field">
+                <label>Группа</label>
+                <select id="fb_cohort" onchange="renderFeedbackTab()"><option value="">Все группы</option></select>
+            </div>
+            <div class="report-filter-field">
+                <label>Программа</label>
+                <select id="fb_program" onchange="renderFeedbackTab()"><option value="">Все программы</option></select>
+            </div>
+            <div class="report-filter-field">
+                <label>Отзыв с</label>
+                <input type="date" id="fb_from" onchange="renderFeedbackTab()">
+            </div>
+            <div class="report-filter-field">
+                <label>по</label>
+                <input type="date" id="fb_to" onchange="renderFeedbackTab()">
+            </div>
+            <div class="report-filter-field" style="align-self:flex-end;">
+                <button type="button" class="secondary" onclick="resetFeedbackFilters()"><i class="fas fa-rotate-left"></i> Сбросить</button>
+            </div>
+            <div class="report-filter-field" style="align-self:flex-end;">
+                <button type="button" class="secondary" onclick="ensureFeedbackLoaded(true)"><i class="fas fa-arrows-rotate"></i> Обновить</button>
+            </div>
+            <div class="report-filter-field" style="align-self:flex-end;">
+                <button type="button" onclick="exportFeedbackToExcel()"><i class="fas fa-file-excel"></i> Экспорт в Excel</button>
+            </div>
+        </div>
+        <div id="feedbackBody"></div>
     </div>
 
     <div id="screen-tasks" class="screen">
@@ -981,6 +1053,7 @@
             <a href="#help-archive">Архив</a>
             <a href="#help-clients">Клиенты</a>
             <a href="#help-analytics">Аналитика</a>
+            <a href="#help-feedback">Отзывы</a>
             <a href="#help-tasks">Задачи</a>
             <a href="#help-programs">Программы</a>
             <a href="#help-reports">Отчётность</a>
@@ -1296,6 +1369,49 @@
             </div>
         </details>
 
+        <details class="help-section" id="help-feedback">
+            <summary><i class="fas fa-comments"></i> Отзывы <i class="fas fa-chevron-down chev"></i></summary>
+            <div class="help-body">
+                <p>Сбор и разбор отзывов слушателей о курсе и о работе отдела. Работает так же, как анкета для зачисления: на вкладке «Группы» в карточке группы создаётся <b>одна ссылка на всю группу</b>, которую можно скопировать или разослать всем слушателям на email одной кнопкой. Каждый слушатель открывает ссылку, отвечает на вопросы (3–5 минут, ФИО указывать необязательно) — и его ответ попадает сюда.</p>
+                <h4>Ссылка в карточке группы</h4>
+                <div class="help-mock">
+                    <div class="help-mock-label"><i class="fas fa-eye"></i> Как это выглядит</div>
+                    <div style="max-width:460px;">
+                        <div class="field-row" style="align-items:flex-end;">
+                            <div class="field" style="margin-bottom:0;"><input type="text" readonly value="https://.../feedback.html?cohort=12&token=..." style="font-size:12.5px;"></div>
+                            <button type="button" class="secondary" style="flex-shrink:0;"><i class="fas fa-copy"></i></button>
+                        </div>
+                        <div style="margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                            <button type="button" style="font-size:12.5px;padding:8px 14px;"><i class="fas fa-paper-plane"></i> Отправить ссылку всем на email</button>
+                            <span class="readonly-hint">Получено отзывов: 7 из 12 слушателей</span>
+                        </div>
+                    </div>
+                </div>
+                <p>Письма уходят на email из заявок группы (одинаковые адреса — один раз). Счётчик рядом показывает, сколько отзывов уже пришло от заявленного числа слушателей, а ссылка «Смотреть аналитику» открывает эту вкладку сразу по нужной группе. Ссылку можно переслать самим — форма принимает сколько угодно ответов, а после отправки предлагает «Заполнить за другого слушателя» (удобно, если группа отвечает с одного компьютера).</p>
+                <h4>Аналитика</h4>
+                <div class="help-mock">
+                    <div class="help-mock-label"><i class="fas fa-eye"></i> Как это выглядит</div>
+                    <div class="stat-tiles" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;">
+                        <div class="stat-tile"><div class="label">Отзывов</div><div class="value">24</div></div>
+                        <div class="stat-tile"><div class="label">Оценка курса</div><div class="value">8,6 / 10</div></div>
+                        <div class="stat-tile"><div class="label">NPS курса</div><div class="value">+42</div></div>
+                        <div class="stat-tile"><div class="label">Рекомендуют</div><div class="value">88%</div></div>
+                    </div>
+                </div>
+                <ul>
+                    <li><b>Фильтры</b> — по группе, по программе и по периоду. Клик по строке в таблицах сравнения сразу фильтрует по этой группе или программе.</li>
+                    <li><b>Показатели</b> — число отзывов и отклик (отзывов от числа слушателей в группах), средние оценки курса и преподавателя, <b>NPS</b> (доля «сторонников» с оценкой 9–10 минус доля «критиков» с оценкой 1–6), доля рекомендующих, средняя полезность, доля готовых применить знания в ближайшее время, число просящих связаться.</li>
+                    <li><b>Распределения</b> — гистограммы оценок 1–10 и по каждому вопросу с вариантами ответа: сколько человек и какая доля выбрала каждый вариант, средний балл.</li>
+                    <li><b>Сравнение</b> — таблицы по группам, по программам и (если данных больше чем за один месяц) динамика по месяцам; оценки ниже 7 подсвечены красным.</li>
+                    <li><b>Требуют внимания</b> — критичные отзывы (оценка курса или преподавателя 6 и ниже, либо «не порекомендую») с комментариями «что лишнее» и «что улучшить», и список тех, кто оставил контакт для связи.</li>
+                    <li><b>Текстовые ответы</b> — все свободные ответы по каждому открытому вопросу (самое полезное, лишнее, что улучшить, чему научились, что изменят, темы для следующих курсов) с поиском по тексту.</li>
+                    <li><b>Все отзывы</b> — таблица; клик по строке (или по любому отзыву в списках выше) открывает полный ответ, там же отзыв можно удалить, если он тестовый или ошибочный.</li>
+                    <li><b>Экспорт в Excel</b> — три листа с учётом текущих фильтров: «Ответы» (одна строка на отзыв, по столбцу на вопрос), «Сводка» (распределения и средние по каждому вопросу), «По группам».</li>
+                </ul>
+                <div class="help-tip"><i class="fas fa-lightbulb"></i> <span>Список вопросов хранится на сервере в одном месте и общий для формы слушателя и для аналитики. Если понадобится изменить или добавить вопрос — напишите разработчику: старые ответы при этом сохранятся.</span></div>
+            </div>
+        </details>
+
         <details class="help-section" id="help-tasks">
             <summary><i class="fas fa-list-check"></i> Задачи <i class="fas fa-chevron-down chev"></i></summary>
             <div class="help-body">
@@ -1550,6 +1666,18 @@
         <div class="modal-actions">
             <button type="button" class="secondary" onclick="closeTaskModal()">Отмена</button>
             <button type="button" onclick="saveTaskModal()"><i class="fas fa-check"></i> Создать задачу</button>
+        </div>
+    </div>
+</div>
+
+<!-- Модалка одного отзыва -->
+<div id="feedbackDetailOverlay">
+    <div id="feedbackDetailModal">
+        <h2>Отзыв</h2>
+        <div id="fbDetailBody"></div>
+        <div class="modal-actions">
+            <button type="button" class="danger-outline" id="fbDetailDeleteBtn" style="margin-right:auto;"><i class="fas fa-trash"></i> Удалить</button>
+            <button type="button" class="secondary" onclick="closeFeedbackDetail()">Закрыть</button>
         </div>
     </div>
 </div>
@@ -2160,6 +2288,7 @@
         else if (currentTab === 'archive') renderArchive(filtered);
         else if (currentTab === 'clients') renderClients(filtered);
         else if (currentTab === 'analytics') renderAnalytics(filtered);
+        else if (currentTab === 'feedback') renderFeedbackTab();
         else if (currentTab === 'tasks') renderMyTasksTab();
         else if (currentTab === 'programs') renderPrograms();
         else if (currentTab === 'reports') renderReports();
@@ -3198,6 +3327,8 @@
 
             <button type="button" style="font-size:12.5px;padding:8px 14px;margin-bottom:16px;" onclick="sendAllIntakeEmails(membersOfCohort(${cohort.id}))"><i class="fas fa-paper-plane"></i> Отправить анкеты всем</button>
 
+            <div class="cohort-docs-section" id="cohortFeedbackBox" style="margin-bottom:16px;"></div>
+
             <div class="student-cards-grid" id="cohortTabStudents"></div>
 
             <div class="cohort-docs-section">
@@ -3231,6 +3362,7 @@
         document.getElementById('ct_org_name').value = orgInfo.org_name;
         document.getElementById('ct_inn').value = orgInfo.inn;
 
+        renderCohortFeedbackBox(cohort);
         document.getElementById('cohortTabStudents').innerHTML = members.map(d => renderStudentCard(d)).join('');
         document.getElementById('cohortTabStudents').querySelectorAll('.sc-scan-link').forEach(a => {
             a.addEventListener('click', (e) => { e.preventDefault(); openScan(a.dataset.fileId); });
@@ -5098,6 +5230,576 @@
         });
 
         renderTasksCalendar(tasks);
+    }
+
+    // ========== Отзывы слушателей ==========
+    // Вопросы приходят с сервера (getFeedbackSpec) — единый источник для формы
+    // feedback.html и для этой аналитики; ответы хранятся по id вопроса.
+    let feedbackSpec = null;
+    let allFeedback = [];
+    let feedbackLoaded = false;
+    let feedbackLoading = false;
+    let feedbackLoadFailed = false;
+    let feedbackTextQ = 'most_useful';
+    let feedbackTextSearch = '';
+    let feedbackRawLimit = 30;
+
+    const fmt1 = (n) => (Math.round(n * 10) / 10).toFixed(1).replace('.', ',');
+    const fmtPct = (n) => Math.round(n) + '%';
+    const fmtNps = (n) => (n > 0 ? '+' : '') + Math.round(n);
+
+    function fbQuestions() { return feedbackSpec ? feedbackSpec.sections.flatMap(s => s.questions) : []; }
+    function fbQuestion(id) { return fbQuestions().find(q => q.id === id); }
+    function fbOptionLabel(q, key) { const o = (q.options || []).find(x => x.key === key); return o ? o.label : key; }
+    function fbCohortLabel(cohortId, program) {
+        const c = allCohorts.find(x => x.id === cohortId);
+        if (!c) return `${program || '—'} (группа удалена)`;
+        return `${c.program}${c.planned_start_date ? ' · ' + String(c.planned_start_date).slice(0, 10) : ''} · №${c.id}`;
+    }
+    function fbDate(r) { return new Date(r.created_at).toLocaleDateString('ru-RU'); }
+
+    async function ensureFeedbackLoaded(force) {
+        if (feedbackLoading) return;
+        if (force) feedbackLoadFailed = false;
+        if ((feedbackLoaded && !force) || feedbackLoadFailed) return;
+        feedbackLoading = true;
+        try {
+            const [specRes, fbRes] = await Promise.all([
+                feedbackSpec ? Promise.resolve({ status: 'success', data: feedbackSpec }) : fetchJSON(`${API_URL}?action=getFeedbackSpec`),
+                fetchJSON(`${API_URL}?action=getFeedback`),
+            ]);
+            if (specRes.status !== 'success') throw new Error(specRes.message || 'Не удалось загрузить вопросы');
+            if (fbRes.status !== 'success') throw new Error(fbRes.message || 'Не удалось загрузить отзывы');
+            feedbackSpec = specRes.data;
+            allFeedback = fbRes.data;
+            feedbackLoaded = true;
+        } catch (err) {
+            feedbackLoadFailed = true;
+            if (err.message !== 'Unauthorized') showMessage('Отзывы: ' + err.message, 'error');
+        } finally {
+            feedbackLoading = false;
+            if (currentTab === 'feedback') renderFeedbackTab();
+            updateCohortFeedbackCount();
+        }
+    }
+
+    // ---- статистика ----
+    function fbNums(rows, id) { return rows.map(r => r.answers && r.answers[id]).filter(v => typeof v === 'number'); }
+    function fbMean(arr) { return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null; }
+    // NPS по шкале 1–10: 9–10 — сторонники, 1–6 — критики, 7–8 не считаются.
+    function fbNps(arr) {
+        if (!arr.length) return null;
+        return (arr.filter(v => v >= 9).length - arr.filter(v => v <= 6).length) / arr.length * 100;
+    }
+    function fbShare(rows, qid, keys) {
+        const vals = rows.map(r => r.answers && r.answers[qid]).filter(Boolean);
+        return vals.length ? vals.filter(v => keys.includes(v)).length / vals.length * 100 : null;
+    }
+    function fbChoiceStats(rows, q) {
+        const counts = {};
+        q.options.forEach(o => { counts[o.key] = 0; });
+        let answered = 0, scoreSum = 0, scoreN = 0;
+        rows.forEach(r => {
+            const v = r.answers && r.answers[q.id];
+            if (v === undefined || counts[v] === undefined) return;
+            counts[v]++; answered++;
+            const o = q.options.find(x => x.key === v);
+            if (typeof o.score === 'number') { scoreSum += o.score; scoreN++; }
+        });
+        return { counts, answered, avg: scoreN ? scoreSum / scoreN : null };
+    }
+    function fbAggregate(rows) {
+        const useful = fbQuestion('usefulness');
+        return {
+            n: rows.length,
+            course: fbMean(fbNums(rows, 'course_rating')),
+            teacher: fbMean(fbNums(rows, 'teacher_rating')),
+            nps: fbNps(fbNums(rows, 'course_rating')),
+            rec: fbShare(rows, 'recommend', ['yes', 'rather_yes']),
+            useful: useful ? fbChoiceStats(rows, useful).avg : null,
+        };
+    }
+    function fbScoreClass(score) { return score == null ? '' : score <= 2 ? ' neg' : score === 3 ? ' mid' : ' pos'; }
+
+    // ---- фильтры ----
+    function feedbackFilters() {
+        return {
+            cohort: document.getElementById('fb_cohort').value,
+            program: document.getElementById('fb_program').value,
+            from: document.getElementById('fb_from').value,
+            to: document.getElementById('fb_to').value,
+        };
+    }
+    function feedbackFilteredRows() {
+        const f = feedbackFilters();
+        return allFeedback.filter(r => {
+            if (f.cohort && String(r.cohort_id) !== f.cohort) return false;
+            if (f.program && (r.program || '') !== f.program) return false;
+            const d = toLocalDateKey(new Date(r.created_at));
+            if (f.from && d < f.from) return false;
+            if (f.to && d > f.to) return false;
+            return true;
+        });
+    }
+    function populateFeedbackFilters() {
+        const cSel = document.getElementById('fb_cohort');
+        const pSel = document.getElementById('fb_program');
+        const keepC = cSel.value, keepP = pSel.value;
+        const byCohort = new Map();
+        allFeedback.forEach(r => {
+            const k = String(r.cohort_id);
+            if (!byCohort.has(k)) byCohort.set(k, { id: r.cohort_id, program: r.program, n: 0 });
+            byCohort.get(k).n++;
+        });
+        cSel.innerHTML = '<option value="">Все группы</option>' + [...byCohort.entries()]
+            .sort((a, b) => fbCohortLabel(a[1].id, a[1].program).localeCompare(fbCohortLabel(b[1].id, b[1].program), 'ru'))
+            .map(([k, v]) => `<option value="${k}">${escapeHtml(fbCohortLabel(v.id, v.program))} (${v.n})</option>`).join('');
+        const programs = [...new Set(allFeedback.map(r => r.program).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ru'));
+        pSel.innerHTML = '<option value="">Все программы</option>' + programs.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
+        cSel.value = [...cSel.options].some(o => o.value === keepC) ? keepC : '';
+        pSel.value = [...pSel.options].some(o => o.value === keepP) ? keepP : '';
+    }
+    function resetFeedbackFilters() {
+        ['fb_cohort', 'fb_program', 'fb_from', 'fb_to'].forEach(id => { document.getElementById(id).value = ''; });
+        renderFeedbackTab();
+    }
+    function openFeedbackForCohort(cohortId) {
+        switchTab('feedback');
+        document.getElementById('fb_cohort').value = String(cohortId);
+        renderFeedbackTab();
+    }
+
+    // ---- вкладка ----
+    function renderFeedbackTab() {
+        const body = document.getElementById('feedbackBody');
+        if (!feedbackLoaded) {
+            body.innerHTML = feedbackLoadFailed
+                ? '<div class="panel"><p class="readonly-hint">Не удалось загрузить отзывы. Проверьте соединение и нажмите «Обновить».</p></div>'
+                : '<div class="panel"><p class="readonly-hint">Загрузка отзывов…</p></div>';
+            ensureFeedbackLoaded();
+            return;
+        }
+        populateFeedbackFilters();
+        const rows = feedbackFilteredRows();
+        if (!allFeedback.length) {
+            body.innerHTML = '<div class="panel"><p class="readonly-hint">Отзывов пока нет. Ссылку на отзыв можно создать и отправить слушателям на вкладке «Группы» — в карточке нужной группы.</p></div>';
+            return;
+        }
+        if (!rows.length) {
+            body.innerHTML = '<div class="panel"><p class="readonly-hint">По выбранным фильтрам отзывов нет.</p></div>';
+            return;
+        }
+
+        const agg = fbAggregate(rows);
+        const cohortIds = [...new Set(rows.map(r => r.cohort_id).filter(id => id !== null))];
+        const heads = cohortIds.reduce((s, id) => s + sumParticipants(membersOfCohort(id)), 0);
+        const soon = fbShare(rows, 'apply_plan', ['soon']);
+        const contactN = rows.filter(r => r.answers.contact_ok === 'yes').length;
+        const tiles = [
+            ['Отзывов', rows.length, ''],
+            ['Отклик', heads ? fmtPct(Math.min(100, rows.length / heads * 100)) : '—', heads ? `${rows.length} из ${heads} слушателей` : 'нет данных о составе групп'],
+            ['Оценка курса', agg.course != null ? fmt1(agg.course) + ' / 10' : '—', ''],
+            ['Оценка преподавателя', fbMean(fbNums(rows, 'teacher_rating')) != null ? fmt1(agg.teacher) + ' / 10' : '—', ''],
+            ['NPS курса', agg.nps != null ? fmtNps(agg.nps) : '—', 'сторонники 9–10 минус критики 1–6'],
+            ['Рекомендуют', agg.rec != null ? fmtPct(agg.rec) : '—', '«да» и «скорее да»'],
+            ['Полезность', agg.useful != null ? fmt1(agg.useful) + ' / 5' : '—', 'средний балл'],
+            ['Применят в ближайшее время', soon != null ? fmtPct(soon) : '—', ''],
+            ['Просят связаться', contactN, ''],
+        ];
+
+        const histogram = (qid, title) => {
+            const q = fbQuestion(qid);
+            if (!q) return '';
+            const nums = fbNums(rows, qid);
+            const counts = {};
+            for (let i = q.min; i <= q.max; i++) counts[i] = 0;
+            nums.forEach(v => { counts[v]++; });
+            const max = Math.max(1, ...Object.values(counts));
+            return `
+                <div class="panel">
+                    <h3>${escapeHtml(title)}</h3>
+                    <div class="fb-hist">
+                        ${Object.entries(counts).map(([v, c]) => `
+                            <div class="fb-hist-col" title="${v}: ${c}">
+                                <span class="fb-hist-n">${c || ''}</span>
+                                <div class="fb-hist-bar${Number(v) <= 6 ? ' neg' : Number(v) <= 8 ? ' mid' : ' pos'}" style="height:${Math.round(c / max * 100)}%"></div>
+                                <span class="fb-hist-x">${v}</span>
+                            </div>`).join('')}
+                    </div>
+                    <div class="readonly-hint" style="margin-top:8px;">Ответили: ${nums.length}${nums.length ? ` · средняя ${fmt1(fbMean(nums))} · NPS ${fmtNps(fbNps(nums))}` : ''}</div>
+                </div>`;
+        };
+
+        const choicePanels = feedbackSpec.sections.map(s => {
+            const qs = s.questions.filter(q => q.type === 'choice' && q.id !== 'contact_ok');
+            if (!qs.length) return '';
+            return qs.map(q => {
+                const st = fbChoiceStats(rows, q);
+                return `
+                    <div class="panel">
+                        <h3>${escapeHtml(q.label)}</h3>
+                        ${q.options.map(o => {
+                            const c = st.counts[o.key];
+                            const pct = st.answered ? c / st.answered * 100 : 0;
+                            return `<div class="fb-bar-row"><span class="fb-bar-label">${escapeHtml(o.label)}</span>
+                                <div class="fb-bar-track"><div class="fb-bar-fill${fbScoreClass(o.score)}" style="width:${pct}%"></div></div>
+                                <span class="fb-bar-val">${c} · ${fmtPct(pct)}</span></div>`;
+                        }).join('')}
+                        <div class="readonly-hint" style="margin-top:6px;">Ответили: ${st.answered}${st.avg != null ? ` · средний балл ${fmt1(st.avg)} из 5` : ''}</div>
+                    </div>`;
+            }).join('');
+        }).join('');
+
+        const cmpRow = (label, rs, extra) => {
+            const a = fbAggregate(rs);
+            const low = (v) => v != null && v < 7 ? ' style="color:var(--danger);font-weight:600;"' : '';
+            return `<tr${extra || ''}>
+                <td>${label}</td><td>${a.n}</td>
+                <td${low(a.course)}>${a.course != null ? fmt1(a.course) : '—'}</td>
+                <td${low(a.teacher)}>${a.teacher != null ? fmt1(a.teacher) : '—'}</td>
+                <td>${a.nps != null ? fmtNps(a.nps) : '—'}</td>
+                <td>${a.rec != null ? fmtPct(a.rec) : '—'}</td>
+                <td>${a.useful != null ? fmt1(a.useful) : '—'}</td></tr>`;
+        };
+        const cmpHead = (first) => `<tr><th>${first}</th><th>Отзывов</th><th>Курс</th><th>Препод.</th><th>NPS</th><th>Рекоменд.</th><th>Польза /5</th></tr>`;
+        const groupBy = (keyFn) => { const m = new Map(); rows.forEach(r => { const k = keyFn(r); if (!m.has(k)) m.set(k, []); m.get(k).push(r); }); return m; };
+        const byCohort = groupBy(r => String(r.cohort_id));
+        const byProgram = groupBy(r => r.program || '—');
+        const byMonth = groupBy(r => toLocalDateKey(new Date(r.created_at)).slice(0, 7));
+
+        const critical = rows.filter(r => (r.answers.course_rating <= 6) || (r.answers.teacher_rating <= 6) || ['no', 'rather_no'].includes(r.answers.recommend))
+            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        const contacts = rows.filter(r => r.answers.contact_ok === 'yes')
+            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+        const textQs = fbQuestions().filter(q => q.type === 'textarea' || q.type === 'list');
+        if (!textQs.some(q => q.id === feedbackTextQ)) feedbackTextQ = textQs[0] ? textQs[0].id : '';
+
+        body.innerHTML = `
+            <div class="stat-tiles fb-tiles">
+                ${tiles.map(([label, value, sub]) => `<div class="stat-tile"><div class="label">${escapeHtml(label)}</div><div class="value">${escapeHtml(String(value))}</div>${sub ? `<div class="readonly-hint">${escapeHtml(sub)}</div>` : ''}</div>`).join('')}
+            </div>
+
+            <div class="fb-grid">
+                ${histogram('course_rating', 'Оценка курса (1–10)')}
+                ${histogram('teacher_rating', 'Оценка преподавателя (1–10)')}
+            </div>
+
+            <h3 class="fb-h">Сравнение</h3>
+            <div class="fb-grid">
+                <div class="panel">
+                    <h3>По группам</h3>
+                    <div class="archive-table-wrap" style="box-shadow:none;max-height:none;">
+                        <table class="archive-table fb-table">
+                            ${cmpHead('Группа')}
+                            ${[...byCohort.entries()].sort((a, b) => b[1].length - a[1].length).map(([k, rs]) =>
+                                cmpRow(escapeHtml(fbCohortLabel(rs[0].cohort_id, rs[0].program)), rs, ` data-cohort="${k}" style="cursor:pointer;" title="Показать только эту группу"`)).join('')}
+                        </table>
+                    </div>
+                </div>
+                <div class="panel">
+                    <h3>По программам</h3>
+                    <div class="archive-table-wrap" style="box-shadow:none;max-height:none;">
+                        <table class="archive-table fb-table">
+                            ${cmpHead('Программа')}
+                            ${[...byProgram.entries()].sort((a, b) => b[1].length - a[1].length).map(([k, rs]) => cmpRow(escapeHtml(k), rs, ` data-program="${escapeHtml(k)}" style="cursor:pointer;" title="Показать только эту программу"`)).join('')}
+                        </table>
+                    </div>
+                </div>
+            </div>
+            ${byMonth.size > 1 ? `
+            <div class="panel" style="margin-top:16px;">
+                <h3>Динамика по месяцам</h3>
+                <div class="archive-table-wrap" style="box-shadow:none;max-height:none;">
+                    <table class="archive-table fb-table">
+                        ${cmpHead('Месяц')}
+                        ${[...byMonth.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([k, rs]) => cmpRow(escapeHtml(k), rs, ' style="cursor:default;"')).join('')}
+                    </table>
+                </div>
+            </div>` : ''}
+
+            <h3 class="fb-h">Ответы на вопросы с вариантами</h3>
+            <div class="fb-grid">${choicePanels}</div>
+
+            <h3 class="fb-h">Требуют внимания</h3>
+            <div class="fb-grid">
+                <div class="panel">
+                    <h3>Критичные отзывы (${critical.length})</h3>
+                    <p class="readonly-hint" style="margin:0 0 10px;">Оценка курса или преподавателя 6 и ниже, либо «не порекомендую».</p>
+                    ${critical.slice(0, 15).map(r => `
+                        <div class="fb-item" data-id="${r.id}">
+                            <div class="fb-item-head"><b>${escapeHtml(r.answers.fio || 'Аноним')}</b>${r.answers.company ? ' · ' + escapeHtml(r.answers.company) : ''}
+                                <span class="readonly-hint"> · ${fbDate(r)} · ${escapeHtml(fbCohortLabel(r.cohort_id, r.program))}</span></div>
+                            <div class="fb-item-chips">
+                                ${r.answers.course_rating != null ? `<span class="fb-chip${r.answers.course_rating <= 6 ? ' neg' : ''}">курс ${r.answers.course_rating}</span>` : ''}
+                                ${r.answers.teacher_rating != null ? `<span class="fb-chip${r.answers.teacher_rating <= 6 ? ' neg' : ''}">препод. ${r.answers.teacher_rating}</span>` : ''}
+                                ${r.answers.recommend ? `<span class="fb-chip${['no', 'rather_no'].includes(r.answers.recommend) ? ' neg' : ''}">${escapeHtml(fbOptionLabel(fbQuestion('recommend'), r.answers.recommend))}</span>` : ''}
+                            </div>
+                            ${[r.answers.excess, r.answers.improve_org].filter(Boolean).map(t => `<div class="fb-item-text">${escapeHtml(t)}</div>`).join('')}
+                        </div>`).join('') || '<p class="readonly-hint">Таких отзывов нет.</p>'}
+                    ${critical.length > 15 ? `<p class="readonly-hint">Показаны 15 из ${critical.length} — остальные в таблице ниже.</p>` : ''}
+                </div>
+                <div class="panel">
+                    <h3>Просят связаться (${contacts.length})</h3>
+                    ${contacts.slice(0, 20).map(r => `
+                        <div class="fb-item" data-id="${r.id}">
+                            <div class="fb-item-head"><b>${escapeHtml(r.answers.fio || 'Аноним')}</b>${r.answers.company ? ' · ' + escapeHtml(r.answers.company) : ''}
+                                <span class="readonly-hint"> · ${fbDate(r)} · ${escapeHtml(fbCohortLabel(r.cohort_id, r.program))}</span></div>
+                            <div class="fb-item-text">${r.answers.contact ? escapeHtml(r.answers.contact) : '<span class="readonly-hint">контакт не указан</span>'}</div>
+                        </div>`).join('') || '<p class="readonly-hint">Никто не оставил контакт.</p>'}
+                </div>
+            </div>
+
+            <h3 class="fb-h">Текстовые ответы</h3>
+            <div class="panel">
+                <div class="fb-text-tabs">
+                    ${textQs.map(q => `<button type="button" class="chip-filter${q.id === feedbackTextQ ? ' active' : ''}" data-q="${q.id}">${escapeHtml(q.label)}</button>`).join('')}
+                </div>
+                <input type="text" id="fbTextSearch" placeholder="Поиск по тексту…" value="${escapeHtml(feedbackTextSearch)}" style="margin:10px 0;max-width:340px;">
+                <div id="fbTextList"></div>
+            </div>
+
+            <h3 class="fb-h">Все отзывы</h3>
+            <div class="archive-table-wrap"><table class="archive-table fb-table" id="fbRawTable"></table></div>
+            <div id="fbRawMore" style="margin-top:10px;"></div>
+        `;
+
+        body.querySelectorAll('tr[data-cohort]').forEach(tr => tr.addEventListener('click', () => {
+            document.getElementById('fb_cohort').value = tr.dataset.cohort; renderFeedbackTab();
+        }));
+        body.querySelectorAll('tr[data-program]').forEach(tr => tr.addEventListener('click', () => {
+            document.getElementById('fb_program').value = tr.dataset.program; renderFeedbackTab();
+        }));
+        body.querySelectorAll('.fb-item').forEach(el => el.addEventListener('click', () => openFeedbackDetail(Number(el.dataset.id))));
+        body.querySelectorAll('.fb-text-tabs button').forEach(b => b.addEventListener('click', () => {
+            feedbackTextQ = b.dataset.q;
+            body.querySelectorAll('.fb-text-tabs button').forEach(x => x.classList.toggle('active', x === b));
+            renderFeedbackTexts(rows);
+        }));
+        document.getElementById('fbTextSearch').addEventListener('input', (e) => { feedbackTextSearch = e.target.value; renderFeedbackTexts(rows); });
+        renderFeedbackTexts(rows);
+        renderFeedbackRaw(rows);
+    }
+
+    function renderFeedbackTexts(rows) {
+        const q = fbQuestion(feedbackTextQ);
+        if (!q) return;
+        const needle = feedbackTextSearch.trim().toLowerCase();
+        const items = [];
+        rows.forEach(r => {
+            const v = r.answers[q.id];
+            if (!v) return;
+            (Array.isArray(v) ? v : [v]).forEach(text => items.push({ r, text }));
+        });
+        const shown = items.filter(i => !needle || i.text.toLowerCase().includes(needle))
+            .sort((a, b) => new Date(b.r.created_at) - new Date(a.r.created_at));
+        document.getElementById('fbTextList').innerHTML = `
+            <div class="readonly-hint" style="margin-bottom:8px;">Ответов: ${items.length}${needle ? `, найдено: ${shown.length}` : ''}</div>
+            ${shown.slice(0, 100).map(i => `
+                <div class="fb-item" data-id="${i.r.id}">
+                    <div class="fb-item-text">${escapeHtml(i.text)}</div>
+                    <div class="readonly-hint">${fbDate(i.r)} · ${escapeHtml(fbCohortLabel(i.r.cohort_id, i.r.program))}${i.r.answers.course_rating != null ? ` · курс ${i.r.answers.course_rating}` : ''}</div>
+                </div>`).join('') || '<p class="readonly-hint">Ничего нет.</p>'}
+            ${shown.length > 100 ? `<p class="readonly-hint">Показаны первые 100 — уточните поиск или фильтры.</p>` : ''}`;
+        document.querySelectorAll('#fbTextList .fb-item').forEach(el => el.addEventListener('click', () => openFeedbackDetail(Number(el.dataset.id))));
+    }
+
+    function renderFeedbackRaw(rows) {
+        const sorted = [...rows].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        const recQ = fbQuestion('recommend');
+        document.getElementById('fbRawTable').innerHTML = `
+            <tr><th>Дата</th><th>Группа</th><th>Респондент</th><th>Курс</th><th>Препод.</th><th>Рекомендует</th><th>Связь</th></tr>
+            ${sorted.slice(0, feedbackRawLimit).map(r => `
+                <tr data-id="${r.id}">
+                    <td>${fbDate(r)}</td>
+                    <td>${escapeHtml(fbCohortLabel(r.cohort_id, r.program))}</td>
+                    <td>${escapeHtml(r.answers.fio || 'Аноним')}${r.answers.company ? ` <span class="readonly-hint">· ${escapeHtml(r.answers.company)}</span>` : ''}</td>
+                    <td>${r.answers.course_rating != null ? r.answers.course_rating : '—'}</td>
+                    <td>${r.answers.teacher_rating != null ? r.answers.teacher_rating : '—'}</td>
+                    <td>${r.answers.recommend && recQ ? escapeHtml(fbOptionLabel(recQ, r.answers.recommend)) : '—'}</td>
+                    <td>${r.answers.contact_ok === 'yes' ? '<i class="fas fa-phone" title="Просит связаться"></i>' : ''}</td>
+                </tr>`).join('')}`;
+        document.querySelectorAll('#fbRawTable tr[data-id]').forEach(tr => tr.addEventListener('click', () => openFeedbackDetail(Number(tr.dataset.id))));
+        const more = document.getElementById('fbRawMore');
+        more.innerHTML = sorted.length > feedbackRawLimit
+            ? `<button type="button" class="secondary" style="font-size:12.5px;padding:8px 14px;">Показать ещё (осталось ${sorted.length - feedbackRawLimit})</button>` : '';
+        const btn = more.querySelector('button');
+        if (btn) btn.addEventListener('click', () => { feedbackRawLimit += 30; renderFeedbackRaw(rows); });
+    }
+
+    // ---- карточка отзыва ----
+    function openFeedbackDetail(id) {
+        const r = allFeedback.find(x => x.id === id);
+        if (!r) return;
+        const fmtAnswer = (q, v) => q.type === 'choice' ? fbOptionLabel(q, v) : Array.isArray(v) ? v.map((x, i) => `${i + 1}. ${x}`).join('\n') : String(v);
+        document.getElementById('fbDetailBody').innerHTML = `
+            <div class="readonly-hint" style="margin-bottom:12px;">${new Date(r.created_at).toLocaleString('ru-RU')} · ${escapeHtml(fbCohortLabel(r.cohort_id, r.program))}</div>
+            ${feedbackSpec.sections.map(s => {
+                const answered = s.questions.filter(q => r.answers[q.id] !== undefined);
+                if (!answered.length) return '';
+                return `<h4 class="fb-detail-h">${escapeHtml(s.title)}</h4>` + answered.map(q =>
+                    `<div class="fb-detail-q"><div class="fb-detail-label">${escapeHtml(q.label)}</div><div class="fb-detail-val">${escapeHtml(fmtAnswer(q, r.answers[q.id]))}</div></div>`).join('');
+            }).join('')}`;
+        document.getElementById('fbDetailDeleteBtn').onclick = () => deleteFeedbackResponse(id);
+        document.getElementById('feedbackDetailOverlay').classList.add('open');
+    }
+    function closeFeedbackDetail() { document.getElementById('feedbackDetailOverlay').classList.remove('open'); }
+    document.getElementById('feedbackDetailOverlay').addEventListener('click', (e) => { if (e.target.id === 'feedbackDetailOverlay') closeFeedbackDetail(); });
+
+    async function deleteFeedbackResponse(id) {
+        if (!confirm('Удалить этот отзыв навсегда? Отменить это нельзя.')) return;
+        showLoading(true);
+        try {
+            const res = await postJSON('deleteFeedback', { id });
+            if (res.status !== 'success') throw new Error(res.message || 'Ошибка');
+            allFeedback = allFeedback.filter(r => r.id !== id);
+            closeFeedbackDetail();
+            renderFeedbackTab();
+            updateCohortFeedbackCount();
+            showMessage('Отзыв удалён');
+        } catch (err) {
+            showMessage('Ошибка: ' + err.message, 'error');
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    // ---- экспорт ----
+    function exportFeedbackToExcel() {
+        if (!feedbackLoaded) return;
+        const rows = feedbackFilteredRows();
+        if (!rows.length) { showMessage('Нет отзывов для выгрузки', 'error'); return; }
+        const qs = fbQuestions();
+        const cell = (q, v) => v === undefined ? '' : q.type === 'choice' ? fbOptionLabel(q, v) : Array.isArray(v) ? v.join('; ') : v;
+
+        const answersAoa = [['ID', 'Дата', 'Группа', 'Программа', ...qs.map(q => q.label)]];
+        rows.forEach(r => answersAoa.push([r.id, new Date(r.created_at).toLocaleString('ru-RU'), fbCohortLabel(r.cohort_id, r.program), r.program || '', ...qs.map(q => cell(q, r.answers[q.id]))]));
+
+        const summaryAoa = [['Вопрос', 'Вариант / показатель', 'Значение', 'Доля, %']];
+        qs.forEach(q => {
+            if (q.type === 'scale') {
+                const nums = fbNums(rows, q.id);
+                summaryAoa.push([q.label, 'Ответили', nums.length, '']);
+                if (nums.length) {
+                    summaryAoa.push([q.label, 'Средняя оценка', Math.round(fbMean(nums) * 100) / 100, '']);
+                    summaryAoa.push([q.label, 'NPS', Math.round(fbNps(nums)), '']);
+                    for (let i = q.min; i <= q.max; i++) summaryAoa.push([q.label, String(i), nums.filter(v => v === i).length, Math.round(nums.filter(v => v === i).length / nums.length * 1000) / 10]);
+                }
+            } else if (q.type === 'choice') {
+                const st = fbChoiceStats(rows, q);
+                q.options.forEach(o => summaryAoa.push([q.label, o.label, st.counts[o.key], st.answered ? Math.round(st.counts[o.key] / st.answered * 1000) / 10 : 0]));
+                if (st.avg != null) summaryAoa.push([q.label, 'Средний балл (из 5)', Math.round(st.avg * 100) / 100, '']);
+            }
+        });
+
+        const groupsAoa = [['Группа', 'Отзывов', 'Слушателей в группе', 'Средняя оценка курса', 'Средняя оценка преподавателя', 'NPS курса', 'Рекомендуют, %', 'Полезность (из 5)']];
+        const m = new Map();
+        rows.forEach(r => { const k = String(r.cohort_id); if (!m.has(k)) m.set(k, []); m.get(k).push(r); });
+        m.forEach(rs => {
+            const a = fbAggregate(rs);
+            const r2 = (v) => v == null ? '' : Math.round(v * 100) / 100;
+            groupsAoa.push([fbCohortLabel(rs[0].cohort_id, rs[0].program), a.n, rs[0].cohort_id !== null ? sumParticipants(membersOfCohort(rs[0].cohort_id)) : '', r2(a.course), r2(a.teacher), a.nps == null ? '' : Math.round(a.nps), r2(a.rec), r2(a.useful)]);
+        });
+
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(answersAoa), 'Ответы');
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summaryAoa), 'Сводка');
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(groupsAoa), 'По группам');
+        XLSX.writeFile(wb, `Отзывы_ДПО_${toLocalDateKey(new Date())}.xlsx`);
+    }
+
+    // ---- ссылка на отзыв в карточке группы ----
+    function feedbackLinkFor(cohort) {
+        return `${location.origin}${location.pathname.replace(/crm\.html$/, '')}feedback.html?cohort=${cohort.id}&token=${encodeURIComponent(cohort.feedback_token)}`;
+    }
+
+    function renderCohortFeedbackBox(cohort) {
+        const box = document.getElementById('cohortFeedbackBox');
+        if (!box) return;
+        if (!cohort.feedback_token) {
+            box.innerHTML = `
+                <h4><i class="fas fa-comments"></i> Отзывы слушателей</h4>
+                <p class="readonly-hint" style="margin:0 0 10px;">Одна ссылка на всю группу: каждый слушатель отвечает на вопросы о курсе, ФИО можно не указывать.</p>
+                <button type="button" class="secondary" style="font-size:12.5px;padding:8px 14px;" id="fbCreateLinkBtn"><i class="fas fa-link"></i> Создать ссылку на отзыв</button>`;
+            document.getElementById('fbCreateLinkBtn').addEventListener('click', () => createFeedbackLink(cohort.id));
+            return;
+        }
+        box.innerHTML = `
+            <h4><i class="fas fa-comments"></i> Отзывы слушателей</h4>
+            <div class="field-row" style="align-items:flex-end;">
+                <div class="field" style="margin-bottom:0;"><input type="text" id="fbLinkField" readonly style="font-size:12.5px;" value="${escapeHtml(feedbackLinkFor(cohort))}"></div>
+                <button type="button" class="secondary" id="fbCopyLinkBtn" style="flex-shrink:0;" title="Скопировать ссылку"><i class="fas fa-copy"></i></button>
+            </div>
+            <div style="margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                <button type="button" style="font-size:12.5px;padding:8px 14px;" id="fbSendAllBtn"><i class="fas fa-paper-plane"></i> Отправить ссылку всем на email</button>
+                <span class="readonly-hint" id="cohortFeedbackCount"></span>
+                <a href="#" id="fbOpenAnalyticsLink" style="font-size:12.5px;display:none;">Смотреть аналитику →</a>
+            </div>`;
+        document.getElementById('fbCopyLinkBtn').addEventListener('click', () => {
+            const f = document.getElementById('fbLinkField');
+            f.select();
+            navigator.clipboard?.writeText(f.value).then(() => showMessage('Ссылка скопирована')).catch(() => { document.execCommand('copy'); showMessage('Ссылка скопирована'); });
+        });
+        document.getElementById('fbSendAllBtn').addEventListener('click', () => sendAllFeedbackEmails(cohort.id));
+        document.getElementById('fbOpenAnalyticsLink').addEventListener('click', (e) => { e.preventDefault(); openFeedbackForCohort(cohort.id); });
+        ensureFeedbackLoaded();
+        updateCohortFeedbackCount();
+    }
+
+    function updateCohortFeedbackCount() {
+        const el = document.getElementById('cohortFeedbackCount');
+        if (!el || activeCohortTabId === null) return;
+        const link = document.getElementById('fbOpenAnalyticsLink');
+        if (!feedbackLoaded) { el.textContent = feedbackLoadFailed ? '' : 'Загрузка…'; return; }
+        const n = allFeedback.filter(r => r.cohort_id === activeCohortTabId).length;
+        const heads = sumParticipants(membersOfCohort(activeCohortTabId));
+        el.textContent = `Получено отзывов: ${n} из ${heads} слушателей`;
+        if (link) link.style.display = n ? 'inline' : 'none';
+    }
+
+    async function createFeedbackLink(cohortId) {
+        showLoading(true);
+        try {
+            const res = await postJSON('generateFeedbackLink', { cohortId });
+            if (res.status !== 'success') throw new Error(res.message || 'Ошибка');
+            const cohort = allCohorts.find(c => c.id === cohortId);
+            if (cohort) { cohort.feedback_token = res.token; renderCohortFeedbackBox(cohort); }
+            showMessage('Ссылка на отзыв создана');
+        } catch (err) {
+            showMessage('Ошибка: ' + err.message, 'error');
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    async function sendAllFeedbackEmails(cohortId) {
+        const cohort = allCohorts.find(c => c.id === cohortId);
+        if (!cohort || !cohort.feedback_token) return;
+        const seen = new Set();
+        const targets = membersOfCohort(cohortId).filter(d => {
+            const e = String(d.email || '').trim().toLowerCase();
+            if (!e || seen.has(e)) return false;
+            seen.add(e);
+            return true;
+        });
+        if (!targets.length) { showMessage('Ни у одной заявки в группе нет email', 'error'); return; }
+        if (!confirm(`Отправить ссылку на отзыв на ${targets.length} email?`)) return;
+
+        const link = feedbackLinkFor(cohort);
+        showLoading(true);
+        let failed = 0;
+        try {
+            for (const d of targets) {
+                try {
+                    const res = await postJSON('sendFeedbackEmail', { cohortId, leadId: d.id, link });
+                    if (res.status !== 'success') failed++;
+                } catch (err) { failed++; }
+                await new Promise(r => setTimeout(r, 150));
+            }
+            showMessage(failed ? `Отправлено: ${targets.length - failed}, не удалось: ${failed}` : `Ссылка отправлена: ${targets.length}`, failed ? 'error' : undefined);
+        } finally {
+            showLoading(false);
+        }
     }
 
     // ========== История изменений ==========

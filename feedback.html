@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Отзыв о программе</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --primary: #4361ee; --primary-light: #4895ef; --primary-dark: #3f37c9;
+            --success: #2ecc71; --danger: #f72585; --warning: #f8961e;
+            --bg: #f8f9fa; --card-bg: #ffffff; --text: #212529;
+            --text-secondary: #495057; --border: #dee2e6;
+            --shadow: 0 4px 12px rgba(0,0,0,0.05); --radius: 12px; --transition: 0.2s ease;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0; padding: 24px 16px 60px;
+            background: linear-gradient(135deg, #e0e7ff 0%, #f8f9fa 100%);
+            color: var(--text);
+        }
+        .container { max-width: 720px; margin: auto; }
+        header { margin-bottom: 20px; }
+        h1 { color: var(--primary-dark); font-size: 22px; margin: 0 0 6px; font-weight: 600; }
+        .lede { color: var(--text-secondary); font-size: 14.5px; line-height: 1.5; margin: 0; }
+        .context-card {
+            background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow);
+            padding: 14px 20px; margin-bottom: 18px; font-size: 14px;
+        }
+        .context-card .prog { font-weight: 600; color: var(--primary-dark); }
+        .context-card .meta { color: var(--text-secondary); font-size: 13px; margin-top: 3px; }
+
+        .progress { position: sticky; top: 0; z-index: 5; height: 5px; background: rgba(255,255,255,0.7); border-radius: 3px; margin-bottom: 14px; overflow: hidden; }
+        .progress > div { height: 100%; width: 0; background: var(--primary); transition: width 0.25s ease; }
+
+        .section-card {
+            background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow);
+            padding: 20px 22px 8px; margin-bottom: 16px;
+        }
+        .section-card h2 { font-size: 15px; color: var(--primary-dark); margin: 0 0 16px; }
+        .q { margin-bottom: 20px; }
+        .q.invalid { background: #fff0f6; border-radius: 8px; padding: 8px 10px; margin-left: -10px; margin-right: -10px; }
+        .q > label.title { display: block; font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+        .q .req { color: var(--danger); }
+        .q .hint { font-size: 12px; color: #868e96; margin-bottom: 8px; font-weight: 400; }
+        .q input[type=text], .q textarea {
+            width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px;
+            font-size: 14px; font-family: inherit; margin-top: 6px;
+        }
+        .q textarea { min-height: 84px; resize: vertical; }
+        .q input[type=text]:focus, .q textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(67,97,238,0.15); }
+
+        .scale { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+        .scale button {
+            width: 44px; height: 44px; padding: 0; border-radius: 10px; background: #fff; color: var(--text);
+            border: 1px solid var(--border); font-size: 15px; font-weight: 600; justify-content: center;
+        }
+        .scale button:hover { border-color: var(--primary-light); background: #eef1ff; }
+        .scale button.on { background: var(--primary); color: #fff; border-color: var(--primary); }
+        .scale-legend { display: flex; justify-content: space-between; font-size: 11.5px; color: #868e96; margin-top: 5px; max-width: 470px; }
+
+        .choices { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+        .choices button {
+            padding: 9px 14px; border-radius: 22px; background: #fff; color: var(--text);
+            border: 1px solid var(--border); font-size: 13.5px; font-weight: 500;
+        }
+        .choices button:hover { border-color: var(--primary-light); background: #eef1ff; }
+        .choices button.on { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+        button { font-family: inherit; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: var(--transition); }
+        #submitBtn {
+            width: 100%; justify-content: center; padding: 14px; font-size: 15px; margin-top: 6px;
+            background: var(--primary); color: #fff; border: none; border-radius: 25px; font-weight: 500;
+        }
+        #submitBtn:hover { background: var(--primary-dark); }
+        #submitBtn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .again-btn { margin-top: 18px; background: transparent; color: var(--primary); border: 1px solid var(--primary); border-radius: 25px; padding: 10px 20px; font-size: 14px; }
+
+        #errorScreen, #successScreen { text-align: center; padding: 60px 20px; }
+        #errorScreen i, #successScreen i { font-size: 42px; margin-bottom: 16px; }
+        #errorScreen i { color: var(--danger); }
+        #successScreen i { color: var(--success); }
+        #errorScreen h2, #successScreen h2 { font-size: 19px; margin: 0 0 8px; }
+        #errorScreen p, #successScreen p { color: var(--text-secondary); }
+
+        #loading-overlay {
+            position: fixed; inset: 0; background: rgba(255,255,255,0.75); display: none;
+            justify-content: center; align-items: center; z-index: 2000; flex-direction: column; gap: 12px;
+        }
+        [hidden] { display: none !important; }
+        @media (max-width: 480px) { .scale button { width: 38px; height: 40px; } }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <div id="errorScreen" hidden>
+        <i class="fas fa-circle-exclamation"></i>
+        <h2>Ссылка недействительна</h2>
+        <p id="errorText">Проверьте, что вы перешли по полной ссылке из письма. Если проблема повторяется — свяжитесь с отделом ДПО.</p>
+    </div>
+
+    <div id="successScreen" hidden>
+        <i class="fas fa-circle-check"></i>
+        <h2>Спасибо за отзыв!</h2>
+        <p>Ваши ответы помогут нам сделать обучение лучше.</p>
+        <button type="button" class="again-btn" onclick="fillAgain()"><i class="fas fa-rotate-left"></i> Заполнить за другого слушателя</button>
+    </div>
+
+    <div id="formScreen" hidden>
+        <header>
+            <h1><i class="fas fa-comments"></i> Отзыв о программе</h1>
+            <p class="lede">Ответьте, пожалуйста, на несколько вопросов — это займёт 3–5 минут. Обязательные вопросы отмечены <span style="color:var(--danger)">*</span>, ФИО можно не указывать.</p>
+        </header>
+        <div class="context-card">
+            <div class="prog" id="ctxProgram"></div>
+        </div>
+        <div class="progress"><div id="progressBar"></div></div>
+        <div id="sections"></div>
+        <button id="submitBtn" onclick="submitForm()"><i class="fas fa-paper-plane"></i> Отправить отзыв</button>
+    </div>
+
+</div>
+
+<div id="loading-overlay">
+    <i class="fas fa-spinner fa-spin" style="font-size: 2.5rem; color: var(--primary);"></i>
+</div>
+
+<script>
+    const API_URL = 'https://91-210-168-118.sslip.io';
+    const params = new URLSearchParams(location.search);
+    const cohortId = params.get('cohort');
+    const token = params.get('token');
+
+    let spec = null;
+    let answers = {};
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.appendChild(document.createTextNode(text == null ? '' : String(text)));
+        return div.innerHTML;
+    }
+    function showLoading(show) { document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none'; }
+    function allQuestions() { return spec.sections.flatMap(s => s.questions); }
+
+    function isVisible(q) { return !q.showIf || answers[q.showIf.q] === q.showIf.is; }
+
+    function questionHtml(q) {
+        const req = q.required ? ' <span class="req">*</span>' : '';
+        const hint = q.hint ? `<div class="hint">${escapeHtml(q.hint)}</div>` : '';
+        let body = '';
+        if (q.type === 'scale') {
+            const btns = [];
+            for (let i = q.min; i <= q.max; i++) btns.push(`<button type="button" data-q="${q.id}" data-v="${i}">${i}</button>`);
+            body = `<div class="scale">${btns.join('')}</div>` +
+                (q.minLabel || q.maxLabel ? `<div class="scale-legend"><span>${q.min} — ${escapeHtml(q.minLabel || '')}</span><span>${q.max} — ${escapeHtml(q.maxLabel || '')}</span></div>` : '');
+        } else if (q.type === 'choice') {
+            body = `<div class="choices">${q.options.map(o => `<button type="button" data-q="${q.id}" data-v="${o.key}">${escapeHtml(o.label)}</button>`).join('')}</div>`;
+        } else if (q.type === 'textarea') {
+            body = `<textarea data-q="${q.id}"></textarea>`;
+        } else if (q.type === 'list') {
+            body = Array.from({ length: q.max }, (_, i) => `<input type="text" data-q="${q.id}" data-i="${i}" placeholder="${i + 1}.">`).join('');
+        } else {
+            body = `<input type="text" data-q="${q.id}">`;
+        }
+        return `<div class="q" data-qid="${q.id}"${isVisible(q) ? '' : ' hidden'}><label class="title">${escapeHtml(q.label)}${req}</label>${hint}${body}</div>`;
+    }
+
+    function renderForm() {
+        document.getElementById('sections').innerHTML = spec.sections.map(s => `
+            <div class="section-card"><h2>${escapeHtml(s.title)}</h2>${s.questions.map(questionHtml).join('')}</div>`).join('');
+        document.querySelectorAll('.scale button, .choices button').forEach(b => b.addEventListener('click', () => {
+            const qid = b.dataset.q;
+            const q = allQuestions().find(x => x.id === qid);
+            const v = q.type === 'scale' ? Number(b.dataset.v) : b.dataset.v;
+            // Повторный клик по выбранному снимает ответ — на случай, если передумали.
+            if (answers[qid] === v) delete answers[qid]; else answers[qid] = v;
+            syncQuestion(qid);
+            updateVisibility();
+            updateProgress();
+        }));
+        document.querySelectorAll('textarea[data-q], input[type=text][data-q]').forEach(el => el.addEventListener('input', () => {
+            const qid = el.dataset.q;
+            const q = allQuestions().find(x => x.id === qid);
+            if (q.type === 'list') {
+                answers[qid] = [...document.querySelectorAll(`input[data-q="${qid}"]`)].map(i => i.value.trim()).filter(Boolean);
+            } else {
+                answers[qid] = el.value;
+            }
+            updateProgress();
+        }));
+    }
+
+    function syncQuestion(qid) {
+        document.querySelectorAll(`button[data-q="${qid}"]`).forEach(b => {
+            const q = allQuestions().find(x => x.id === qid);
+            const v = q.type === 'scale' ? Number(b.dataset.v) : b.dataset.v;
+            b.classList.toggle('on', answers[qid] === v);
+        });
+        document.querySelector(`.q[data-qid="${qid}"]`).classList.remove('invalid');
+    }
+
+    function updateVisibility() {
+        allQuestions().forEach(q => {
+            if (!q.showIf) return;
+            const el = document.querySelector(`.q[data-qid="${q.id}"]`);
+            el.hidden = !isVisible(q);
+        });
+    }
+
+    function updateProgress() {
+        const req = allQuestions().filter(q => q.required);
+        const done = req.filter(q => answers[q.id] !== undefined && answers[q.id] !== '').length;
+        document.getElementById('progressBar').style.width = (req.length ? Math.round(done / req.length * 100) : 100) + '%';
+    }
+
+    async function submitForm() {
+        const missing = allQuestions().filter(q => q.required && (answers[q.id] === undefined || answers[q.id] === ''));
+        document.querySelectorAll('.q.invalid').forEach(e => e.classList.remove('invalid'));
+        if (missing.length) {
+            missing.forEach(q => document.querySelector(`.q[data-qid="${q.id}"]`).classList.add('invalid'));
+            document.querySelector(`.q[data-qid="${missing[0].id}"]`).scrollIntoView({ behavior: 'smooth', block: 'center' });
+            alert(`Пожалуйста, ответьте на обязательные вопросы (не заполнено: ${missing.length})`);
+            return;
+        }
+        showLoading(true);
+        document.getElementById('submitBtn').disabled = true;
+        try {
+            const resp = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: 'submitFeedback', cohortId, token, answers }),
+            });
+            const result = await resp.json();
+            if (result.status !== 'success') throw new Error(result.message || 'Не удалось отправить отзыв');
+            document.getElementById('formScreen').hidden = true;
+            document.getElementById('successScreen').hidden = false;
+            window.scrollTo(0, 0);
+        } catch (err) {
+            alert('Ошибка отправки: ' + err.message + '\nПопробуйте ещё раз.');
+            document.getElementById('submitBtn').disabled = false;
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    function fillAgain() {
+        answers = {};
+        renderForm();
+        updateProgress();
+        document.getElementById('submitBtn').disabled = false;
+        document.getElementById('successScreen').hidden = true;
+        document.getElementById('formScreen').hidden = false;
+        window.scrollTo(0, 0);
+    }
+
+    async function init() {
+        if (!cohortId || !token) {
+            document.getElementById('errorText').textContent = 'В ссылке не хватает параметров. Используйте ссылку из письма целиком.';
+            document.getElementById('errorScreen').hidden = false;
+            return;
+        }
+        showLoading(true);
+        try {
+            const [ctxResp, specResp] = await Promise.all([
+                fetch(`${API_URL}?action=getFeedbackContext&cohortId=${encodeURIComponent(cohortId)}&token=${encodeURIComponent(token)}`).then(r => r.json()),
+                fetch(`${API_URL}?action=getFeedbackSpec`).then(r => r.json()),
+            ]);
+            if (ctxResp.status !== 'success') throw new Error(ctxResp.message || 'Ссылка недействительна');
+            if (specResp.status !== 'success') throw new Error(specResp.message || 'Не удалось загрузить анкету');
+            spec = specResp.data;
+            document.getElementById('ctxProgram').textContent = ctxResp.data.program || '';
+            renderForm();
+            updateProgress();
+            document.getElementById('formScreen').hidden = false;
+        } catch (err) {
+            document.getElementById('errorText').textContent = err.message;
+            document.getElementById('errorScreen').hidden = false;
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    init();
+</script>
+</body>
+</html>
